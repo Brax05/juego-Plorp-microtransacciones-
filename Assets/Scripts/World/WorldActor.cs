@@ -10,14 +10,11 @@ public sealed class WorldActor : MonoBehaviour
     FarmGameState state;
     Action<string> message;
     WorldActorRole role;
-    Vector2 home;
     string id;
     string displayName;
-    string idleTexture;
     long reward;
     long cooldownSeconds;
     long nextReady;
-    float phase;
     float nextVisualCheck;
 
     public WorldActorRole Role => role;
@@ -30,15 +27,13 @@ public sealed class WorldActor : MonoBehaviour
         message = showMessage;
         id = actorId;
         displayName = title;
-        idleTexture = texture;
         role = actorRole;
-        home = position;
         reward = payout;
         cooldownSeconds = cooldown;
-        phase = Mathf.Abs(actorId.GetHashCode() % 1000) / 100f;
         long.TryParse(PlayerPrefs.GetString(SaveKey, "0"), out nextReady);
         sprite = gameObject.AddComponent<WorldSprite>();
         sprite.Initialize(ui, texture, OnTapped);
+        gameObject.AddComponent<WorldActorAnimator>().Initialize(sprite, role, id, texture, position);
         RefreshReady();
     }
 
@@ -64,14 +59,8 @@ public sealed class WorldActor : MonoBehaviour
 
     void Update()
     {
-        float t = Time.unscaledTime;
-        float x = role == WorldActorRole.Machine ? 0 : Mathf.Sin(t * .8f + phase) * 3.5f;
-        float y = Mathf.Sin(t * 1.7f + phase) * (role == WorldActorRole.Machine ? .7f : 1.7f);
-        sprite.Rect.anchoredPosition = new Vector2(home.x + x, -(home.y + y));
-        if (role == WorldActorRole.Worker)
-            sprite.SetTexture(idleTexture + (Mathf.FloorToInt(t * 3.2f + phase) % 2 == 0 ? "" : "_walk"));
-        if (t < nextVisualCheck) return;
-        nextVisualCheck = t + .5f;
+        if (Time.unscaledTime < nextVisualCheck) return;
+        nextVisualCheck = Time.unscaledTime + .5f;
         RefreshReady();
     }
 

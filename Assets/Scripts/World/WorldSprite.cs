@@ -7,7 +7,9 @@ public sealed class WorldSprite : MonoBehaviour
 {
     RectTransform rect;
     RawImage art;
+    RectTransform artRect;
     string currentTexture;
+    bool facingRight = true;
     static readonly Dictionary<string, Texture2D> TextureCache = new Dictionary<string, Texture2D>();
 
     public RectTransform Rect => rect;
@@ -22,7 +24,23 @@ public sealed class WorldSprite : MonoBehaviour
         button.onClick.AddListener(onClick);
         art = ui.Texture(transform, "Sprite art", "World/Sprites/" + textureName,
             0, 0, rect.sizeDelta.x, rect.sizeDelta.y);
+        artRect = art.rectTransform;
+        artRect.pivot = new Vector2(.5f, .5f);
+        artRect.anchoredPosition = new Vector2(rect.sizeDelta.x * .5f, -rect.sizeDelta.y * .5f);
         SetTexture(textureName);
+    }
+
+    public void SetPose(bool facingRight, float heightScale, float lift, float lean)
+    {
+        if (this.facingRight != facingRight)
+        {
+            art.uvRect = facingRight ? new Rect(0, 0, 1, 1) : new Rect(1, 0, -1, 1);
+            this.facingRight = facingRight;
+        }
+        artRect.localScale = new Vector3(1f, heightScale, 1f);
+        artRect.localRotation = Quaternion.Euler(0f, 0f, lean);
+        artRect.anchoredPosition = new Vector2(rect.sizeDelta.x * .5f,
+            -rect.sizeDelta.y * .5f + lift);
     }
 
     public void SetTexture(string textureName)

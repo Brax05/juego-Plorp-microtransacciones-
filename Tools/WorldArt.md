@@ -10,7 +10,9 @@ World behavior lives in `Assets/Scripts/World`. `FarmWorldController` places eve
 
 `FarmWorldController` starts with one chicken, one sheep and one cow. Each animal upgrade adds one more of each using fixed homes inside the two fenced areas. The sheep and cows use a short roaming radius so their feet stay behind the front fence. `animal_spawn_preview.png` compares the starting arrangement with the first upgrade; `animal_spawn_five_preview.png` shows the crowded pen after four upgrades; `world_grid_preview.png` is a coordinate reference for placing future objects.
 
-For saves created before the one-of-each roster, `FarmGameState` records the current animal upgrade level as a one-time roster baseline. This starts the new visible roster at one of each without changing saved gold, prices or levels. Later animal purchases add one of each, and the new baseline remains stable across restarts.
+For saves created before the one-of-each roster, `FarmGameState` records the current animal upgrade level as a one-time roster baseline. This starts the new visible roster at one of each without changing saved gold or levels. Later animal purchases add one of each, and the new baseline remains stable across restarts.
+
+The animal upgrade starts at 1,000 coins for testing. Existing saves receive that lower price once; later purchases continue to increase and persist the price normally.
 
 The animal sheet at `SourceArt/animals_sheet.png` was generated with the built-in image generation tool in **stylized-concept** mode, using `SourceArt/farm_source.png` as a style reference. Its final prompt was:
 

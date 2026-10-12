@@ -6,9 +6,11 @@ public sealed class FarmGameState
 {
     public static readonly string[] UpgradeNames = { "Semillas", "Animales", "Trabajadores", "Maquinaria" };
     public static readonly string[] AchievementNames = { "Primera cosecha", "Granjero constante", "Gran inversion" };
-    static readonly long[] StartingPrices = { 150000, 1200000, 5000000, 10000000 };
+    const long AnimalTestPrice = 1000;
+    static readonly long[] StartingPrices = { 150000, AnimalTestPrice, 5000000, 10000000 };
     static readonly int[] StartingLevels = { 25, 14, 3, 1 };
     const string AnimalRosterBaselineKey = "GlorpFarm.animalRosterBaselineLevel";
+    const string AnimalTestPriceKey = "GlorpFarm.animalTestPriceApplied";
     readonly int animalRosterBaselineLevel;
 
     public readonly int[] Levels = new int[4];
@@ -40,14 +42,24 @@ public sealed class FarmGameState
             Levels[i] = PlayerPrefs.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
             Prices[i] = ReadLong("price." + i, StartingPrices[i]);
         }
+        bool migrated = false;
         // Existing saves used the upgrade level for a prefilled animal roster.
         // Anchor the new roster at the current level once, keeping the rest of the save.
         if (!PlayerPrefs.HasKey(AnimalRosterBaselineKey))
         {
             PlayerPrefs.SetInt(AnimalRosterBaselineKey, Levels[1]);
-            PlayerPrefs.Save();
+            migrated = true;
         }
         animalRosterBaselineLevel = PlayerPrefs.GetInt(AnimalRosterBaselineKey, StartingLevels[1]);
+        // Apply the lower testing price once so old saves keep it, then let purchases raise it.
+        if (!PlayerPrefs.HasKey(AnimalTestPriceKey))
+        {
+            Prices[1] = Math.Min(Prices[1], AnimalTestPrice);
+            PlayerPrefs.SetString("GlorpFarm.price.1", Prices[1].ToString());
+            PlayerPrefs.SetInt(AnimalTestPriceKey, 1);
+            migrated = true;
+        }
+        if (migrated) PlayerPrefs.Save();
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
     }

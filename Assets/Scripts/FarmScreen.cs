@@ -86,7 +86,7 @@ public sealed class FarmScreen
         for (int i = 0; i < 4; i++)
         {
             prices[i].text = FarmGameState.Format(state.Prices[i]);
-            levels[i].text = "Nv." + state.Levels[i];
+            levels[i].text = i == 1 ? state.AnimalGroups + " c/u" : "Nv." + state.Levels[i];
         }
     }
 }

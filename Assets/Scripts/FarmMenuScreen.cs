@@ -116,7 +116,8 @@ public sealed class FarmMenuScreen
             float y = 120 + i * 165;
             var card = Card(FarmGameState.UpgradeNames[i], y, 149);
             ui.Label(card, "Name", FarmGameState.UpgradeNames[i].ToUpperInvariant(), 18, 8, 480, 40, 24, Color.white);
-            ui.Label(card, "Level", "Nivel " + state.Levels[i], 18, 53, 220, 34, 21, PixelUIFactory.Cream);
+            ui.Label(card, "Level", i == 1 ? "Nivel " + state.Levels[i] + " · " + state.AnimalGroups + " c/u"
+                : "Nivel " + state.Levels[i], 18, 53, 220, 34, 21, PixelUIFactory.Cream);
             ui.Label(card, "Price", FarmGameState.Format(state.Prices[i]) + " monedas", 18, 96, 260, 35, 21, PixelUIFactory.Gold);
             ui.ActionButton(card, "Upgrade " + i, "MEJORAR", 329, 83, 180, 57, () =>
                 message(state.BuyUpgrade(index)

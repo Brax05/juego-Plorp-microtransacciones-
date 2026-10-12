@@ -8,6 +8,8 @@ public sealed class FarmGameState
     public static readonly string[] AchievementNames = { "Primera cosecha", "Granjero constante", "Gran inversion" };
     static readonly long[] StartingPrices = { 150000, 1200000, 5000000, 10000000 };
     static readonly int[] StartingLevels = { 25, 14, 3, 1 };
+    const string AnimalRosterBaselineKey = "GlorpFarm.animalRosterBaselineLevel";
+    readonly int animalRosterBaselineLevel;
 
     public readonly int[] Levels = new int[4];
     public readonly long[] Prices = new long[4];
@@ -18,7 +20,7 @@ public sealed class FarmGameState
     public int Harvests { get; private set; }
     public int Purchases { get; private set; }
     public long TotalHarvestGold { get; private set; }
-    public int AnimalGroups => Math.Max(1, Levels[1] - StartingLevels[1] + 1);
+    public int AnimalGroups => Math.Max(1, Levels[1] - animalRosterBaselineLevel + 1);
     public bool MusicEnabled { get; private set; }
     public bool SoundEnabled { get; private set; }
     public event Action Changed;
@@ -38,6 +40,14 @@ public sealed class FarmGameState
             Levels[i] = PlayerPrefs.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
             Prices[i] = ReadLong("price." + i, StartingPrices[i]);
         }
+        // Existing saves used the upgrade level for a prefilled animal roster.
+        // Anchor the new roster at the current level once, keeping the rest of the save.
+        if (!PlayerPrefs.HasKey(AnimalRosterBaselineKey))
+        {
+            PlayerPrefs.SetInt(AnimalRosterBaselineKey, Levels[1]);
+            PlayerPrefs.Save();
+        }
+        animalRosterBaselineLevel = PlayerPrefs.GetInt(AnimalRosterBaselineKey, StartingLevels[1]);
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
     }

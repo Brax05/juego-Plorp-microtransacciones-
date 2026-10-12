@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 /// <summary>One independent, clickable pixel sprite in the farm world.</summary>
 public sealed class WorldSprite : MonoBehaviour
 {
     RectTransform rect;
     RawImage art;
+    string currentTexture;
+    static readonly Dictionary<string, Texture2D> TextureCache = new Dictionary<string, Texture2D>();
 
     public RectTransform Rect => rect;
 
@@ -24,7 +27,12 @@ public sealed class WorldSprite : MonoBehaviour
 
     public void SetTexture(string textureName)
     {
-        var texture = Resources.Load<Texture2D>("World/Sprites/" + textureName);
+        if (currentTexture == textureName) return;
+        if (!TextureCache.TryGetValue(textureName, out var texture))
+        {
+            texture = Resources.Load<Texture2D>("World/Sprites/" + textureName);
+            if (texture != null) TextureCache[textureName] = texture;
+        }
         if (texture == null)
         {
             Debug.LogError("Missing world sprite: " + textureName);
@@ -32,6 +40,7 @@ public sealed class WorldSprite : MonoBehaviour
         }
         texture.filterMode = FilterMode.Point;
         art.texture = texture;
+        currentTexture = textureName;
     }
 
     public void SetReady(bool ready)

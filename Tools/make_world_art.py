@@ -77,70 +77,6 @@ for crop in ("carrot", "tomato", "cabbage", "pumpkin"):
     canvas(f"{crop}_1", lambda d, c=crop: sprout(d, c))
     canvas(f"{crop}_2", lambda d, c=crop: mature(d, c))
 
-def chicken(d, brown=False):
-    body = "#c9985a" if brown else "#fff8df"
-    shade = "#9f673f" if brown else "#d4ceb3"
-    d.ellipse((3, 25, 29, 29), fill="#536d3f")
-    d.polygon([(5, 18), (2, 11), (11, 16), (16, 13), (23, 16), (25, 24), (17, 27), (9, 25)], fill=body, outline=INK)
-    d.ellipse((9, 16, 22, 25), fill=shade)
-    d.ellipse((17, 8, 28, 19), fill=body, outline=INK, width=2)
-    d.polygon([(26, 14), (31, 16), (27, 18)], fill="#efaa32", outline=INK)
-    d.rectangle((24, 11, 25, 12), fill=INK)
-    d.polygon([(20, 9), (20, 5), (23, 7), (25, 4), (26, 9)], fill="#d84336", outline=INK)
-    d.line((12, 26, 10, 30), fill="#cf7837", width=2)
-    d.line((20, 26, 22, 30), fill="#cf7837", width=2)
-
-canvas("chicken_white", chicken)
-canvas("chicken_brown", lambda d: chicken(d, True))
-
-def sheep(d, gray=False):
-    wool = "#b9bfc0" if gray else "#fff9e9"
-    shade = "#8a9997" if gray else "#d9d2b7"
-    d.ellipse((2, 27, 30, 31), fill="#527c42")
-    for x, y in [(5, 12), (10, 7), (17, 7), (23, 10), (27, 16), (22, 21), (13, 22), (6, 20)]:
-        d.ellipse((x-4, y-4, x+5, y+5), fill=wool, outline=INK)
-    d.ellipse((13, 13, 29, 25), fill=wool, outline=INK)
-    d.ellipse((21, 17, 31, 26), fill="#514d53", outline=INK)
-    d.ellipse((24, 18, 28, 21), fill="#8c8588")
-    d.rectangle((28, 20, 29, 21), fill=INK)
-    d.rectangle((8, 25, 11, 29), fill=shade, outline=INK)
-    d.rectangle((20, 25, 23, 29), fill=shade, outline=INK)
-
-canvas("sheep_white", sheep)
-canvas("sheep_gray", lambda d: sheep(d, True))
-
-def cow(d):
-    d.ellipse((1, 27, 31, 31), fill="#527c42")
-    d.rectangle((5, 13, 26, 25), fill="#f4edda", outline=INK, width=2)
-    d.polygon([(6, 15), (12, 13), (15, 19), (10, 23), (6, 21)], fill="#41434b")
-    d.ellipse((20, 7, 31, 20), fill="#f4edda", outline=INK, width=2)
-    d.polygon([(20, 8), (18, 4), (21, 3), (24, 8)], fill="#d5bd91", outline=INK)
-    d.polygon([(28, 8), (31, 3), (31, 10)], fill="#d5bd91", outline=INK)
-    d.ellipse((22, 15, 30, 22), fill="#dfaaa0", outline=INK)
-    d.rectangle((28, 11, 29, 12), fill=INK)
-    d.rectangle((8, 24, 11, 29), fill="#605a59", outline=INK)
-    d.rectangle((21, 24, 24, 29), fill="#605a59", outline=INK)
-
-canvas("cow", cow)
-
-def worker(d, red=False):
-    shirt = "#b84342" if red else "#3b91b2"
-    d.ellipse((3, 29, 29, 31), fill="#587644")
-    d.rectangle((9, 15, 22, 22), fill="#e7a06b", outline=INK)
-    d.rectangle((7, 19, 24, 28), fill=shirt, outline=INK, width=2)
-    d.rectangle((9, 23, 14, 29), fill="#354f83", outline=INK)
-    d.rectangle((18, 23, 23, 29), fill="#354f83", outline=INK)
-    d.rectangle((5, 20, 8, 26), fill="#e7a06b", outline=INK)
-    d.rectangle((23, 20, 26, 26), fill="#e7a06b", outline=INK)
-    d.rectangle((11, 15, 12, 16), fill=INK)
-    d.rectangle((20, 15, 21, 16), fill=INK)
-    d.rectangle((7, 10, 25, 13), fill="#b66b31", outline=INK)
-    d.rectangle((10, 5, 22, 10), fill="#e5a84e", outline=INK)
-    d.rectangle((13, 8, 19, 10), fill="#9b5730")
-
-canvas("worker_blue", worker)
-canvas("worker_red", lambda d: worker(d, True))
-
 def tractor(d):
     d.ellipse((2, 27, 31, 31), fill="#567b42")
     d.rectangle((7, 14, 22, 25), fill="#c44837", outline=INK, width=2)
@@ -153,4 +89,7 @@ def tractor(d):
     d.ellipse((26, 26, 29, 29), fill="#80949d")
 
 canvas("tractor", tractor)
+
+from make_character_sprites import build as build_character_sprites
+build_character_sprites()
 print(f"Generated background and {len(list(SPRITES.glob('*.png')))} individual sprites in {OUT}")

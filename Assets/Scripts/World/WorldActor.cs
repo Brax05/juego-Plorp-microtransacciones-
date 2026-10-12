@@ -13,6 +13,7 @@ public sealed class WorldActor : MonoBehaviour
     Vector2 home;
     string id;
     string displayName;
+    string idleTexture;
     long reward;
     long cooldownSeconds;
     long nextReady;
@@ -29,6 +30,7 @@ public sealed class WorldActor : MonoBehaviour
         message = showMessage;
         id = actorId;
         displayName = title;
+        idleTexture = texture;
         role = actorRole;
         home = position;
         reward = payout;
@@ -66,6 +68,8 @@ public sealed class WorldActor : MonoBehaviour
         float x = role == WorldActorRole.Machine ? 0 : Mathf.Sin(t * .8f + phase) * 3.5f;
         float y = Mathf.Sin(t * 1.7f + phase) * (role == WorldActorRole.Machine ? .7f : 1.7f);
         sprite.Rect.anchoredPosition = new Vector2(home.x + x, -(home.y + y));
+        if (role == WorldActorRole.Worker)
+            sprite.SetTexture(idleTexture + (Mathf.FloorToInt(t * 3.2f + phase) % 2 == 0 ? "" : "_walk"));
         if (t < nextVisualCheck) return;
         nextVisualCheck = t + .5f;
         RefreshReady();

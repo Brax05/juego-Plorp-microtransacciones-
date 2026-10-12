@@ -44,11 +44,17 @@ public sealed class FarmGameState
     public long Harvest()
     {
         long earned = 10 + Levels[0] * 25L + Levels[1] * 10L + Levels[2] * 50L + Levels[3] * 100L;
+        Collect(earned);
+        return earned;
+    }
+
+    public void Collect(long earned)
+    {
+        if (earned <= 0) return;
         Gold += earned;
         TotalHarvestGold += earned;
         Harvests++;
         Save();
-        return earned;
     }
 
     public bool BuyUpgrade(int index)

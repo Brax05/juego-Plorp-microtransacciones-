@@ -6,8 +6,12 @@ public sealed class FarmGameState
 {
     public static readonly string[] UpgradeNames = { "Semillas", "Animales", "Trabajadores", "Maquinaria" };
     public static readonly string[] AchievementNames = { "Primera cosecha", "Granjero constante", "Gran inversion" };
-    static readonly long[] StartingPrices = { 150000, 1200000, 5000000, 10000000 };
+    const long AnimalTestPrice = 1000;
+    static readonly long[] StartingPrices = { 150000, AnimalTestPrice, 5000000, 10000000 };
     static readonly int[] StartingLevels = { 25, 14, 3, 1 };
+    const string AnimalRosterBaselineKey = "GlorpFarm.animalRosterBaselineLevel";
+    const string AnimalTestPriceKey = "GlorpFarm.animalTestPriceApplied";
+    readonly int animalRosterBaselineLevel;
 
     public readonly int[] Levels = new int[4];
     public readonly long[] Prices = new long[4];
@@ -18,6 +22,7 @@ public sealed class FarmGameState
     public int Harvests { get; private set; }
     public int Purchases { get; private set; }
     public long TotalHarvestGold { get; private set; }
+    public int AnimalGroups => Math.Max(1, Levels[1] - animalRosterBaselineLevel + 1);
     public bool MusicEnabled { get; private set; }
     public bool SoundEnabled { get; private set; }
     public event Action Changed;
@@ -37,6 +42,24 @@ public sealed class FarmGameState
             Levels[i] = PlayerPrefs.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
             Prices[i] = ReadLong("price." + i, StartingPrices[i]);
         }
+        bool migrated = false;
+        // Existing saves used the upgrade level for a prefilled animal roster.
+        // Anchor the new roster at the current level once, keeping the rest of the save.
+        if (!PlayerPrefs.HasKey(AnimalRosterBaselineKey))
+        {
+            PlayerPrefs.SetInt(AnimalRosterBaselineKey, Levels[1]);
+            migrated = true;
+        }
+        animalRosterBaselineLevel = PlayerPrefs.GetInt(AnimalRosterBaselineKey, StartingLevels[1]);
+        // Apply the lower testing price once so old saves keep it, then let purchases raise it.
+        if (!PlayerPrefs.HasKey(AnimalTestPriceKey))
+        {
+            Prices[1] = Math.Min(Prices[1], AnimalTestPrice);
+            PlayerPrefs.SetString("GlorpFarm.price.1", Prices[1].ToString());
+            PlayerPrefs.SetInt(AnimalTestPriceKey, 1);
+            migrated = true;
+        }
+        if (migrated) PlayerPrefs.Save();
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
     }
@@ -44,11 +67,17 @@ public sealed class FarmGameState
     public long Harvest()
     {
         long earned = 10 + Levels[0] * 25L + Levels[1] * 10L + Levels[2] * 50L + Levels[3] * 100L;
+        Collect(earned);
+        return earned;
+    }
+
+    public void Collect(long earned)
+    {
+        if (earned <= 0) return;
         Gold += earned;
         TotalHarvestGold += earned;
         Harvests++;
         Save();
-        return earned;
     }
 
     public bool BuyUpgrade(int index)

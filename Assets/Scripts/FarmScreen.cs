@@ -15,6 +15,7 @@ public sealed class FarmScreen
     readonly Text gems;
     readonly Text farmLevel;
     readonly RectTransform activeTab;
+    readonly FarmWorldController world;
 
     public FarmScreen(Transform parent, FarmGameState state, PixelUIFactory ui,
         Action<int> navigate, Action<string> message)
@@ -24,7 +25,9 @@ public sealed class FarmScreen
         this.navigate = navigate;
         this.message = message;
 
-        ui.Texture(parent, "Farm illustration", "UI/farm", 0, 0, 570, 530);
+        var worldRoot = ui.Rect(parent, "Modular farm world", 0, 0, 570, 530);
+        world = worldRoot.gameObject.AddComponent<FarmWorldController>();
+        world.Initialize(state, ui, message);
         ui.Texture(parent, "Pixel UI frame", "UI/chrome", 0, 0, 570, 1018);
         farmLevel = ui.Label(parent, "Farm level", "", 158, 13, 58, 42, 27, Color.white);
         gold = ui.Label(parent, "Gold", "", 424, 20, 98, 35, 25, PixelUIFactory.Gold, TextAnchor.MiddleRight);
@@ -64,13 +67,15 @@ public sealed class FarmScreen
 
     void Harvest()
     {
-        long earned = state.Harvest();
-        message("+" + FarmGameState.Format(earned) + " monedas");
+        long earned = world.HarvestAll();
+        message(earned > 0 ? "+" + FarmGameState.Format(earned) + " monedas" : "Nada listo para cosechar");
     }
 
     void Buy(int index)
     {
-        message(state.BuyUpgrade(index) ? "Mejora comprada" : "Faltan monedas");
+        message(state.BuyUpgrade(index)
+            ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
+            : "Faltan monedas");
     }
 
     void Refresh()
@@ -81,7 +86,7 @@ public sealed class FarmScreen
         for (int i = 0; i < 4; i++)
         {
             prices[i].text = FarmGameState.Format(state.Prices[i]);
-            levels[i].text = "Nv." + state.Levels[i];
+            levels[i].text = i == 1 ? state.AnimalGroups + " c/u" : "Nv." + state.Levels[i];
         }
     }
 }

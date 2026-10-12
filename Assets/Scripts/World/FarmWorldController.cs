@@ -14,6 +14,10 @@ public sealed class FarmWorldController : MonoBehaviour
     };
     static readonly Vector2[] PlotOrigins = { V(35,182), V(199,243), V(31,315), V(196,388) };
     static readonly CropKind[] InitialKinds = { CropKind.Carrot, CropKind.Tomato, CropKind.Pumpkin, CropKind.Cabbage };
+    // Top-left sprite positions, chosen on the grass inside each visible fence.
+    static readonly Vector2[] ChickenHomes = { V(258,130), V(205,116), V(300,135), V(238,147), V(329,129), V(275,112) };
+    static readonly Vector2[] SheepHomes = { V(524,273), V(522,230), V(480,252), V(503,220), V(452,233), V(531,255) };
+    static readonly Vector2[] CowHomes = { V(453,226), V(487,230), V(526,216), V(445,240), V(505,255), V(470,207) };
 
     readonly CropPlot[] plots = new CropPlot[4];
     readonly List<WorldActor> actors = new List<WorldActor>();
@@ -31,13 +35,6 @@ public sealed class FarmWorldController : MonoBehaviour
         for (int i = 0; i < plots.Length; i++) CreatePlot(i);
 
         // Each animal, worker and machine is a separate GameObject with its own state.
-        Spawn("chicken-1", "Gallina", "chicken_white", WorldActorRole.Animal, V(208,126), 55, 35, 37, 37);
-        Spawn("chicken-2", "Gallina", "chicken_brown", WorldActorRole.Animal, V(244,150), 55, 35, 37, 37);
-        Spawn("chicken-3", "Gallina", "chicken_white", WorldActorRole.Animal, V(281,125), 55, 35, 37, 37);
-        Spawn("chicken-4", "Gallina", "chicken_white", WorldActorRole.Animal, V(316,151), 55, 35, 37, 37);
-        Spawn("sheep-1", "Oveja", "sheep_white", WorldActorRole.Animal, V(456,250), 90, 48, 43, 41);
-        Spawn("sheep-2", "Oveja", "sheep_gray", WorldActorRole.Animal, V(509,274), 90, 48, 43, 41);
-        Spawn("cow-1", "Vaca", "cow", WorldActorRole.Animal, V(474,291), 120, 65, 45, 42);
         Spawn("worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, V(139,302), 80, 45, 35, 43);
         Spawn("worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, V(392,334), 80, 45, 35, 43);
         Spawn("tractor-1", "Tractor", "tractor", WorldActorRole.Machine, V(402,390), 160, 70, 44, 41);
@@ -84,11 +81,7 @@ public sealed class FarmWorldController : MonoBehaviour
         int seedSteps = Mathf.Max(0, state.Levels[0] - 25);
         plots[0].SetKind((CropKind)(seedSteps % 4));
 
-        int extraAnimals = Mathf.Clamp(state.Levels[1] - 14, 0, 4);
-        if (extraAnimals > 0) Spawn("chicken-5", "Gallina", "chicken_brown", WorldActorRole.Animal, V(226,173), 55, 35, 37, 37);
-        if (extraAnimals > 1) Spawn("sheep-3", "Oveja", "sheep_white", WorldActorRole.Animal, V(526,239), 90, 48, 43, 41);
-        if (extraAnimals > 2) Spawn("cow-2", "Vaca", "cow", WorldActorRole.Animal, V(438,279), 120, 65, 45, 42);
-        if (extraAnimals > 3) Spawn("chicken-6", "Gallina", "chicken_white", WorldActorRole.Animal, V(322,178), 55, 35, 37, 37);
+        for (int i = 0; i < state.AnimalGroups; i++) SpawnAnimalGroup(i);
 
         int extraWorkers = Mathf.Clamp(state.Levels[2] - 3, 0, 3);
         if (extraWorkers > 0) Spawn("worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, V(282,383), 80, 45, 35, 43);
@@ -97,6 +90,26 @@ public sealed class FarmWorldController : MonoBehaviour
 
         if (state.Levels[3] > 1)
             Spawn("tractor-2", "Tractor", "tractor", WorldActorRole.Machine, V(270,378), 160, 70, 44, 41);
+    }
+
+    void SpawnAnimalGroup(int index)
+    {
+        int number = index + 1;
+        Spawn("chicken-" + number, "Gallina", index % 2 == 0 ? "chicken_white" : "chicken_brown",
+            WorldActorRole.Animal, AnimalHome(ChickenHomes, index), 55, 35, 35, 35);
+        Spawn("sheep-" + number, "Oveja", index % 2 == 0 ? "sheep_white" : "sheep_gray",
+            WorldActorRole.Animal, AnimalHome(SheepHomes, index), 90, 48, 36, 35);
+        Spawn("cow-" + number, "Vaca", "cow", WorldActorRole.Animal,
+            AnimalHome(CowHomes, index), 120, 65, 38, 36);
+    }
+
+    static Vector2 AnimalHome(Vector2[] homes, int index)
+    {
+        // Extra purchases continue to create actors, even after the first row fills.
+        Vector2 home = homes[index % homes.Length];
+        int row = index / homes.Length;
+        if (row == 0) return home;
+        return home + new Vector2((row % 3 - 1) * 3f, -(row % 2) * 3f);
     }
 
     void Spawn(string id, string title, string texture, WorldActorRole role, Vector2 position,

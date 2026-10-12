@@ -14,6 +14,7 @@ public sealed class WorldActorAnimator : MonoBehaviour
     float stateUntil;
     float stepTime;
     float speed;
+    Vector2 roamRadius;
     bool moving;
     bool facingRight = true;
 
@@ -30,6 +31,9 @@ public sealed class WorldActorAnimator : MonoBehaviour
         phase = (float)random.NextDouble() * Mathf.PI * 2f;
         stateUntil = Time.unscaledTime + Range(.4f, 2f);
         speed = role == WorldActorRole.Animal ? Range(8f, 12f) : Range(7f, 10f);
+        roamRadius = role == WorldActorRole.Animal
+            ? (textureName.StartsWith("chicken") ? new Vector2(9f, 5f) : new Vector2(5f, 3f))
+            : new Vector2(8f, 5f);
         if (role == WorldActorRole.Machine) speed = 0f;
     }
 
@@ -70,12 +74,11 @@ public sealed class WorldActorAnimator : MonoBehaviour
 
     void StartWalk()
     {
-        Vector2 radius = role == WorldActorRole.Animal ? new Vector2(13f, 7f) : new Vector2(8f, 5f);
-        float x = Range(-radius.x, radius.x);
+        float x = Range(-roamRadius.x, roamRadius.x);
         // Every trip has enough horizontal travel to show a clear turn.
-        if (Mathf.Abs(x - offset.x) < 6f)
-            x = offset.x < 0f ? radius.x : -radius.x;
-        destination = new Vector2(x, Range(-radius.y, radius.y));
+        if (Mathf.Abs(x - offset.x) < 4f)
+            x = offset.x < 0f ? roamRadius.x : -roamRadius.x;
+        destination = new Vector2(x, Range(-roamRadius.y, roamRadius.y));
         facingRight = destination.x >= offset.x;
         moving = true;
         stepTime = 0f;

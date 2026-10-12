@@ -18,6 +18,7 @@ public sealed class FarmGameState
     public int Harvests { get; private set; }
     public int Purchases { get; private set; }
     public long TotalHarvestGold { get; private set; }
+    public int AnimalGroups => Math.Max(1, Levels[1] - StartingLevels[1] + 1);
     public bool MusicEnabled { get; private set; }
     public bool SoundEnabled { get; private set; }
     public event Action Changed;

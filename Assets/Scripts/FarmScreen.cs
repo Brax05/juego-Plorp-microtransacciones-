@@ -73,7 +73,9 @@ public sealed class FarmScreen
 
     void Buy(int index)
     {
-        message(state.BuyUpgrade(index) ? "Mejora comprada" : "Faltan monedas");
+        message(state.BuyUpgrade(index)
+            ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
+            : "Faltan monedas");
     }
 
     void Refresh()

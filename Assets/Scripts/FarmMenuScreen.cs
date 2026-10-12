@@ -119,7 +119,9 @@ public sealed class FarmMenuScreen
             ui.Label(card, "Level", "Nivel " + state.Levels[i], 18, 53, 220, 34, 21, PixelUIFactory.Cream);
             ui.Label(card, "Price", FarmGameState.Format(state.Prices[i]) + " monedas", 18, 96, 260, 35, 21, PixelUIFactory.Gold);
             ui.ActionButton(card, "Upgrade " + i, "MEJORAR", 329, 83, 180, 57, () =>
-                message(state.BuyUpgrade(index) ? "Mejora comprada" : "Faltan monedas"));
+                message(state.BuyUpgrade(index)
+                    ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
+                    : "Faltan monedas"));
         }
     }
 

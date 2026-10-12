@@ -1,0 +1,29 @@
+# Unity-generated folders
+/Library/
+/Temp/
+/Obj/
+/obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Recordings/
+
+# IDE and generated project files
+/.vscode/
+/.idea/
+/.vs/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+
+# Python art generator cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db

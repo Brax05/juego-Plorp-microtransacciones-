@@ -28,24 +28,54 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         var state = new FarmGameState();
         var ui = new PixelUIFactory();
-        var canvasObject = new GameObject("Pixel Farm Canvas", typeof(RectTransform), typeof(Canvas),
-            typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasObject.transform.SetParent(transform, false);
-        var canvas = canvasObject.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.pixelPerfect = true;
-        canvasObject.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
-        content = ui.Rect(canvasObject.transform, "Portrait screen", 0, 0, Width, Height);
-        content.anchorMin = content.anchorMax = content.pivot = new Vector2(.5f, .5f);
-        content.anchoredPosition = Vector2.zero;
+        var canvas = GetComponentInChildren<Canvas>(true);
+        if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
+
+        GameObject canvasObject;
+        if (canvas == null)
+        {
+            canvasObject = new GameObject("Pixel Farm Canvas", typeof(RectTransform), typeof(Canvas),
+                typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(transform, false);
+            canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.pixelPerfect = true;
+            canvasObject.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        }
+        else
+        {
+            canvasObject = canvas.gameObject;
+        }
+
+        var portraitTransform = FindChildRecursive(canvasObject.transform, "Portrait screen") as RectTransform;
+        if (portraitTransform == null)
+        {
+            content = ui.Rect(canvasObject.transform, "Portrait screen", 0, 0, Width, Height);
+            content.anchorMin = content.anchorMax = content.pivot = new Vector2(.5f, .5f);
+            content.anchoredPosition = Vector2.zero;
+        }
+        else
+        {
+            content = portraitTransform;
+        }
         FitScreen();
 
         farm = new FarmScreen(content, state, ui, Navigate, ShowMessage);
         menu = new FarmMenuScreen(content, state, ui, Navigate, ShowMessage);
-        messageLabel = ui.Label(content, "Feedback", "", 60, 488, 450, 48, 24,
-            PixelUIFactory.Gold, TextAnchor.MiddleCenter);
-        messageLabel.gameObject.SetActive(false);
+
+        var feedbackTransform = FindChildRecursive(content, "Feedback");
+        if (feedbackTransform != null)
+        {
+            messageLabel = feedbackTransform.GetComponent<Text>();
+        }
+        else
+        {
+            messageLabel = ui.Label(content, "Feedback", "", 60, 488, 450, 48, 24,
+                PixelUIFactory.Gold, TextAnchor.MiddleCenter);
+        }
+        if (messageLabel != null) messageLabel.gameObject.SetActive(false);
+
         Navigate(0);
 
         if (FindAnyObjectByType<EventSystem>() == null)
@@ -53,6 +83,18 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             var events = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             events.transform.SetParent(transform, false);
         }
+    }
+
+    public static Transform FindChildRecursive(Transform root, string name)
+    {
+        if (root == null) return null;
+        if (root.name == name) return root;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            var found = FindChildRecursive(root.GetChild(i), name);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     void Update()

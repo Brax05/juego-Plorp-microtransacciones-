@@ -31,7 +31,10 @@ public sealed class FarmWorldController : MonoBehaviour
         state = gameState;
         ui = factory;
         message = showMessage;
-        ui.Texture(transform, "Static landscape and barns", "World/farm_background", 0, 0, 570, 530);
+        if (transform.Find("Static landscape and barns") == null)
+        {
+            ui.Texture(transform, "Static landscape and barns", "World/farm_background", 0, 0, 570, 530);
+        }
         for (int i = 0; i < plots.Length; i++) CreatePlot(i);
 
         // Each animal, worker and machine is a separate GameObject with its own state.
@@ -55,12 +58,25 @@ public sealed class FarmWorldController : MonoBehaviour
     void CreatePlot(int index)
     {
         Vector2 origin = PlotOrigins[index];
-        var root = ui.Rect(transform, "Plot " + index + " - " + InitialKinds[index], origin.x, origin.y, 235, 145);
-        var plot = root.gameObject.AddComponent<CropPlot>();
+        string plotName = "Plot " + index + " - " + InitialKinds[index];
+        var existing = transform.Find(plotName) ?? transform.Find("Plot " + index);
+        CropPlot plot;
+        if (existing != null)
+        {
+            plot = existing.GetComponent<CropPlot>() ?? existing.gameObject.AddComponent<CropPlot>();
+        }
+        else
+        {
+            var root = ui.Rect(transform, plotName, origin.x, origin.y, 235, 145);
+            plot = root.gameObject.AddComponent<CropPlot>();
+        }
         plot.Initialize(index, InitialKinds[index]);
         plots[index] = plot;
-        for (int i = 0; i < CropPositions[index].Length; i++)
-            plot.AddCell(ui, i, CropPositions[index][i] - origin, OnCropTapped);
+        if (plot.transform.childCount == 0)
+        {
+            for (int i = 0; i < CropPositions[index].Length; i++)
+                plot.AddCell(ui, i, CropPositions[index][i] - origin, OnCropTapped);
+        }
     }
 
     void OnCropTapped(CropCell cell)

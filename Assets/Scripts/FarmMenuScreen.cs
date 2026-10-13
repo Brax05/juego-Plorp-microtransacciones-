@@ -20,21 +20,183 @@ public sealed class FarmMenuScreen
         this.ui = ui;
         this.navigate = navigate;
         this.message = message;
-        overlay = ui.Panel(parent, "Secondary screen", 0, 108, 570, 840, PixelUIFactory.Hex("#A75F3B"), true);
+
+        var existingOverlay = FarmUIBootstrap.FindChildRecursive(parent, "Secondary screen") as RectTransform;
+        if (existingOverlay != null)
+        {
+            overlay = existingOverlay;
+        }
+        else
+        {
+            overlay = ui.Panel(parent, "Secondary screen", 0, 108, 570, 840, PixelUIFactory.Hex("#A75F3B"), true);
+        }
         overlay.gameObject.SetActive(false);
         state.Changed += Refresh;
     }
+
+    bool HasPrebuiltPages => overlay != null &&
+        (overlay.Find("Page - Tienda") != null ||
+         overlay.Find("Page - Logros") != null ||
+         overlay.Find("Page - Mejoras") != null ||
+         overlay.Find("Page - Ajustes") != null);
 
     public void Show(int tab)
     {
         selectedTab = tab;
         overlay.gameObject.SetActive(tab != 0);
-        if (tab != 0) Draw();
+        if (tab != 0)
+        {
+            if (HasPrebuiltPages) ShowPrebuilt(tab);
+            else Draw();
+        }
     }
 
     void Refresh()
     {
-        if (selectedTab != 0) Draw();
+        if (selectedTab != 0)
+        {
+            if (HasPrebuiltPages) RefreshPrebuilt();
+            else Draw();
+        }
+    }
+
+    void ShowPrebuilt(int tab)
+    {
+        var pStore = overlay.Find("Page - Tienda");
+        var pAchievements = overlay.Find("Page - Logros");
+        var pUpgrades = overlay.Find("Page - Mejoras");
+        var pSettings = overlay.Find("Page - Ajustes");
+
+        if (pStore != null) pStore.gameObject.SetActive(tab == 1);
+        if (pAchievements != null) pAchievements.gameObject.SetActive(tab == 2);
+        if (pUpgrades != null) pUpgrades.gameObject.SetActive(tab == 3);
+        if (pSettings != null) pSettings.gameObject.SetActive(tab == 4);
+
+        RefreshPrebuilt();
+    }
+
+    void RefreshPrebuilt()
+    {
+        switch (selectedTab)
+        {
+            case 1: RefreshPrebuiltStore(); break;
+            case 2: RefreshPrebuiltAchievements(); break;
+            case 3: RefreshPrebuiltUpgrades(); break;
+            case 4: RefreshPrebuiltSettings(); break;
+        }
+    }
+
+    void RefreshPrebuiltStore()
+    {
+        var p = overlay.Find("Page - Tienda");
+        if (p == null) return;
+        var bolsa = p.Find("Bolsa de monedas");
+        if (bolsa != null)
+        {
+            BindActionButton(bolsa, () => message(state.BuyGold(10, 50000) ? "+50K monedas" : "Faltan gemas"));
+        }
+        var cofre = p.Find("Cofre de monedas");
+        if (cofre != null)
+        {
+            BindActionButton(cofre, () => message(state.BuyGold(90, 500000) ? "+500K monedas" : "Faltan gemas"));
+        }
+        var gems = p.Find("More gems");
+        if (gems != null)
+        {
+            BindActionButton(gems, () => navigate(2));
+        }
+    }
+
+    void RefreshPrebuiltAchievements()
+    {
+        var p = overlay.Find("Page - Logros");
+        if (p == null) return;
+        for (int i = 0; i < 3; i++)
+        {
+            int index = i;
+            var card = p.Find(FarmGameState.AchievementNames[i]);
+            if (card == null) continue;
+            var progress = card.Find("Progress")?.GetComponent<Text>();
+            if (progress != null) progress.text = state.AchievementProgress(i);
+            string caption = state.Claimed[i] ? "COBRADO" : state.AchievementReady(i) ? "COBRAR" : "PENDIENTE";
+            var btn = BindActionButton(card, () => { if (state.ClaimAchievement(index)) message("Gemas recibidas"); });
+            if (btn != null)
+            {
+                btn.interactable = state.AchievementReady(i);
+                var captionText = FarmUIBootstrap.FindChildRecursive(card, "Caption")?.GetComponent<Text>();
+                if (captionText != null) captionText.text = caption;
+            }
+        }
+    }
+
+    void RefreshPrebuiltUpgrades()
+    {
+        var p = overlay.Find("Page - Mejoras");
+        if (p == null) return;
+        for (int i = 0; i < 4; i++)
+        {
+            int index = i;
+            var card = p.Find(FarmGameState.UpgradeNames[i]);
+            if (card == null) continue;
+            var level = card.Find("Level")?.GetComponent<Text>();
+            if (level != null)
+            {
+                level.text = i == 1 ? "Nivel " + state.Levels[i] + " · " + state.AnimalGroups + " c/u"
+                                    : "Nivel " + state.Levels[i];
+            }
+            var price = card.Find("Price")?.GetComponent<Text>();
+            if (price != null)
+            {
+                price.text = FarmGameState.Format(state.Prices[i]) + " monedas";
+            }
+            BindActionButton(card, () =>
+                message(state.BuyUpgrade(index)
+                    ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
+                    : "Faltan monedas"));
+        }
+    }
+
+    void RefreshPrebuiltSettings()
+    {
+        var p = overlay.Find("Page - Ajustes");
+        if (p == null) return;
+
+        var music = p.Find("Musica");
+        if (music != null)
+        {
+            BindActionButton(music, () =>
+            {
+                state.ToggleMusic();
+                message("Musica " + (state.MusicEnabled ? "activada" : "apagada"));
+                RefreshPrebuiltSettings();
+            });
+            var cap = FarmUIBootstrap.FindChildRecursive(music, "Caption")?.GetComponent<Text>();
+            if (cap != null) cap.text = state.MusicEnabled ? "ACTIVADO" : "APAGADO";
+        }
+
+        var sound = p.Find("Sonidos");
+        if (sound != null)
+        {
+            BindActionButton(sound, () =>
+            {
+                state.ToggleSound();
+                message("Sonidos " + (state.SoundEnabled ? "activada" : "apagada"));
+                RefreshPrebuiltSettings();
+            });
+            var cap = FarmUIBootstrap.FindChildRecursive(sound, "Caption")?.GetComponent<Text>();
+            if (cap != null) cap.text = state.SoundEnabled ? "ACTIVADO" : "APAGADO";
+        }
+    }
+
+    static Button BindActionButton(Transform container, UnityEngine.Events.UnityAction action)
+    {
+        var btn = container.GetComponentInChildren<Button>(true);
+        if (btn != null)
+        {
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(action);
+        }
+        return btn;
     }
 
     void Draw()

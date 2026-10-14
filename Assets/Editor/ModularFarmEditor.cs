@@ -5,13 +5,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Editor utility that converts the farm world from a static background image into
-/// modular, editable scene and prefab components (Terrain, Buildings, Animal Pens, Crop Plots)
-/// directly manipulable in the Unity IDE.
+/// Editor utility that converts the farm world into a spacious, pannable viewport
+/// with smooth 2D scrolling, and generous spacing between buildings, animal pens, and crop plots.
 /// </summary>
 public static class ModularFarmEditor
 {
+    public const float ViewportWidth = 570f;
+    public const float ViewportHeight = 546f;
+    public const float MapWidth = 1100f;
+    public const float MapHeight = 950f;
+
     const string PrefabPath = "Assets/Prefabs/PixelFarmCanvas.prefab";
+    const string ScenePath = "Assets/Scenes/SampleScene.unity";
 
     [MenuItem("Tools/Farm World/Rebuild Modular Farm Layout", false, 1)]
     public static void UpgradeModularFarmLayout()
@@ -24,18 +29,17 @@ public static class ModularFarmEditor
             var prefabRoot = PrefabUtility.LoadPrefabContents(PrefabPath);
             if (prefabRoot != null)
             {
-                var worldTransform = FarmUIBootstrap.FindChildRecursive(prefabRoot.transform, "Modular farm world");
-                if (worldTransform != null)
+                var portraitScreen = FarmUIBootstrap.FindChildRecursive(prefabRoot.transform, "Portrait screen");
+                if (portraitScreen != null)
                 {
-                    ConfigureModularWorld(worldTransform);
+                    ConfigureViewportAndWorld(portraitScreen);
                     PrefabUtility.SaveAsPrefabAsset(prefabRoot, PrefabPath);
-                    Debug.Log("<color=green>[ModularFarmEditor]</color> Successfully updated modular layout in " + PrefabPath);
+                    Debug.Log("<color=green>[ModularFarmEditor]</color> Successfully updated pannable viewport and spacious layout in " + PrefabPath);
                 }
                 PrefabUtility.UnloadPrefabContents(prefabRoot);
             }
 
-            // 2. Ensure Canvas is present in SampleScene.unity
-            const string ScenePath = "Assets/Scenes/SampleScene.unity";
+            // 2. Ensure Canvas & Viewport in SampleScene.unity
             if (System.IO.File.Exists(ScenePath))
             {
                 var scene = EditorSceneManager.OpenScene(ScenePath);
@@ -54,13 +58,13 @@ public static class ModularFarmEditor
                 }
                 else
                 {
-                    var sceneWorld = FarmUIBootstrap.FindChildRecursive(sceneCanvas.transform, "Modular farm world");
-                    if (sceneWorld != null)
+                    var portraitScreen = FarmUIBootstrap.FindChildRecursive(sceneCanvas.transform, "Portrait screen");
+                    if (portraitScreen != null)
                     {
-                        ConfigureModularWorld(sceneWorld);
+                        ConfigureViewportAndWorld(portraitScreen);
                         EditorSceneManager.MarkSceneDirty(scene);
                         EditorSceneManager.SaveScene(scene);
-                        Debug.Log("<color=green>[ModularFarmEditor]</color> Updated modular world in SampleScene.unity");
+                        Debug.Log("<color=green>[ModularFarmEditor]</color> Updated pannable viewport in SampleScene.unity");
                     }
                 }
             }
@@ -71,9 +75,68 @@ public static class ModularFarmEditor
         }
     }
 
+    public static void ConfigureViewportAndWorld(Transform portraitScreen)
+    {
+        // 1. Farm Viewport (Scrollable container / frame)
+        var viewport = portraitScreen.Find("Farm Viewport");
+        if (viewport == null)
+        {
+            var go = CreateRect(portraitScreen, "Farm Viewport", 0, 0, ViewportWidth, ViewportHeight);
+            viewport = go.transform;
+            viewport.SetSiblingIndex(0);
+        }
+        else
+        {
+            SetRect(viewport as RectTransform, 0, 0, ViewportWidth, ViewportHeight);
+            viewport.SetSiblingIndex(0);
+        }
+
+        var hitImg = viewport.GetComponent<Image>() ?? viewport.gameObject.AddComponent<Image>();
+        hitImg.color = new Color(0, 0, 0, 0);
+        hitImg.raycastTarget = true;
+
+        var mask = viewport.GetComponent<RectMask2D>() ?? viewport.gameObject.AddComponent<RectMask2D>();
+
+        var scroll = viewport.GetComponent<ScrollRect>() ?? viewport.gameObject.AddComponent<ScrollRect>();
+        scroll.horizontal = true;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.inertia = true;
+        scroll.decelerationRate = 0.135f;
+        scroll.scrollSensitivity = 25f;
+
+        // 2. Modular farm world (Spacious Content)
+        var world = viewport.Find("Modular farm world") ?? portraitScreen.Find("Modular farm world");
+        if (world == null)
+        {
+            var go = CreateRect(viewport, "Modular farm world", 0, 0, MapWidth, MapHeight);
+            world = go.transform;
+        }
+        if (world.parent != viewport)
+        {
+            world.SetParent(viewport, false);
+        }
+
+        // Center map view inside viewport
+        float initialX = -(MapWidth - ViewportWidth) * 0.5f;
+        float initialY = (MapHeight - ViewportHeight) * 0.5f;
+        var worldRect = world as RectTransform;
+        worldRect.anchorMin = new Vector2(0, 1);
+        worldRect.anchorMax = new Vector2(0, 1);
+        worldRect.pivot = new Vector2(0, 1);
+        worldRect.sizeDelta = new Vector2(MapWidth, MapHeight);
+        worldRect.anchoredPosition = new Vector2(initialX, initialY);
+
+        scroll.viewport = viewport as RectTransform;
+        scroll.content = worldRect;
+
+        // 3. Configure world modular elements inside
+        ConfigureModularWorld(world);
+    }
+
     public static void ConfigureModularWorld(Transform world)
     {
-        // 1. Remove legacy static monolithic background
+        // Remove legacy static monolithic background if present
         var legacy = world.Find("Static landscape and barns");
         if (legacy != null)
         {
@@ -86,11 +149,11 @@ public static class ModularFarmEditor
             world.gameObject.AddComponent<FarmWorldController>();
         }
 
-        // 2. Terrain Root (Expandable / Tileable grass)
+        // 1. Terrain Root (Expandable / Tileable grass map)
         var terrain = world.Find("Terrain");
         if (terrain == null)
         {
-            var go = CreateRect(world, "Terrain", 0, 0, 570, 530);
+            var go = CreateRect(world, "Terrain", 0, 0, MapWidth, MapHeight);
             terrain = go.transform;
             terrain.SetAsFirstSibling();
         }
@@ -103,53 +166,53 @@ public static class ModularFarmEditor
             terrainRaw.texture = grassTex;
         }
         terrainRaw.raycastTarget = false;
-        terrainRaw.uvRect = new Rect(0, 0, 1.11f, 1.04f);
-        SetRect(terrain as RectTransform, 0, 0, 570, 530);
+        terrainRaw.uvRect = new Rect(0, 0, MapWidth / 512f, MapHeight / 512f);
+        SetRect(terrain as RectTransform, 0, 0, MapWidth, MapHeight);
 
-        // 3. Buildings Root (Granjas y Estructuras)
+        // 2. Buildings Root (Granjas y Estructuras)
         var buildings = world.Find("Buildings");
         if (buildings == null)
         {
-            var go = CreateRect(world, "Buildings", 0, 0, 570, 530);
+            var go = CreateRect(world, "Buildings", 0, 0, MapWidth, MapHeight);
             buildings = go.transform;
         }
-        SetRect(buildings as RectTransform, 0, 0, 570, 530);
+        SetRect(buildings as RectTransform, 0, 0, MapWidth, MapHeight);
 
-        SetupBuilding(buildings, "Main Barn", "World/Sprites/barn_yellow", 375, 20, 160, 155);
-        SetupBuilding(buildings, "Coop Shed", "World/Sprites/coop_shed", 175, 25, 140, 120);
-        SetupBuilding(buildings, "Red Barn", "World/Sprites/barn_red", 400, 355, 155, 145);
+        SetupBuilding(buildings, "Main Barn", "World/Sprites/barn_yellow", 750, 140, 160, 155);
+        SetupBuilding(buildings, "Coop Shed", "World/Sprites/coop_shed", 380, 130, 140, 120);
+        SetupBuilding(buildings, "Red Barn", "World/Sprites/barn_red", 780, 620, 155, 145);
 
-        // 4. Animal Pens (Corrales de Animales)
+        // 3. Animal Pens (Corrales de Animales)
         var pens = world.Find("Animal Pens");
         if (pens == null)
         {
-            var go = CreateRect(world, "Animal Pens", 0, 0, 570, 530);
+            var go = CreateRect(world, "Animal Pens", 0, 0, MapWidth, MapHeight);
             pens = go.transform;
         }
-        SetRect(pens as RectTransform, 0, 0, 570, 530);
+        SetRect(pens as RectTransform, 0, 0, MapWidth, MapHeight);
 
         // Chicken pen
         var chickenPen = pens.Find("Chicken Pen");
         if (chickenPen == null)
         {
-            var go = CreateRect(pens, "Chicken Pen", 155, 30, 175, 135);
+            var go = CreateRect(pens, "Chicken Pen", 340, 170, 200, 150);
             chickenPen = go.transform;
         }
-        SetRect(chickenPen as RectTransform, 155, 30, 175, 135);
+        SetRect(chickenPen as RectTransform, 340, 170, 200, 150);
 
         // Pasture pen
         var pasturePen = pens.Find("Pasture Pen");
         if (pasturePen == null)
         {
-            var go = CreateRect(pens, "Pasture Pen", 350, 180, 200, 145);
+            var go = CreateRect(pens, "Pasture Pen", 680, 350, 260, 185);
             pasturePen = go.transform;
         }
-        SetRect(pasturePen as RectTransform, 350, 180, 200, 145);
+        SetRect(pasturePen as RectTransform, 680, 350, 260, 185);
 
         var fence = pasturePen.Find("Fence");
         if (fence == null)
         {
-            var go = CreateRect(pasturePen, "Fence", 0, 0, 200, 140);
+            var go = CreateRect(pasturePen, "Fence", 0, 0, 260, 175);
             fence = go.transform;
         }
         var fenceRaw = fence.GetComponent<RawImage>() ?? fence.gameObject.AddComponent<RawImage>();
@@ -160,16 +223,16 @@ public static class ModularFarmEditor
             fenceRaw.texture = fenceTex;
         }
         fenceRaw.raycastTarget = false;
-        SetRect(fence as RectTransform, 0, 0, 200, 140);
+        SetRect(fence as RectTransform, 0, 0, 260, 175);
 
-        // 5. Crop Plots (Parcelas / Bancales de Cultivo)
+        // 4. Crop Plots (Parcelas / Bancales de Cultivo)
         var crops = world.Find("Crop Plots");
         if (crops == null)
         {
-            var go = CreateRect(world, "Crop Plots", 0, 0, 570, 530);
+            var go = CreateRect(world, "Crop Plots", 0, 0, MapWidth, MapHeight);
             crops = go.transform;
         }
-        SetRect(crops as RectTransform, 0, 0, 570, 530);
+        SetRect(crops as RectTransform, 0, 0, MapWidth, MapHeight);
 
         // Relocate any existing plots from world root into crops root
         for (int i = 0; i < 4; i++)
@@ -184,10 +247,10 @@ public static class ModularFarmEditor
         }
 
         Vector2[] plotPos = {
-            new Vector2(25, 175),
-            new Vector2(195, 240),
-            new Vector2(25, 310),
-            new Vector2(195, 375)
+            new Vector2(120, 260),
+            new Vector2(340, 340),
+            new Vector2(120, 430),
+            new Vector2(340, 510)
         };
         string[] kinds = { "Carrot", "Tomato", "Pumpkin", "Cabbage" };
 

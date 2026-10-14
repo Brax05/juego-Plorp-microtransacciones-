@@ -29,10 +29,35 @@ public sealed class FarmScreen
         if (worldTransform != null)
         {
             world = worldTransform.GetComponent<FarmWorldController>() ?? worldTransform.gameObject.AddComponent<FarmWorldController>();
+            var viewport = worldTransform.parent as RectTransform;
+            if (viewport != null)
+            {
+                var scroll = viewport.GetComponent<ScrollRect>();
+                if (scroll != null && scroll.content == null)
+                {
+                    scroll.content = worldTransform as RectTransform;
+                    scroll.viewport = viewport;
+                }
+            }
         }
         else
         {
-            var worldRoot = ui.Rect(parent, "Modular farm world", 0, 0, 570, 530);
+            var viewport = ui.Rect(parent, "Farm Viewport", 0, 0, 570, 546);
+            viewport.SetAsFirstSibling();
+            viewport.gameObject.AddComponent<RectMask2D>();
+            var hit = viewport.gameObject.AddComponent<Image>();
+            hit.color = Color.clear;
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.horizontal = true;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.inertia = true;
+            scroll.decelerationRate = 0.135f;
+            scroll.scrollSensitivity = 25f;
+
+            var worldRoot = ui.Rect(viewport, "Modular farm world", 0, 0, FarmWorldController.MapWidth, FarmWorldController.MapHeight);
+            scroll.content = worldRoot;
+            scroll.viewport = viewport;
             world = worldRoot.gameObject.AddComponent<FarmWorldController>();
         }
         world.Initialize(state, ui, message);

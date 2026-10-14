@@ -5,12 +5,15 @@ using UnityEngine;
 /// <summary>Builds and manages the modular farm world with separated terrain, buildings, animal pens, and crop plots.</summary>
 public sealed class FarmWorldController : MonoBehaviour
 {
+    public const float MapWidth = 1100f;
+    public const float MapHeight = 950f;
+
     static readonly Vector2[] DefaultPlotPositions =
     {
-        new Vector2(25, 175),   // Plot 0
-        new Vector2(195, 240),  // Plot 1
-        new Vector2(25, 310),   // Plot 2
-        new Vector2(195, 375)   // Plot 3
+        new Vector2(120, 260),  // Plot 0
+        new Vector2(340, 340),  // Plot 1
+        new Vector2(120, 430),  // Plot 2
+        new Vector2(340, 510)   // Plot 3
     };
 
     static readonly CropKind[] InitialKinds = { CropKind.Carrot, CropKind.Tomato, CropKind.Pumpkin, CropKind.Cabbage };
@@ -18,18 +21,18 @@ public sealed class FarmWorldController : MonoBehaviour
     // Animal spawn offsets relative to their pen:
     static readonly Vector2[] ChickenHomes =
     {
-        new Vector2(25, 65), new Vector2(55, 55), new Vector2(85, 70),
-        new Vector2(35, 85), new Vector2(65, 90), new Vector2(95, 60)
+        new Vector2(35, 75), new Vector2(75, 65), new Vector2(115, 80),
+        new Vector2(50, 95), new Vector2(90, 100), new Vector2(130, 70)
     };
     static readonly Vector2[] SheepHomes =
     {
-        new Vector2(35, 45), new Vector2(75, 35), new Vector2(115, 55),
-        new Vector2(50, 70), new Vector2(90, 60), new Vector2(125, 80)
+        new Vector2(45, 55), new Vector2(95, 45), new Vector2(145, 65),
+        new Vector2(65, 85), new Vector2(115, 75), new Vector2(160, 95)
     };
     static readonly Vector2[] CowHomes =
     {
-        new Vector2(25, 65), new Vector2(65, 75), new Vector2(105, 50),
-        new Vector2(45, 85), new Vector2(85, 90), new Vector2(120, 65)
+        new Vector2(35, 75), new Vector2(85, 90), new Vector2(135, 60),
+        new Vector2(55, 105), new Vector2(105, 110), new Vector2(150, 80)
     };
 
     readonly List<CropPlot> plots = new List<CropPlot>();
@@ -45,6 +48,24 @@ public sealed class FarmWorldController : MonoBehaviour
     Transform chickenPen;
     Transform pasturePen;
     Transform cropsRoot;
+
+    void Start()
+    {
+        CenterInViewport();
+    }
+
+    public void CenterInViewport()
+    {
+        var rect = GetComponent<RectTransform>();
+        var parentRect = transform.parent as RectTransform;
+        if (rect != null && parentRect != null && rect.sizeDelta.x > parentRect.sizeDelta.x)
+        {
+            rect.anchoredPosition = new Vector2(
+                -(rect.sizeDelta.x - parentRect.sizeDelta.x) * 0.5f,
+                (rect.sizeDelta.y - parentRect.sizeDelta.y) * 0.5f
+            );
+        }
+    }
 
     public void Initialize(FarmGameState gameState, PixelUIFactory factory, Action<string> showMessage)
     {
@@ -64,39 +85,40 @@ public sealed class FarmWorldController : MonoBehaviour
         terrainRoot = transform.Find("Terrain");
         if (terrainRoot == null)
         {
-            var raw = ui.Texture(transform, "Terrain", "World/Sprites/terrain_grass", 0, 0, 570, 530);
+            var raw = ui.Texture(transform, "Terrain", "World/Sprites/terrain_grass", 0, 0, MapWidth, MapHeight);
             terrainRoot = raw.transform;
             terrainRoot.SetAsFirstSibling();
+            raw.uvRect = new Rect(0, 0, MapWidth / 512f, MapHeight / 512f);
         }
 
         // 2. Granjas y Estructuras (Buildings)
         buildingsRoot = transform.Find("Buildings");
         if (buildingsRoot == null)
         {
-            buildingsRoot = ui.Rect(transform, "Buildings", 0, 0, 570, 530);
-            ui.Texture(buildingsRoot, "Main Barn", "World/Sprites/barn_yellow", 375, 20, 160, 155);
-            ui.Texture(buildingsRoot, "Coop Shed", "World/Sprites/coop_shed", 175, 25, 140, 120);
-            ui.Texture(buildingsRoot, "Red Barn", "World/Sprites/barn_red", 400, 355, 155, 145);
+            buildingsRoot = ui.Rect(transform, "Buildings", 0, 0, MapWidth, MapHeight);
+            ui.Texture(buildingsRoot, "Main Barn", "World/Sprites/barn_yellow", 750, 140, 160, 155);
+            ui.Texture(buildingsRoot, "Coop Shed", "World/Sprites/coop_shed", 380, 130, 140, 120);
+            ui.Texture(buildingsRoot, "Red Barn", "World/Sprites/barn_red", 780, 620, 155, 145);
         }
 
         // 3. Corrales de Animales (Animal Pens)
         pensRoot = transform.Find("Animal Pens");
         if (pensRoot == null)
         {
-            pensRoot = ui.Rect(transform, "Animal Pens", 0, 0, 570, 530);
+            pensRoot = ui.Rect(transform, "Animal Pens", 0, 0, MapWidth, MapHeight);
         }
 
         chickenPen = pensRoot.Find("Chicken Pen") ?? transform.Find("Chicken Pen");
         if (chickenPen == null)
         {
-            chickenPen = ui.Rect(pensRoot, "Chicken Pen", 155, 30, 175, 135);
+            chickenPen = ui.Rect(pensRoot, "Chicken Pen", 340, 170, 200, 150);
         }
 
         pasturePen = pensRoot.Find("Pasture Pen") ?? transform.Find("Pasture Pen");
         if (pasturePen == null)
         {
-            pasturePen = ui.Rect(pensRoot, "Pasture Pen", 350, 180, 200, 145);
-            ui.Texture(pasturePen, "Fence", "World/Sprites/animal_pen", 0, 0, 200, 140);
+            pasturePen = ui.Rect(pensRoot, "Pasture Pen", 680, 350, 260, 185);
+            ui.Texture(pasturePen, "Fence", "World/Sprites/animal_pen", 0, 0, 260, 175);
         }
 
         // 4. Zona de Cultivos (Crop Plots)
@@ -124,12 +146,14 @@ public sealed class FarmWorldController : MonoBehaviour
         }
 
         // Workers & Tractor
-        Spawn(transform, "worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, V(139, 302), 80, 45, 35, 43);
-        Spawn(transform, "worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, V(392, 334), 80, 45, 35, 43);
-        Spawn(transform, "tractor-1", "Tractor", "tractor", WorldActorRole.Machine, V(402, 390), 160, 70, 44, 41);
+        Spawn(transform, "worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, V(280, 420), 80, 45, 35, 43);
+        Spawn(transform, "worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, V(650, 560), 80, 45, 35, 43);
+        Spawn(transform, "tractor-1", "Tractor", "tractor", WorldActorRole.Machine, V(800, 780), 160, 70, 44, 41);
 
         state.Changed += SyncUpgrades;
         SyncUpgrades();
+
+        CenterInViewport();
     }
 
     public long HarvestAll()
@@ -156,7 +180,7 @@ public sealed class FarmWorldController : MonoBehaviour
         {
             Vector2 origin = index < DefaultPlotPositions.Length
                 ? DefaultPlotPositions[index]
-                : new Vector2(25 + (index % 2) * 170, 175 + (index / 2) * 135);
+                : new Vector2(120 + (index % 2) * 220, 260 + (index / 2) * 170);
             var root = ui.Rect(cropsRoot, plotName, origin.x, origin.y, 204, 108);
             plot = root.gameObject.AddComponent<CropPlot>();
         }
@@ -192,12 +216,12 @@ public sealed class FarmWorldController : MonoBehaviour
         for (int i = 0; i < state.AnimalGroups; i++) SpawnAnimalGroup(i);
 
         int extraWorkers = Mathf.Clamp(state.Levels[2] - 3, 0, 3);
-        if (extraWorkers > 0) Spawn(transform, "worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, V(282, 383), 80, 45, 35, 43);
-        if (extraWorkers > 1) Spawn(transform, "worker-4", "Trabajador", "worker_red", WorldActorRole.Worker, V(94, 437), 80, 45, 35, 43);
-        if (extraWorkers > 2) Spawn(transform, "worker-5", "Trabajador", "worker_blue", WorldActorRole.Worker, V(373, 226), 80, 45, 35, 43);
+        if (extraWorkers > 0) Spawn(transform, "worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, V(500, 380), 80, 45, 35, 43);
+        if (extraWorkers > 1) Spawn(transform, "worker-4", "Trabajador", "worker_red", WorldActorRole.Worker, V(220, 550), 80, 45, 35, 43);
+        if (extraWorkers > 2) Spawn(transform, "worker-5", "Trabajador", "worker_blue", WorldActorRole.Worker, V(700, 260), 80, 45, 35, 43);
 
         if (state.Levels[3] > 1)
-            Spawn(transform, "tractor-2", "Tractor", "tractor", WorldActorRole.Machine, V(270, 378), 160, 70, 44, 41);
+            Spawn(transform, "tractor-2", "Tractor", "tractor", WorldActorRole.Machine, V(600, 740), 160, 70, 44, 41);
     }
 
     void SpawnAnimalGroup(int index)

@@ -21,8 +21,8 @@ public sealed class FarmWorldController : MonoBehaviour
     // Animal spawn offsets relative to their pen:
     static readonly Vector2[] ChickenHomes =
     {
-        new Vector2(35, 75), new Vector2(75, 65), new Vector2(115, 80),
-        new Vector2(50, 95), new Vector2(90, 100), new Vector2(130, 70)
+        new Vector2(40, 75), new Vector2(85, 65), new Vector2(130, 80),
+        new Vector2(60, 95), new Vector2(105, 105), new Vector2(150, 75)
     };
     static readonly Vector2[] SheepHomes =
     {
@@ -111,7 +111,12 @@ public sealed class FarmWorldController : MonoBehaviour
         chickenPen = pensRoot.Find("Chicken Pen") ?? transform.Find("Chicken Pen");
         if (chickenPen == null)
         {
-            chickenPen = ui.Rect(pensRoot, "Chicken Pen", 340, 170, 200, 150);
+            chickenPen = ui.Rect(pensRoot, "Chicken Pen", 330, 180, 240, 165);
+        }
+        var chickenFence = chickenPen.Find("Fence");
+        if (chickenFence == null)
+        {
+            ui.Texture(chickenPen, "Fence", "World/Sprites/animal_pen", 0, 0, 240, 155);
         }
 
         pasturePen = pensRoot.Find("Pasture Pen") ?? transform.Find("Pasture Pen");

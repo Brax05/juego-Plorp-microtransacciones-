@@ -34,18 +34,11 @@ public sealed class WorldActorAnimator : MonoBehaviour
         roamRadius = role == WorldActorRole.Animal
             ? (textureName.StartsWith("chicken") ? new Vector2(9f, 5f) : new Vector2(5f, 3f))
             : new Vector2(8f, 5f);
-        if (role == WorldActorRole.Machine) speed = 0f;
     }
 
     void Update()
     {
         float time = Time.unscaledTime;
-        if (role == WorldActorRole.Machine)
-        {
-            sprite.SetPose(true, 1f, Mathf.Sin(time * 1.4f + phase) * .35f, 0f);
-            return;
-        }
-
         if (moving)
         {
             offset = Vector2.MoveTowards(offset, destination, speed * Time.unscaledDeltaTime);

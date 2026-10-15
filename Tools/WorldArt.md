@@ -1,6 +1,6 @@
 # World art source
 
-`make_world_art.py` crops `SourceArt/farm_background_source.png` into the static world background and builds independent transparent sprites. It draws crops and tractor with Pillow, then uses `make_character_sprites.py` to extract animals and farmers from the source sheets. Install the tools with `python -m pip install -r Tools/requirements.txt`, then run `python Tools/make_world_art.py` from the project root. The current character previews are `character_preview.png` and `character_world_preview.png`.
+`make_world_art.py` crops `SourceArt/farm_background_source.png` into the static world background and builds independent transparent crop sprites, then uses `make_character_sprites.py` to extract animals and farmers from the source sheets. Install the tools with `python -m pip install -r Tools/requirements.txt`, then run `python Tools/make_world_art.py` from the project root. The current character previews are `character_preview.png` and `character_world_preview.png`.
 
 The static landscape source was edited from `SourceArt/farm_source.png` with the built-in image generation tool using this prompt:
 
@@ -8,11 +8,9 @@ The static landscape source was edited from `SourceArt/farm_source.png` with the
 
 World behavior lives in `Assets/Scripts/World`. `FarmWorldController` places every object, `CropPlot` groups cells, `CropCell` saves growth stages, `WorldActor` saves animal and worker production timers, and `WorldSprite` handles visual art and clicks. `WorldActorAnimator` gives animals and workers separate idle and walking states, short bounded routes, breathing, a step bounce and horizontal turns. Workers show their walking frame only while moving.
 
-`FarmWorldController` starts with one chicken, one sheep and one cow. Each animal upgrade adds one more of each using fixed homes inside the two fenced areas. The sheep and cows use a short roaming radius so their feet stay behind the front fence. `animal_spawn_preview.png` compares the starting arrangement with the first upgrade; `animal_spawn_five_preview.png` shows the crowded pen after four upgrades; `world_grid_preview.png` is a coordinate reference for placing future objects.
+`FarmWorldController` starts with one crop plot and no animals or workers. Seed upgrades reveal the remaining plots one at a time. Animal upgrades add a single animal in the order chicken, sheep, cow, then repeat; worker upgrades add workers individually. Fixed homes and short roaming radii keep animals inside their pens. `world_grid_preview.png` remains the coordinate reference for future placement.
 
-For saves created before the one-of-each roster, `FarmGameState` records the current animal upgrade level as a one-time roster baseline. This starts the new visible roster at one of each without changing saved gold or levels. Later animal purchases add one of each, and the new baseline remains stable across restarts.
-
-The animal upgrade starts at 1,000 coins for testing. Existing saves receive that lower price once; later purchases continue to increase and persist the price normally.
+`FarmGameState` uses a progression version to migrate the old advanced demo save into the level-one economy once. The new starting state is 250 coins, no gems, seed level 1, and all other upgrades at level 0. Upgrade prices begin at 300 / 750 / 2,000 / 6,000 coins, grow by 48%, and stop at meaningful content limits.
 
 The animal sheet at `SourceArt/animals_sheet.png` was generated with the built-in image generation tool in **stylized-concept** mode, using `SourceArt/farm_source.png` as a style reference. Its final prompt was:
 

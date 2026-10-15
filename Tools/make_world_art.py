@@ -77,19 +77,6 @@ for crop in ("carrot", "tomato", "cabbage", "pumpkin"):
     canvas(f"{crop}_1", lambda d, c=crop: sprout(d, c))
     canvas(f"{crop}_2", lambda d, c=crop: mature(d, c))
 
-def tractor(d):
-    d.ellipse((2, 27, 31, 31), fill="#567b42")
-    d.rectangle((7, 14, 22, 25), fill="#c44837", outline=INK, width=2)
-    d.rectangle((14, 5, 24, 15), fill="#c44837", outline=INK, width=2)
-    d.rectangle((16, 7, 22, 13), fill="#9bd5d2", outline=INK)
-    d.rectangle((21, 17, 30, 24), fill="#dc6544", outline=INK)
-    d.ellipse((6, 22, 17, 31), fill=INK)
-    d.ellipse((9, 25, 14, 29), fill="#80949d")
-    d.ellipse((23, 24, 31, 31), fill=INK)
-    d.ellipse((26, 26, 29, 29), fill="#80949d")
-
-canvas("tractor", tractor)
-
 from make_character_sprites import build as build_character_sprites
 build_character_sprites()
 print(f"Generated background and {len(list(SPRITES.glob('*.png')))} individual sprites in {OUT}")

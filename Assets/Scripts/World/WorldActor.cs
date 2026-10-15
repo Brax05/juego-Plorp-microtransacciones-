@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 
-public enum WorldActorRole { Animal, Worker, Machine }
+public enum WorldActorRole { Animal, Worker }
 
-/// <summary>Independent animal, worker or machine with motion and a saved collection timer.</summary>
+/// <summary>Independent animal or worker with motion and a saved collection timer.</summary>
 public sealed class WorldActor : MonoBehaviour
 {
     WorldSprite sprite;

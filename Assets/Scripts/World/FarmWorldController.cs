@@ -150,11 +150,6 @@ public sealed class FarmWorldController : MonoBehaviour
             for (int i = 0; i < DefaultPlotPositions.Length; i++) CreatePlot(i);
         }
 
-        // Workers & Tractor
-        Spawn(transform, "worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, V(280, 420), 80, 45, 35, 43);
-        Spawn(transform, "worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, V(650, 560), 80, 45, 35, 43);
-        Spawn(transform, "tractor-1", "Tractor", "tractor", WorldActorRole.Machine, V(800, 780), 160, 70, 44, 41);
-
         state.Changed += SyncUpgrades;
         SyncUpgrades();
 
@@ -164,7 +159,8 @@ public sealed class FarmWorldController : MonoBehaviour
     public long HarvestAll()
     {
         long earned = 0;
-        foreach (var plot in plots) earned += plot.HarvestReady();
+        foreach (var plot in plots)
+            if (plot.gameObject.activeInHierarchy) earned += plot.HarvestReady();
         foreach (var actor in actors) earned += actor.TakeProduction();
         if (earned > 0) state.Collect(earned);
         return earned;
@@ -214,34 +210,35 @@ public sealed class FarmWorldController : MonoBehaviour
 
     void SyncUpgrades()
     {
-        int seedSteps = Mathf.Max(0, state.Levels[0] - 25);
-        if (plots.Count > 0)
-            plots[0].SetKind((CropKind)(seedSteps % 4));
+        int unlockedPlots = Mathf.Clamp(state.Levels[0], 1, plots.Count);
+        for (int i = 0; i < plots.Count; i++) plots[i].gameObject.SetActive(i < unlockedPlots);
 
-        for (int i = 0; i < state.AnimalGroups; i++) SpawnAnimalGroup(i);
+        for (int i = 0; i < state.AnimalCount; i++) SpawnAnimal(i);
 
-        int extraWorkers = Mathf.Clamp(state.Levels[2] - 3, 0, 3);
-        if (extraWorkers > 0) Spawn(transform, "worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, V(500, 380), 80, 45, 35, 43);
-        if (extraWorkers > 1) Spawn(transform, "worker-4", "Trabajador", "worker_red", WorldActorRole.Worker, V(220, 550), 80, 45, 35, 43);
-        if (extraWorkers > 2) Spawn(transform, "worker-5", "Trabajador", "worker_blue", WorldActorRole.Worker, V(700, 260), 80, 45, 35, 43);
+        int workers = Mathf.Clamp(state.Levels[2], 0, 4);
+        if (workers > 0) Spawn(transform, "worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, V(280, 420), 80, 45, 35, 43);
+        if (workers > 1) Spawn(transform, "worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, V(650, 560), 80, 45, 35, 43);
+        if (workers > 2) Spawn(transform, "worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, V(500, 380), 80, 45, 35, 43);
+        if (workers > 3) Spawn(transform, "worker-4", "Trabajador", "worker_red", WorldActorRole.Worker, V(220, 550), 80, 45, 35, 43);
 
-        if (state.Levels[3] > 1)
-            Spawn(transform, "tractor-2", "Tractor", "tractor", WorldActorRole.Machine, V(600, 740), 160, 70, 44, 41);
     }
 
-    void SpawnAnimalGroup(int index)
+    void SpawnAnimal(int index)
     {
-        int number = index + 1;
-        Spawn(chickenPen != null ? chickenPen : transform, "chicken-" + number, "Gallina",
-            index % 2 == 0 ? "chicken_white" : "chicken_brown",
-            WorldActorRole.Animal, AnimalHome(ChickenHomes, index), 55, 35, 35, 35);
-
-        Spawn(pasturePen != null ? pasturePen : transform, "sheep-" + number, "Oveja",
-            index % 2 == 0 ? "sheep_white" : "sheep_gray",
-            WorldActorRole.Animal, AnimalHome(SheepHomes, index), 90, 48, 36, 35);
-
-        Spawn(pasturePen != null ? pasturePen : transform, "cow-" + number, "Vaca", "cow",
-            WorldActorRole.Animal, AnimalHome(CowHomes, index), 120, 65, 38, 36);
+        int species = index % 3;
+        int slot = index / 3;
+        int number = slot + 1;
+        if (species == 0)
+            Spawn(chickenPen != null ? chickenPen : transform, "chicken-" + number, "Gallina",
+                slot % 2 == 0 ? "chicken_white" : "chicken_brown",
+                WorldActorRole.Animal, AnimalHome(ChickenHomes, slot), 55, 35, 35, 35);
+        else if (species == 1)
+            Spawn(pasturePen != null ? pasturePen : transform, "sheep-" + number, "Oveja",
+                slot % 2 == 0 ? "sheep_white" : "sheep_gray",
+                WorldActorRole.Animal, AnimalHome(SheepHomes, slot), 90, 48, 36, 35);
+        else
+            Spawn(pasturePen != null ? pasturePen : transform, "cow-" + number, "Vaca", "cow",
+                WorldActorRole.Animal, AnimalHome(CowHomes, slot), 120, 65, 38, 36);
     }
 
     static Vector2 AnimalHome(Vector2[] homes, int index)

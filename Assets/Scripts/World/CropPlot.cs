@@ -9,15 +9,16 @@ public enum CropKind { Carrot, Tomato, Pumpkin, Cabbage }
 [ExecuteAlways]
 public sealed class CropPlot : MonoBehaviour
 {
-    // Clean isometric furrow coordinates local to the plot (3 furrows x 4 columns = 12 crops):
+    // Sprite top-left positions. Their bottom-center planting points follow the soil perspective:
+    // four plants along each diagonal furrow, ordered back-to-front for correct UI overlap.
     public static readonly Vector2[] LocalCropPositions =
     {
-        // Furrow 1 (Top)
-        new Vector2(85, 22), new Vector2(112, 36), new Vector2(139, 50), new Vector2(166, 64),
-        // Furrow 2 (Middle)
-        new Vector2(65, 35), new Vector2(92, 49), new Vector2(119, 63), new Vector2(146, 77),
-        // Furrow 3 (Bottom)
-        new Vector2(45, 48), new Vector2(72, 62), new Vector2(99, 76), new Vector2(126, 90)
+        // Back furrow
+        new Vector2(75, -4), new Vector2(97, 7), new Vector2(120, 19), new Vector2(142, 30),
+        // Middle furrow
+        new Vector2(53, 7), new Vector2(75, 18), new Vector2(98, 29), new Vector2(120, 40),
+        // Front furrow
+        new Vector2(31, 17), new Vector2(53, 28), new Vector2(76, 40), new Vector2(98, 50)
     };
 
     readonly List<CropCell> cells = new List<CropCell>();

@@ -93,12 +93,12 @@ public sealed class FarmMenuScreen
         var bolsa = p.Find("Bolsa de monedas");
         if (bolsa != null)
         {
-            BindActionButton(bolsa, () => message(state.BuyGold(10, 50000) ? "+50K monedas" : "Faltan gemas"));
+            BindActionButton(bolsa, () => message(state.BuyGold(10, 1500) ? "+1.5K monedas" : "Faltan gemas"));
         }
         var cofre = p.Find("Cofre de monedas");
         if (cofre != null)
         {
-            BindActionButton(cofre, () => message(state.BuyGold(90, 500000) ? "+500K monedas" : "Faltan gemas"));
+            BindActionButton(cofre, () => message(state.BuyGold(45, 10000) ? "+10K monedas" : "Faltan gemas"));
         }
         var gems = p.Find("More gems");
         if (gems != null)
@@ -133,26 +133,34 @@ public sealed class FarmMenuScreen
     {
         var p = overlay.Find("Page - Mejoras");
         if (p == null) return;
-        for (int i = 0; i < 4; i++)
+        var obsoleteMachinery = p.Find("Maquinaria");
+        if (obsoleteMachinery != null)
+        {
+            obsoleteMachinery.gameObject.SetActive(false);
+            UnityEngine.Object.Destroy(obsoleteMachinery.gameObject);
+        }
+        for (int i = 0; i < 3; i++)
         {
             int index = i;
             var card = p.Find(FarmGameState.UpgradeNames[i]);
             if (card == null) continue;
+            var cardRect = card as RectTransform;
+            if (cardRect != null) cardRect.anchoredPosition = new Vector2(cardRect.anchoredPosition.x, -(120 + i * 195));
             var level = card.Find("Level")?.GetComponent<Text>();
             if (level != null)
             {
-                level.text = i == 1 ? "Nivel " + state.Levels[i] + " · " + state.AnimalGroups + " c/u"
-                                    : "Nivel " + state.Levels[i];
+                level.text = "Nivel " + state.Levels[i];
             }
             var price = card.Find("Price")?.GetComponent<Text>();
             if (price != null)
             {
-                price.text = FarmGameState.Format(state.Prices[i]) + " monedas";
+                price.text = state.IsMaxed(i) ? "Nivel maximo" : FarmGameState.Format(state.Prices[i]) + " monedas";
             }
-            BindActionButton(card, () =>
+            var button = BindActionButton(card, () =>
                 message(state.BuyUpgrade(index)
-                    ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
+                    ? (index == 1 ? "Nuevo animal desbloqueado" : "Mejora comprada")
                     : "Faltan monedas"));
+            if (button != null) button.interactable = !state.IsMaxed(i) && state.Gold >= state.Prices[i];
         }
     }
 
@@ -231,8 +239,8 @@ public sealed class FarmMenuScreen
     void DrawStore()
     {
         Header("Tienda", "Cambia gemas por monedas para la granja");
-        StoreCard(122, "Bolsa de monedas", "+50K monedas", "10 gemas", 10, 50000);
-        StoreCard(276, "Cofre de monedas", "+500K monedas", "90 gemas", 90, 500000);
+        StoreCard(122, "Bolsa de monedas", "+1.5K monedas", "10 gemas", 10, 1500);
+        StoreCard(276, "Cofre de monedas", "+10K monedas", "45 gemas", 45, 10000);
         var card = Card("More gems", 436, 184);
         ui.Label(card, "Name", "MAS GEMAS", 20, 15, 400, 42, 26, Color.white);
         ui.Label(card, "Hint", "Completa logros para ganar gemas.", 20, 62, 488, 35, 20, PixelUIFactory.Cream);
@@ -272,19 +280,18 @@ public sealed class FarmMenuScreen
     void DrawUpgrades()
     {
         Header("Mejoras", "Haz crecer tu produccion");
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 3; i++)
         {
             int index = i;
-            float y = 120 + i * 165;
+            float y = 120 + i * 195;
             var card = Card(FarmGameState.UpgradeNames[i], y, 149);
             ui.Label(card, "Name", FarmGameState.UpgradeNames[i].ToUpperInvariant(), 18, 8, 480, 40, 24, Color.white);
-            ui.Label(card, "Level", i == 1 ? "Nivel " + state.Levels[i] + " · " + state.AnimalGroups + " c/u"
-                : "Nivel " + state.Levels[i], 18, 53, 220, 34, 21, PixelUIFactory.Cream);
-            ui.Label(card, "Price", FarmGameState.Format(state.Prices[i]) + " monedas", 18, 96, 260, 35, 21, PixelUIFactory.Gold);
-            ui.ActionButton(card, "Upgrade " + i, "MEJORAR", 329, 83, 180, 57, () =>
+            ui.Label(card, "Level", "Nivel " + state.Levels[i], 18, 53, 220, 34, 21, PixelUIFactory.Cream);
+            ui.Label(card, "Price", state.IsMaxed(i) ? "Nivel maximo" : FarmGameState.Format(state.Prices[i]) + " monedas", 18, 96, 260, 35, 21, PixelUIFactory.Gold);
+            ui.ActionButton(card, "Upgrade " + i, state.IsMaxed(i) ? "MAXIMO" : "MEJORAR", 329, 83, 180, 57, () =>
                 message(state.BuyUpgrade(index)
-                    ? (index == 1 ? "Gallina, oveja y vaca nuevas" : "Mejora comprada")
-                    : "Faltan monedas"));
+                    ? (index == 1 ? "Nuevo animal desbloqueado" : "Mejora comprada")
+                    : "Faltan monedas"), !state.IsMaxed(i) && state.Gold >= state.Prices[i]);
         }
     }
 

@@ -7,8 +7,6 @@ using UnityEngine.UI;
 /// <summary>Composes the modular farm UI and handles screen changes.</summary>
 public sealed class FarmUIBootstrap : MonoBehaviour
 {
-    const float Width = 570f;
-    const float Height = 1018f;
     RectTransform content;
     FarmScreen farm;
     FarmMenuScreen menu;
@@ -16,6 +14,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     Coroutine messageRoutine;
     int lastWidth;
     int lastHeight;
+    Vector3 authoredScale;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Create()
@@ -27,53 +26,33 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     void Awake()
     {
         var state = new FarmGameState();
-        var ui = new PixelUIFactory();
 
         var canvas = GetComponentInChildren<Canvas>(true);
         if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
 
-        GameObject canvasObject;
         if (canvas == null)
         {
-            canvasObject = new GameObject("Pixel Farm Canvas", typeof(RectTransform), typeof(Canvas),
-                typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.transform.SetParent(transform, false);
-            canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.pixelPerfect = true;
-            canvasObject.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-        }
-        else
-        {
-            canvasObject = canvas.gameObject;
+            Debug.LogError("PixelFarmCanvas must be present in the scene. The UI is authored in the canvas.");
+            enabled = false;
+            return;
         }
 
-        var portraitTransform = FindChildRecursive(canvasObject.transform, "Portrait screen") as RectTransform;
+        var portraitTransform = FindChildRecursive(canvas.transform, "Portrait screen") as RectTransform;
         if (portraitTransform == null)
         {
-            content = ui.Rect(canvasObject.transform, "Portrait screen", 0, 0, Width, Height);
-            content.anchorMin = content.anchorMax = content.pivot = new Vector2(.5f, .5f);
-            content.anchoredPosition = Vector2.zero;
+            Debug.LogError("Portrait screen is missing from PixelFarmCanvas.", canvas);
+            enabled = false;
+            return;
         }
-        else
-        {
-            content = portraitTransform;
-        }
+        content = portraitTransform;
+        authoredScale = content.localScale;
         FitScreen();
 
-        farm = new FarmScreen(content, state, ui, Navigate, ShowMessage);
-        menu = new FarmMenuScreen(content, state, ui, Navigate, ShowMessage);
+        farm = new FarmScreen(content, state, Navigate, ShowMessage);
+        menu = new FarmMenuScreen(content, state, Navigate, ShowMessage);
 
         var feedbackTransform = FindChildRecursive(content, "Feedback");
-        if (feedbackTransform != null)
-        {
-            messageLabel = feedbackTransform.GetComponent<Text>();
-        }
-        else
-        {
-            messageLabel = ui.Label(content, "Feedback", "", 60, 488, 450, 48, 24,
-                PixelUIFactory.Gold, TextAnchor.MiddleCenter);
-        }
+        messageLabel = feedbackTransform != null ? feedbackTransform.GetComponent<Text>() : null;
         if (messageLabel != null) messageLabel.gameObject.SetActive(false);
 
         Navigate(0);
@@ -106,8 +85,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         lastWidth = Screen.width;
         lastHeight = Screen.height;
-        float scale = Mathf.Min(Screen.width / Width, Screen.height / Height);
-        content.localScale = Vector3.one * scale;
+        float scale = Mathf.Min(Screen.width / Mathf.Max(1f, content.rect.width),
+            Screen.height / Mathf.Max(1f, content.rect.height));
+        content.localScale = authoredScale * scale;
     }
 
     void Navigate(int tab)
@@ -120,6 +100,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void ShowMessage(string text)
     {
+        if (messageLabel == null) return;
         if (messageRoutine != null) StopCoroutine(messageRoutine);
         messageRoutine = StartCoroutine(MessageForMoment(text));
     }

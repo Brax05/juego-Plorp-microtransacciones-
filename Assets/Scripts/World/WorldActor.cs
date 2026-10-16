@@ -19,7 +19,7 @@ public sealed class WorldActor : MonoBehaviour
 
     public WorldActorRole Role => role;
 
-    public void Initialize(PixelUIFactory ui, FarmGameState gameState, Action<string> showMessage,
+    public void Initialize(FarmGameState gameState, Action<string> showMessage,
         string actorId, string title, string texture, WorldActorRole actorRole,
         Vector2 position, long payout, long cooldown)
     {
@@ -31,9 +31,10 @@ public sealed class WorldActor : MonoBehaviour
         reward = payout;
         cooldownSeconds = cooldown;
         long.TryParse(PlayerPrefs.GetString(SaveKey, "0"), out nextReady);
-        sprite = gameObject.AddComponent<WorldSprite>();
-        sprite.Initialize(ui, texture, OnTapped);
-        gameObject.AddComponent<WorldActorAnimator>().Initialize(sprite, role, id, texture, position);
+        sprite = GetComponent<WorldSprite>() ?? gameObject.AddComponent<WorldSprite>();
+        sprite.Initialize(texture, OnTapped, true);
+        (GetComponent<WorldActorAnimator>() ?? gameObject.AddComponent<WorldActorAnimator>())
+            .Initialize(sprite, role, id, texture, position);
         RefreshReady();
     }
 

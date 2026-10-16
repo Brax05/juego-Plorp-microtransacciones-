@@ -10,32 +10,54 @@ public sealed class WorldSprite : MonoBehaviour, IBeginDragHandler, IDragHandler
     RectTransform rect;
     RawImage art;
     RectTransform artRect;
+    Vector2 artStart;
+    Vector3 artScale;
+    Quaternion artRotation;
+    Color artColor;
+    Rect artUV;
     string currentTexture;
     bool facingRight = true;
     bool dragged;
+    bool keepArtTexture;
     ScrollRect parentScroll;
     static readonly Dictionary<string, Texture2D> TextureCache = new Dictionary<string, Texture2D>();
 
     public RectTransform Rect => rect;
 
-    public void Initialize(PixelUIFactory ui, string textureName, UnityEngine.Events.UnityAction onClick)
+    public void Initialize(string textureName, UnityEngine.Events.UnityAction onClick,
+        bool keepCustomTexture = false, string authoredDefaultTextureName = null)
     {
         rect = GetComponent<RectTransform>();
         parentScroll = GetComponentInParent<ScrollRect>();
-        var hitImage = gameObject.AddComponent<Image>();
-        hitImage.color = new Color(1, 1, 1, 0);
-        var button = gameObject.AddComponent<Button>();
-        button.targetGraphic = hitImage;
+        var hitImage = GetComponent<Image>();
+        if (hitImage == null)
+        {
+            hitImage = gameObject.AddComponent<Image>();
+            hitImage.color = new Color(1, 1, 1, 0);
+        }
+        var button = GetComponent<Button>();
+        if (button == null) button = gameObject.AddComponent<Button>();
+        if (button.targetGraphic == null) button.targetGraphic = hitImage;
+        button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() =>
         {
             if (dragged) return;
             onClick();
         });
-        art = ui.Texture(transform, "Sprite art", "World/Sprites/" + textureName,
-            0, 0, rect.sizeDelta.x, rect.sizeDelta.y);
+        var existingArt = transform.Find("Sprite art");
+        art = existingArt != null ? existingArt.GetComponent<RawImage>() : null;
+        if (art == null)
+            throw new System.InvalidOperationException(name + " needs a Sprite art RawImage in PixelFarmCanvas.");
         artRect = art.rectTransform;
-        artRect.pivot = new Vector2(.5f, .5f);
-        artRect.anchoredPosition = new Vector2(rect.sizeDelta.x * .5f, -rect.sizeDelta.y * .5f);
+        artStart = artRect.anchoredPosition;
+        artScale = artRect.localScale;
+        artRotation = artRect.localRotation;
+        artColor = art.color;
+        artUV = art.uvRect;
+        var defaultTexture = Resources.Load<Texture2D>("World/Sprites/" +
+            (authoredDefaultTextureName ?? textureName));
+        keepArtTexture = keepCustomTexture && existingArt != null && art.texture != null &&
+            art.texture != defaultTexture;
         SetTexture(textureName);
     }
 
@@ -69,17 +91,18 @@ public sealed class WorldSprite : MonoBehaviour, IBeginDragHandler, IDragHandler
     {
         if (this.facingRight != facingRight)
         {
-            art.uvRect = facingRight ? new Rect(0, 0, 1, 1) : new Rect(1, 0, -1, 1);
+            art.uvRect = facingRight ? artUV :
+                new Rect(artUV.x + artUV.width, artUV.y, -artUV.width, artUV.height);
             this.facingRight = facingRight;
         }
-        artRect.localScale = new Vector3(1f, heightScale, 1f);
-        artRect.localRotation = Quaternion.Euler(0f, 0f, lean);
-        artRect.anchoredPosition = new Vector2(rect.sizeDelta.x * .5f,
-            -rect.sizeDelta.y * .5f + lift);
+        artRect.localScale = new Vector3(artScale.x, artScale.y * heightScale, artScale.z);
+        artRect.localRotation = artRotation * Quaternion.Euler(0f, 0f, lean);
+        artRect.anchoredPosition = artStart + new Vector2(0f, lift);
     }
 
     public void SetTexture(string textureName)
     {
+        if (keepArtTexture) return;
         if (currentTexture == textureName) return;
         if (!TextureCache.TryGetValue(textureName, out var texture))
         {
@@ -98,6 +121,6 @@ public sealed class WorldSprite : MonoBehaviour, IBeginDragHandler, IDragHandler
 
     public void SetReady(bool ready)
     {
-        art.color = ready ? Color.white : new Color(.82f, .82f, .82f, .88f);
+        art.color = ready ? artColor : artColor * new Color(.82f, .82f, .82f, .88f);
     }
 }

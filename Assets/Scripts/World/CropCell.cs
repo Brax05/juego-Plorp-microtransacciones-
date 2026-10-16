@@ -16,7 +16,7 @@ public sealed class CropCell : MonoBehaviour
     public bool IsReady { get { AdvanceTime(); return stage == 2; } }
     public string CropName => kind.ToString();
 
-    public void Initialize(PixelUIFactory ui, int plotId, int cellId, CropKind initialKind,
+    public void Initialize(int plotId, int cellId, CropKind initialKind,
         Action<CropCell> onTapped)
     {
         kind = initialKind;
@@ -26,8 +26,9 @@ public sealed class CropCell : MonoBehaviour
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         if (!long.TryParse(PlayerPrefs.GetString(saveKey + ".since", now.ToString()), out stageStarted))
             stageStarted = now;
-        sprite = gameObject.AddComponent<WorldSprite>();
-        sprite.Initialize(ui, SpriteName(), () => tapped(this));
+        sprite = GetComponent<WorldSprite>() ?? gameObject.AddComponent<WorldSprite>();
+        sprite.Initialize(SpriteName(), () => tapped(this), true,
+            kind.ToString().ToLowerInvariant() + "_2");
         AdvanceTime();
         Refresh();
     }

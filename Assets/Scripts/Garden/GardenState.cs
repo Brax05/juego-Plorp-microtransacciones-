@@ -82,9 +82,11 @@ public sealed class GardenState
     public GardenWeather Weather { get; private set; }
     double weatherUntil;
     public double FertilizerUntil { get; private set; }
+    /// <summary>Curtains closed: the sun can't get in (light slowly drops).</summary>
+    public bool CurtainsClosed { get; private set; }
 
     float stress, dustTimer, coinTimer, saveTimer, bugTimer = 45f;
-    int lastCondition;
+    readonly bool[] lastProblems = new bool[5];
     readonly System.Random rng = new System.Random();
 
     public event Action Changed;
@@ -122,13 +124,13 @@ public sealed class GardenState
     {
         get
         {
-            switch (Condition)
-            {
-                case 1: return "¡Demasiada agua! Las raíces se ahogan.";
-                case 2: return "Se está secando. Arrastra la regadera.";
-                case 3: return "¡Demasiado sol! Las hojas se queman.";
-                case 4: return "Le falta luz. Arrastra la lámpara.";
-            }
+            // Water and light problems can happen together: show both.
+            var problems = new List<string>();
+            if (TooMuchWater) problems.Add("¡Demasiada agua!");
+            if (TooLittleWater) problems.Add("Se seca: riégala.");
+            if (TooMuchLight) problems.Add(CurtainsClosed ? "¡Demasiado sol! (cortinas cerradas)" : "¡Demasiada luz! Cierra las cortinas.");
+            if (TooLittleLight) problems.Add(CurtainsClosed ? "Muy oscuro: abre las cortinas." : "Le falta luz: usa la lámpara.");
+            if (problems.Count > 0) return string.Join("  ", problems.ToArray());
             if (Bugs.Count > 0) return "¡Bichitos! Aplástalos (dan gemas).";
             if (CountLeaves(LeafState.Withered) + CountLeaves(LeafState.Burnt) > 0) return "Hojas secas: córtalas con las tijeras.";
             if (CountLeaves(LeafState.Dusty) > 0) return "Hojas con polvo: tócalas para limpiarlas.";
@@ -144,8 +146,8 @@ public sealed class GardenState
         {
             case 1: return "Miau... ¡la " + name + " de Plorp tiene demasiada agua! Espera a que se seque.";
             case 2: return "Miau... ¡la " + name + " de Plorp se está secando! Plorp dice \"glerp\". Riégala.";
-            case 3: return "Miau... ¡la " + name + " de Plorp está recibiendo mucho sol! Se le queman las hojas.";
-            default: return "Miau... la " + name + " de Plorp está muy a oscuras. Dale luz con la lámpara.";
+            case 3: return "Miau... ¡hace demasiada luz! La " + name + " de Plorp se quema. Cierra las cortinas.";
+            default: return "Miau... la " + name + " de Plorp está muy a oscuras." + (CurtainsClosed ? " Abre las cortinas o usa la lámpara." : " Dale luz con la lámpara.");
         }
     }
 
@@ -217,6 +219,8 @@ public sealed class GardenState
             default:
                 Water -= dt * .08f; Light -= dt * .06f; break;
         }
+        // Closed curtains block the window: no sun gets in, light fades.
+        if (CurtainsClosed) Light -= dt * (Weather == GardenWeather.Sunny ? .25f : .1f);
         Water = Mathf.Clamp(Water, 0f, 100f);
         Light = Mathf.Clamp(Light, 0f, 100f);
 
@@ -250,10 +254,13 @@ public sealed class GardenState
             }
         }
 
-        // Condition alerts (only when it changes to a bad one)
-        int condition = Condition;
-        if (live && condition != lastCondition && condition != 0) Alert?.Invoke(ConditionAlert(condition));
-        lastCondition = condition;
+        // Alerts: each problem is announced when it starts (several can be active at once).
+        bool[] problems = { false, TooMuchWater, TooLittleWater, TooMuchLight, TooLittleLight };
+        for (int c = 1; c < problems.Length; c++)
+        {
+            if (live && problems[c] && !lastProblems[c]) Alert?.Invoke(ConditionAlert(c));
+            lastProblems[c] = problems[c];
+        }
 
         // Dust
         dustTimer += dt;
@@ -336,7 +343,9 @@ public sealed class GardenState
         Weather = next;
         if (!live) return;
         if (next == GardenWeather.Sunny)
-            Alert?.Invoke("Miau... entra mucho sol por la ventana. Ojo con la planta de Plorp.");
+            Alert?.Invoke(CurtainsClosed
+                ? "Miau... afuera hay mucho sol, menos mal que las cortinas están cerradas."
+                : "Miau... ¡entra mucho sol por la ventana! Si hace demasiada luz, cierra las cortinas.");
         else if (next == GardenWeather.Cloudy)
             Alert?.Invoke("Miau. Se nubló y hay humedad: la planta no necesita agua por ahora.");
     }
@@ -355,6 +364,13 @@ public sealed class GardenState
     }
 
     // ---------- Player actions ----------
+
+    public void ToggleCurtains()
+    {
+        CurtainsClosed = !CurtainsClosed;
+        Save();
+        Changed?.Invoke();
+    }
 
     /// <summary>Watering can held over the plant (per frame).</summary>
     public void PourWater(float dt) { Water = Mathf.Min(100f, Water + 14f * dt); Changed?.Invoke(); }
@@ -467,7 +483,9 @@ public sealed class GardenState
         for (int i = 0; i < LeafSlots; i++)
             Leaves[i] = i < leaves.Length ? (LeafState)Mathf.Clamp(leaves[i] - '0', 0, 5) : LeafState.Healthy;
         FertilizerUntil = ReadDouble("fert");
-        lastCondition = Condition;
+        CurtainsClosed = PlayerPrefs.GetInt(Key + "curtains", 0) == 1;
+        lastProblems[1] = TooMuchWater; lastProblems[2] = TooLittleWater;
+        lastProblems[3] = TooMuchLight; lastProblems[4] = TooLittleLight;
 
         // Catch up on the time the game was closed (capped at 2 hours), quietly.
         double saved = ReadDouble("saved");
@@ -497,6 +515,7 @@ public sealed class GardenState
             PlayerPrefs.SetInt(Key + "bloomed." + i, EverBloomed[i] ? 1 : 0);
         }
         PlayerPrefs.SetInt(Key + "bloomNow", Bloomed ? 1 : 0);
+        PlayerPrefs.SetInt(Key + "curtains", CurtainsClosed ? 1 : 0);
         PlayerPrefs.SetString(Key + "flowerCoins", FlowerCoins.ToString());
         PlayerPrefs.SetInt(Key + "stored", StoredCoins);
         var chars = new char[LeafSlots];
@@ -508,7 +527,7 @@ public sealed class GardenState
 
     public static void ResetSaved()
     {
-        foreach (string k in new[] { "current", "water", "light", "leaves", "fert", "saved", "bloomNow", "flowerCoins", "stored" })
+        foreach (string k in new[] { "current", "water", "light", "leaves", "fert", "saved", "bloomNow", "flowerCoins", "stored", "curtains" })
             PlayerPrefs.DeleteKey(Key + k);
         for (int i = 0; i < Species.Length; i++)
         {

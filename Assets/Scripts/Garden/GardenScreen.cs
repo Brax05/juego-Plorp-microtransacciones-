@@ -47,7 +47,10 @@ public sealed class GardenScreen : MonoBehaviour
     Text signText, weatherText, careValue, flowerCoinText;
     RectTransform waterFill, lightFill, careFill, waterBand, lightBand;
     Text waterValue, lightValue, statusText, bonusText;
-    RectTransform sunLayer, cloudLayer;
+    RectTransform sunLayer, cloudLayer, curtainLeft, curtainRight;
+    Text curtainButtonText;
+    float curtainOpen = 1f; // 1 open, 0 closed (animated)
+    CanvasGroup toastGroup;
     readonly RawImage[] leaves = new RawImage[GardenState.LeafSlots];
     readonly float[] wiggle = new float[GardenState.LeafSlots];
     RectTransform plantRoot, plantZone, flowerStem, flowerRoot, coinBubble, fxLayer;
@@ -94,6 +97,7 @@ public sealed class GardenScreen : MonoBehaviour
 
         // Weather seen through the window (lower panes).
         sunLayer = ui.Rect(transform, "Sunny window", 92, 204, 389, 283);
+        sunLayer.gameObject.AddComponent<RectMask2D>(); // keep the beams inside the glass
         ui.Block(sunLayer, "Warm light", 0, 0, 389, 283, new Color(1f, .93f, .55f, .16f));
         for (int i = 0; i < 3; i++)
         {
@@ -101,10 +105,15 @@ public sealed class GardenScreen : MonoBehaviour
             beam.rectTransform.localEulerAngles = new Vector3(0f, 0f, -28f);
         }
         cloudLayer = ui.Rect(transform, "Cloudy window", 92, 204, 389, 283);
+        cloudLayer.gameObject.AddComponent<RectMask2D>();
         ui.Block(cloudLayer, "Grey", 0, 0, 389, 283, new Color(.55f, .6f, .7f, .38f));
         var rng = new System.Random(4);
         for (int i = 0; i < 26; i++)
             ui.Block(cloudLayer, "Drop", rng.Next(8, 380), rng.Next(8, 275), 3, 4, new Color(.85f, .93f, 1f, .7f));
+
+        // Curtains over the window (closed = no sun gets in).
+        curtainLeft = BuildCurtain("Curtain left", 86);
+        curtainRight = BuildCurtain("Curtain right", 290);
 
         // Sign with the species name: tap to open the plant shop. Weather line under it.
         signText = ui.Label(transform, "Species", "", 128, 120, 312, 40, 24, Color.white, TextAnchor.MiddleCenter);
@@ -115,6 +124,15 @@ public sealed class GardenScreen : MonoBehaviour
         var pill = ui.Panel(transform, "Flower coins", 6, 96, 92, 34, PixelUIFactory.Hex("#7A3F5E"));
         ui.Texture(pill, "Icon", "UI/Garden/icon_flowercoin", 6, 5, 24, 24);
         flowerCoinText = ui.Label(pill, "Count", "", 32, 2, 56, 30, 16, Color.white);
+
+        // Curtain button (top-right of the window frame).
+        var curtainButton = ui.Panel(transform, "Curtains button", 472, 96, 92, 34, PixelUIFactory.Hex("#8C3A3A"));
+        curtainButtonText = ui.Label(curtainButton, "Caption", "", 2, 0, 88, 34, 12, Color.white, TextAnchor.MiddleCenter);
+        ui.Hit(transform, "Toggle curtains", 472, 96, 92, 34, () =>
+        {
+            garden.ToggleCurtains();
+            message(garden.CurtainsClosed ? "Cortinas cerradas: no entra el sol" : "Cortinas abiertas");
+        });
 
         // Water / light / care bars.
         ui.Block(transform, "Bars shade", 96, 194, 380, 86, new Color(.04f, .06f, .1f, .55f));
@@ -176,17 +194,33 @@ public sealed class GardenScreen : MonoBehaviour
 
         // Pepito toast at the top (alerts while the player is here).
         toast = ui.Rect(transform, "Pepito toast", 0, 0, PageW, 96);
+        toastGroup = toast.gameObject.AddComponent<CanvasGroup>();
+        toastGroup.alpha = 0f;
+        toastGroup.blocksRaycasts = false;
         ui.Panel(toast, "Frame", 6, 6, 82, 82, PixelUIFactory.Hex("#4B5160"));
         toastFace = SpriteStripAnimator.Create(toast, "Pepito", "UI/Characters/pepito_talk", 12, 12, 70);
         var bubble = ui.Panel(toast, "Bubble", 92, 10, 470, 74, PixelUIFactory.Hex("#F6E7C8"));
         toastText = ui.Paragraph(bubble, "Text", "", 12, 6, 446, 62, 16, PixelUIFactory.Ink);
         var outline = toastText.GetComponent<Outline>();
         if (outline != null) outline.enabled = false;
-        toast.anchoredPosition = new Vector2(0f, 120f);
+        toast.anchoredPosition = new Vector2(0f, 40f);
 
         garden.Changed += Refresh;
         garden.Alert += ShowToast;
         Refresh();
+    }
+
+    /// <summary>A fabric curtain made of stripes; its width is animated (gathered when open).</summary>
+    RectTransform BuildCurtain(string name, float x)
+    {
+        var curtain = ui.Rect(transform, name, x, 186, 34, 306);
+        curtain.gameObject.AddComponent<RectMask2D>();
+        ui.Block(curtain, "Fabric", 0, 0, 200, 306, PixelUIFactory.Hex("#B5443F"));
+        for (int i = 0; i < 10; i++)
+            ui.Block(curtain, "Fold", 6 + i * 20, 0, 6, 306, PixelUIFactory.Hex(i % 2 == 0 ? "#8E2F2C" : "#CF5B54"));
+        ui.Block(curtain, "Hem", 0, 296, 200, 10, PixelUIFactory.Hex("#E7C46A"));
+        ui.Block(curtain, "Rod", 0, 0, 200, 6, PixelUIFactory.Hex("#5A3420"));
+        return curtain;
     }
 
     void BuildBar(float y, string icon, Color color, out RectTransform fill, out RectTransform band, out Text value)
@@ -213,7 +247,8 @@ public sealed class GardenScreen : MonoBehaviour
         var plant = garden.Plant;
         signText.text = plant.Name.ToUpperInvariant();
         weatherText.text = garden.WeatherText;
-        sunLayer.gameObject.SetActive(garden.Weather == GardenWeather.Sunny);
+        sunLayer.gameObject.SetActive(garden.Weather == GardenWeather.Sunny && !garden.CurtainsClosed);
+        curtainButtonText.text = garden.CurtainsClosed ? "ABRIR\nCORTINAS" : "CERRAR\nCORTINAS";
         cloudLayer.gameObject.SetActive(garden.Weather == GardenWeather.Cloudy);
         flowerCoinText.text = FarmGameState.Format(garden.FlowerCoins);
 
@@ -327,6 +362,13 @@ public sealed class GardenScreen : MonoBehaviour
             pair.Value.rectTransform.anchoredPosition =
                 new Vector2(Mathf.Sin(t * 3f + pair.Key.Along * 9f) * 4f, 68f + pair.Key.Along * 80f);
         }
+
+        // Curtains slide open/closed.
+        curtainOpen = Mathf.MoveTowards(curtainOpen, garden.CurtainsClosed ? 0f : 1f, dt / .35f);
+        float closedW = 200f, openW = 34f, w = Mathf.Lerp(closedW, openW, curtainOpen);
+        curtainLeft.sizeDelta = new Vector2(w, curtainLeft.sizeDelta.y);
+        curtainRight.sizeDelta = new Vector2(w, curtainRight.sizeDelta.y);
+        curtainRight.anchoredPosition = new Vector2(487f - w, curtainRight.anchoredPosition.y);
 
         UpdateTool(dt);
         UpdateToast(dt);
@@ -533,7 +575,10 @@ public sealed class GardenScreen : MonoBehaviour
         float target = Time.unscaledTime < toastUntil ? 1f : 0f;
         toastSlide = Mathf.MoveTowards(toastSlide, target, dt / .25f);
         float eased = 1f - Mathf.Pow(1f - toastSlide, 3f);
-        toast.anchoredPosition = new Vector2(0f, Mathf.Lerp(120f, 0f, eased));
+        // Slides down a little and fades; fully invisible (and not blocking taps) when hidden.
+        toast.anchoredPosition = new Vector2(0f, Mathf.Lerp(40f, 0f, eased));
+        toastGroup.alpha = eased;
+        toastGroup.blocksRaycasts = false;
     }
 
     // ---------- Plant shop ----------

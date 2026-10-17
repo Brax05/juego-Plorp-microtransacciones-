@@ -73,6 +73,15 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void Compose(bool preview)
     {
+        // Never take over the Inicio scene: its canvas has its own scaling (FitScreen on top of it
+        // made the title huge) and the farm only exists in Granja.
+        if (!preview && (BootScene.IsShowing || FindAnyObjectByType<BootScene>(FindObjectsInactive.Include) != null))
+        {
+            enabled = false;
+            Destroy(gameObject);
+            return;
+        }
+
         var state = new FarmGameState();
         gameState = state;
 

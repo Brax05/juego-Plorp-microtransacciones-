@@ -28,6 +28,14 @@ public sealed class BootScene : MonoBehaviour
 
     void OnDestroy() => IsShowing = false;
 
+    RectTransform portraitRect;
+
+    // The canvas scaler already fits the portrait to the screen; nothing else may rescale it.
+    void LateUpdate()
+    {
+        if (portraitRect != null && portraitRect.localScale != Vector3.one) portraitRect.localScale = Vector3.one;
+    }
+
     const float Width = 570f, Height = 1018f;
     const int GameSceneIndex = 1;
 
@@ -64,6 +72,7 @@ public sealed class BootScene : MonoBehaviour
         portrait.SetParent(canvasGo.transform, false);
         portrait.anchorMin = portrait.anchorMax = portrait.pivot = new Vector2(.5f, .5f);
         portrait.sizeDelta = new Vector2(Width, Height);
+        portraitRect = portrait;
 
         StartScreens.CreateForBoot(portrait, state, () =>
         {

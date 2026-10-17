@@ -9,7 +9,7 @@ public sealed class FarmGameState
     public static readonly string[] AchievementNames =
         { "Primera cosecha", "Granjero constante", "Gran inversion", "Alimenta a Plorp" };
     static readonly int[] AchievementGems = { 5, 20, 30, 15 };
-    const int ProgressionVersion = 6; // 6: start with 1 chicken + 1 worker (old saves restart)
+    const int ProgressionVersion = 7; // 7: slower economy (old saves restart)
     const string ProgressionVersionKey = "GlorpFarm.progressionVersion";
     static readonly int[] StartingLevels = FarmEconomy.StartingLevels;
 

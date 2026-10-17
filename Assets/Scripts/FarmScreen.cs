@@ -59,6 +59,7 @@ public sealed class FarmScreen
         BindHit(parent, "Open coin store", () => { StoreScreen.PendingTab = 0; navigate(1); });
         BindHit(parent, "Open gem store", () => { StoreScreen.PendingTab = 1; navigate(1); });
 
+        AlignUpgradeRows(parent);
         for (int i = 0; i < 3; i++)
         {
             int index = i;
@@ -82,6 +83,35 @@ public sealed class FarmScreen
 
         state.Changed += Refresh;
         Refresh();
+    }
+
+    /// <summary>
+    /// Puts each row's price, level and buy button in the same place inside its row as the first one.
+    /// In the canvas the Animales/Trabajadores buttons had drifted up between the rows, so tapping
+    /// "MEJORAR"/"CONTRATAR" missed them ("no se pueden comprar gallinas ni trabajadores").
+    /// The tap area now covers the whole green button.
+    /// </summary>
+    static void AlignUpgradeRows(Transform parent)
+    {
+        var firstRow = FarmUIBootstrap.FindChildRecursive(parent, "Upgrade row 0") as RectTransform;
+        if (firstRow == null) return;
+        for (int i = 0; i < 3; i++)
+        {
+            var row = FarmUIBootstrap.FindChildRecursive(parent, "Upgrade row " + i) as RectTransform;
+            if (row == null) continue;
+            float top = -row.anchoredPosition.y;
+            Place(parent, "Price " + i, 157f, top + 44f, 95f, 32f);
+            Place(parent, "Upgrade level " + i, 410f, top + 44f, 120f, 28f);
+            Place(parent, "Buy upgrade " + i, 392f, top + 6f, 160f, 92f);
+        }
+    }
+
+    static void Place(Transform parent, string name, float x, float y, float w, float h)
+    {
+        var rect = FarmUIBootstrap.FindChildRecursive(parent, name) as RectTransform;
+        if (rect == null) return;
+        rect.anchoredPosition = new Vector2(x, -y);
+        rect.sizeDelta = new Vector2(w, h);
     }
 
     static T Require<T>(Transform parent, string name) where T : Component

@@ -24,14 +24,16 @@ public static class FarmEconomy
 
     // Crops by tier: value per harvest and seconds per growth stage (2 stages to be ready).
     public static readonly CropKind[] CropTiers = { CropKind.Carrot, CropKind.Cabbage, CropKind.Tomato, CropKind.Pumpkin };
-    static readonly long[] CropValue = { 10, 40, 150, 600 };
-    static readonly int[] CropStageSeconds = { 8, 12, 18, 25 };
+    // Balance v7: lower values and slower crops; prices climb faster than income (one purchase
+    // every ~30-60 s at the start, a few minutes after the first hour).
+    static readonly long[] CropValue = { 5, 20, 70, 260 };
+    static readonly int[] CropStageSeconds = { 12, 18, 26, 36 };
 
     // Animals by tier: product value, seconds between products, animals shown per species.
     public static readonly string[] Species = { "chicken", "sheep", "cow" };
     public static readonly string[] SpeciesNames = { "Gallina", "Oveja", "Vaca" };
-    static readonly long[] AnimalValue = { 30, 140, 550 };
-    static readonly int[] AnimalSeconds = { 30, 45, 60 };
+    static readonly long[] AnimalValue = { 15, 60, 220 };
+    static readonly int[] AnimalSeconds = { 40, 60, 80 };
     public const int AnimalsPerSpecies = 6;
 
     // ---------- Levels and tiers ----------
@@ -85,7 +87,7 @@ public static class FarmEconomy
     public static long CropHarvestValue(FarmGameState s, CropKind kind)
     {
         int level = s.Levels[Seeds];
-        double perLevel = 1.0 + 0.2 * Math.Max(0, level - 1);
+        double perLevel = 1.0 + 0.08 * Math.Max(0, level - 1);
         return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s) * GardenCrops(s));
     }
 
@@ -114,7 +116,7 @@ public static class FarmEconomy
     {
         int level = s.Levels[Animals];
         int levelsInSpecies = Math.Max(0, level - species * LevelsPerTier - 1);
-        double perLevel = 1.0 + 0.15 * levelsInSpecies;
+        double perLevel = 1.0 + 0.08 * levelsInSpecies;
         return Round(AnimalValue[species] * perLevel * Milestone(level, Species.Length) * WorkerBonus(s) * GardenAnimals(s));
     }
 
@@ -139,9 +141,9 @@ public static class FarmEconomy
     {
         switch (upgrade)
         {
-            case Seeds: return Round(300 * Math.Pow(1.16, level - 1));
-            case Animals: return Round(400 * Math.Pow(1.17, level));
-            default: return Round(1500 * Math.Pow(1.24, level));
+            case Seeds: return Round(150 * Math.Pow(1.21, level - 1));
+            case Animals: return Round(250 * Math.Pow(1.24, level));
+            default: return Round(1200 * Math.Pow(1.32, level - 1));
         }
     }
 

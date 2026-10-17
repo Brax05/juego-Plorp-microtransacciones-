@@ -28,8 +28,9 @@ public sealed class CropCell : MonoBehaviour
         if (!long.TryParse(PlayerPrefs.GetString(saveKey + ".since", now.ToString()), out stageStarted))
             stageStarted = now;
         sprite = GetComponent<WorldSprite>() ?? gameObject.AddComponent<WorldSprite>();
-        sprite.Initialize(SpriteName(), () => tapped(this), true,
-            kind.ToString().ToLowerInvariant() + "_2");
+        // Never keep the texture baked in the prefab (a field saved with ripe tomatoes looked
+        // frozen): the sprite always follows the crop and its growth stage.
+        sprite.Initialize(SpriteName(), () => tapped(this));
         AdvanceTime();
         Refresh();
     }

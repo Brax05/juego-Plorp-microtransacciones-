@@ -28,7 +28,7 @@ public sealed class PlorpGoal
         Quote = PlorpGoals.QuoteFor(stage);
         int total = 0;
         foreach (var line in lines) total += line.Amount * (line.Item.FromAnimal ? 5 : 1);
-        RewardGold = 40L * total + 100L * stage;
+        RewardGold = 15L * total + 60L * stage;
         RewardGems = 3 + stage * 2;
     }
 

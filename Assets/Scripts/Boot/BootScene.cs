@@ -46,13 +46,19 @@ public sealed class BootScene : MonoBehaviour
 
         StartScreens.CreateForBoot(portrait, state, () =>
         {
-            if (SceneManager.sceneCountInBuildSettings <= GameSceneIndex)
-            {
-                Debug.LogError("Agrega la escena del juego a Build Settings (Tools ▸ Plorp ▸ Crear escena de inicio).");
-                return null;
-            }
             CameFromBoot = true;
-            return SceneManager.LoadSceneAsync(GameSceneIndex);
+            try
+            {
+                var op = SceneManager.LoadSceneAsync("Granja");
+                if (op != null) return op;
+            }
+            catch { }
+
+            if (SceneManager.sceneCountInBuildSettings > GameSceneIndex)
+                return SceneManager.LoadSceneAsync(GameSceneIndex);
+
+            Debug.LogError("Agrega la escena del juego a Build Settings (Tools ▸ Plorp ▸ Crear escena de inicio).");
+            return null;
         });
 
         if (FindAnyObjectByType<EventSystem>() == null)

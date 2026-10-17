@@ -158,8 +158,8 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
         // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
         // Coming from the Inicio scene the title and loading were already shown there.
-        if (BootScene.CameFromBoot) pepito.Begin();
-        else StartScreens.Create(content, state, pepito.Begin);
+        if (BootScene.CameFromBoot) { if (pepito != null) pepito.Begin(); }
+        else StartScreens.Create(content, state, () => { if (pepito != null) pepito.Begin(); });
 
         if (FindAnyObjectByType<EventSystem>() == null)
         {

@@ -18,7 +18,6 @@ using UnityEngine.SceneManagement;
 public sealed class PlorpScenePreview : EditorWindow
 {
     const string PreviewName = "PixelFarmCanvas (VISTA PREVIA - no se guarda)";
-    const string OriginalKey = "PlorpScenePreview.original";
     const string RebuildKey = "PlorpScenePreview.rebuildAfterSave";
     const string TabKey = "PlorpScenePreview.tab";
 
@@ -104,8 +103,6 @@ public sealed class PlorpScenePreview : EditorWindow
 
     static GameObject FindOriginal()
     {
-        int id = SessionState.GetInt(OriginalKey, 0);
-        if (id != 0 && EditorUtility.InstanceIDToObject(id) is GameObject saved) return saved;
         foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects())
         {
             if (root.name == PreviewName) continue;
@@ -131,7 +128,6 @@ public sealed class PlorpScenePreview : EditorWindow
         var preview = Object.Instantiate(original);
         preview.name = PreviewName;
         preview.SetActive(true);
-        SessionState.SetInt(OriginalKey, original.GetInstanceID());
         original.SetActive(false);
 
         try
@@ -179,7 +175,6 @@ public sealed class PlorpScenePreview : EditorWindow
         // Give the real canvas back (it is only hidden while the preview exists).
         var original = FindOriginal();
         if (original != null && !original.activeSelf) original.SetActive(true);
-        SessionState.EraseInt(OriginalKey);
         SceneView.RepaintAll();
     }
 }

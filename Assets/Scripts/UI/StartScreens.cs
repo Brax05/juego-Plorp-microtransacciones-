@@ -167,9 +167,9 @@ public sealed class StartScreens : MonoBehaviour
 
     void StartLoading()
     {
-        title.gameObject.SetActive(false);
-        settings.gameObject.SetActive(false);
-        loading.gameObject.SetActive(true);
+        if (title != null) title.gameObject.SetActive(false);
+        if (settings != null) settings.gameObject.SetActive(false);
+        if (loading != null) loading.gameObject.SetActive(true);
         loadStarted = Time.unscaledTime;
         if (beginLoad != null)
         {
@@ -182,7 +182,8 @@ public sealed class StartScreens : MonoBehaviour
 
     void ShowTip()
     {
-        tip.text = Tips[tipIndex % Tips.Length].ToUpperInvariant();
+        if (tip != null && Tips != null && Tips.Length > 0)
+            tip.text = Tips[tipIndex % Tips.Length].ToUpperInvariant();
         tipIndex++;
         nextTip = Time.unscaledTime + 1.5f;
     }

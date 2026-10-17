@@ -49,6 +49,9 @@ public sealed class StoreScreen : MonoBehaviour
         PurchaseService.Changed += Rebuild;
     }
 
+    /// <summary>Editor preview (OnEnable doesn't run outside Play mode).</summary>
+    public void PreviewRefresh() { if (ui != null) Rebuild(); }
+
     void OnEnable()
     {
         if (PendingTab >= 0) { tab = PendingTab; PendingTab = -1; }

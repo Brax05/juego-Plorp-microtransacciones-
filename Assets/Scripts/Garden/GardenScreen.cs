@@ -59,6 +59,7 @@ public sealed class GardenScreen : MonoBehaviour
     readonly Dictionary<GardenBug, RawImage> bugViews = new Dictionary<GardenBug, RawImage>();
     readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
     RectTransform shop;
+    RectTransform shopPulse;
 
     // Dragging a tool
     int dragTool = -1;
@@ -118,7 +119,14 @@ public sealed class GardenScreen : MonoBehaviour
         // Sign with the species name: tap to open the plant shop. Weather line under it.
         signText = ui.Label(transform, "Species", "", 128, 120, 312, 40, 24, Color.white, TextAnchor.MiddleCenter);
         ui.Hit(transform, "Open plants", 110, 112, 352, 56, OpenShop);
-        weatherText = ui.Label(transform, "Weather", "", 96, 168, 380, 18, 12, Color.white, TextAnchor.MiddleCenter);
+        // Clear button for the plant shop (the sign alone wasn't obvious).
+        var shopButton = ui.Panel(transform, "Plant shop button", 165, 164, 240, 30, PixelUIFactory.Green);
+        ui.Texture(shopButton, "Icon", "UI/Icons/semillas", 8, 1, 28, 28);
+        ui.Label(shopButton, "Caption", "TIENDA DE PLANTAS", 38, 0, 196, 30, 14, Color.white, TextAnchor.MiddleCenter);
+        ui.Hit(transform, "Open plant shop", 165, 164, 240, 30, OpenShop);
+        shopButton.pivot = new Vector2(.5f, .5f);
+        shopButton.anchoredPosition += new Vector2(120f, -15f); // keep the same place with a centred pivot
+        shopPulse = shopButton;
 
         // Monedas de flor counter (top-left of the window frame).
         var pill = ui.Panel(transform, "Flower coins", 6, 96, 92, 34, PixelUIFactory.Hex("#7A3F5E"));
@@ -135,7 +143,8 @@ public sealed class GardenScreen : MonoBehaviour
         });
 
         // Water / light / care bars.
-        ui.Block(transform, "Bars shade", 96, 194, 380, 86, new Color(.04f, .06f, .1f, .55f));
+        ui.Block(transform, "Bars shade", 96, 198, 380, 106, new Color(.04f, .06f, .1f, .55f));
+        weatherText = ui.Label(transform, "Weather", "", 100, 282, 372, 18, 12, Color.white, TextAnchor.MiddleCenter);
         BuildBar(206, "UI/Garden/icon_water", PixelUIFactory.Hex("#5AB0F0"), out waterFill, out waterBand, out waterValue);
         BuildBar(232, "UI/Garden/icon_sun", PixelUIFactory.Hex("#FFD44F"), out lightFill, out lightBand, out lightValue);
         BuildBar(258, "UI/Garden/icon_sprout", PixelUIFactory.Hex("#FF8CC6"), out careFill, out _, out careValue);
@@ -255,14 +264,15 @@ public sealed class GardenScreen : MonoBehaviour
 
         SetBar(waterFill, garden.Water / 100f);
         SetBar(lightFill, garden.Light / 100f);
-        SetBar(careFill, garden.CurrentCare / 100f);
+        SetBar(careFill, garden.Bloomed ? 1f : (garden.CurrentCare % 25f) / 25f);
         SetBand(waterBand, plant.WaterMin, plant.WaterMax);
         SetBand(lightBand, plant.LightMin, plant.LightMax);
         waterValue.text = Mathf.RoundToInt(garden.Water) + "%";
         waterValue.color = garden.TooMuchWater || garden.TooLittleWater ? Warn : Color.white;
         lightValue.text = Mathf.RoundToInt(garden.Light) + "%";
         lightValue.color = garden.TooMuchLight || garden.TooLittleLight ? Warn : Color.white;
-        careValue.text = Mathf.FloorToInt(garden.CurrentCare) + "% " + GardenState.StageNames[garden.Stage];
+        // The bar shows progress inside the current level (each level = 25% of care).
+        careValue.text = "Nv." + garden.Level + "/" + GardenState.MaxLevel + " " + GardenState.LevelNames[garden.Level];
 
         statusText.text = garden.StatusText;
         statusText.color = garden.Comfortable && garden.Bugs.Count == 0 ? Color.white : Warn;
@@ -363,6 +373,12 @@ public sealed class GardenScreen : MonoBehaviour
             pair.Value.rectTransform.anchoredPosition =
                 new Vector2(Mathf.Sin(t * 3f + pair.Key.Along * 9f) * 4f, 68f + pair.Key.Along * 80f);
         }
+
+        // The plant shop button breathes while there is something new to buy.
+        bool canBuy = false;
+        for (int i = 0; i < GardenState.Species.Length; i++)
+            if (!garden.Owned[i] && garden.CanUnlock(i) && garden.FlowerCoins >= GardenState.Species[i].CostFlowerCoins) canBuy = true;
+        shopPulse.localScale = Vector3.one * (canBuy ? 1f + .05f * Mathf.Sin(t * 5f) : 1f);
 
         // Curtains slide open/closed.
         curtainOpen = Mathf.MoveTowards(curtainOpen, garden.CurtainsClosed ? 0f : 1f, dt / .35f);

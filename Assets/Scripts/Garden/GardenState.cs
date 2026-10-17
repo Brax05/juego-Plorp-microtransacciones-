@@ -100,9 +100,13 @@ public sealed class GardenState
     static double Now => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
 
     /// <summary>0 brote, 1 joven, 2 adulta, 3 en flor.</summary>
-    public int Stage => Bloomed ? 3 : CurrentCare < 33f ? 0 : CurrentCare < 66f ? 1 : 2;
-    public static readonly string[] StageNames = { "Brote", "Joven", "Adulta", "¡En flor!" };
-    public int VisibleLeaves => Stage == 0 ? 2 : Stage == 1 ? 4 : LeafSlots;
+    /// <summary>Plant level 1-5: every 25% of care is a level; at level 5 (100%) it flowers.</summary>
+    public const int MaxLevel = 5;
+    public int Level => Bloomed ? MaxLevel : LevelFor(CurrentCare);
+    static int LevelFor(float care) => Mathf.Min(MaxLevel, 1 + Mathf.FloorToInt(care / 25f));
+    public static readonly string[] LevelNames = { "", "Brote", "Pequeña", "Joven", "Adulta", "¡En flor!" };
+    public int VisibleLeaves => Mathf.Min(LeafSlots, Level + 1);
+    int lastLevel;
 
     public GardenState(FarmGameState farm)
     {
@@ -135,7 +139,8 @@ public sealed class GardenState
             if (CountLeaves(LeafState.Withered) + CountLeaves(LeafState.Burnt) > 0) return "Hojas secas: córtalas con las tijeras.";
             if (CountLeaves(LeafState.Dusty) > 0) return "Hojas con polvo: tócalas para limpiarlas.";
             if (Bloomed) return StoredCoins > 0 ? "Toca la flor para recoger monedas de flor." : "En flor: produciendo monedas de flor.";
-            return Fertilized ? "Creciendo rápido con abono." : "Está feliz. El cuidado sube poco a poco.";
+            return (Fertilized ? "Creciendo rápido con abono." : "Está feliz y creciendo.") +
+                   " Nivel " + Level + "/" + MaxLevel + ": a nivel " + MaxLevel + " da la flor.";
         }
     }
 
@@ -300,7 +305,17 @@ public sealed class GardenState
             }
         }
 
-        // Bloom
+        // Level ups (1 gem each, the flower comes at level 5)
+        int level = LevelFor(Care[Current]);
+        if (level > lastLevel && lastLevel > 0 && level < MaxLevel)
+        {
+            farm.AddGems(1);
+            if (live) Alert?.Invoke("¡Miau! La " + Plant.Name.ToLowerInvariant() + " de Plorp subió a nivel " + level +
+                                    ". En el nivel " + MaxLevel + " dará su flor. +1 gema");
+        }
+        lastLevel = level;
+
+        // Bloom (level 5)
         if (!Bloomed && Care[Current] >= 100f)
         {
             Bloomed = true;
@@ -464,6 +479,7 @@ public sealed class GardenState
             Owned[index] = true;
         }
         Current = index;
+        lastLevel = LevelFor(Care[index]);
         Bloomed = false;
         StoredCoins = 0;
         Water = Light = 55f;
@@ -497,6 +513,7 @@ public sealed class GardenState
         FertilizerUntil = ReadDouble("fert");
         CurtainsClosed = PlayerPrefs.GetInt(Key + "curtains", 0) == 1;
         BugsSquashed = PlayerPrefs.GetInt(Key + "bugs", 0);
+        lastLevel = LevelFor(Care[Current]);
         lastProblems[1] = TooMuchWater; lastProblems[2] = TooLittleWater;
         lastProblems[3] = TooMuchLight; lastProblems[4] = TooLittleLight;
 

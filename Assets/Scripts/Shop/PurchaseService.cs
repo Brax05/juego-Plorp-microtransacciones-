@@ -122,7 +122,7 @@ public static class PurchaseService
     static bool ValidateReceipt(string receipt) => !string.IsNullOrEmpty(receipt);
 
 #if PLORP_IAP
-    sealed class Store : IDetailedStoreListener
+    sealed class Store : IStoreListener
     {
         public static IStoreController Controller;
         public static IExtensionProvider Extensions;
@@ -143,7 +143,9 @@ public static class PurchaseService
             var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
             foreach (var pack in ShopCatalog.Packs)
                 builder.AddProduct(pack.ProductId, pack.OncePerPlayer ? ProductType.NonConsumable : ProductType.Consumable);
+#pragma warning disable 0618
             UnityPurchasing.Initialize(new Store(), builder);
+#pragma warning restore 0618
         }
 
         public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
@@ -179,11 +181,6 @@ public static class PurchaseService
         public void OnPurchaseFailed(Product product, PurchaseFailureReason reason)
         {
             if (reason != PurchaseFailureReason.UserCancelled) message?.Invoke("La compra no se completó");
-        }
-
-        public void OnPurchaseFailed(Product product, PurchaseFailureDescription description)
-        {
-            if (description.reason != PurchaseFailureReason.UserCancelled) message?.Invoke("La compra no se completó");
         }
     }
 #endif

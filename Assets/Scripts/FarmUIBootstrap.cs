@@ -118,10 +118,31 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     RectTransform achievementBadge;
     Text achievementBadgeText;
     float nextHudRefresh;
+    int currentTab;
+    float nextFarmTip = 25f;
+    static readonly string[] FarmTips =
+    {
+        "¡Toca los tickets dorados!", "¡Arrastra para recorrer la granja!", "¡Cada 10 compras, algo nuevo!",
+        "¡Los trabajadores cosechan solos!", "¡Mira la planta en JARDINERÍA!",
+    };
 
     void Update()
     {
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
+        // Arched tips over the farm now and then.
+        if (gameState != null && currentTab == 0)
+        {
+            nextFarmTip -= Time.unscaledDeltaTime;
+            if (nextFarmTip <= 0f)
+            {
+                nextFarmTip = 35f + UnityEngine.Random.value * 20f;
+                string tip = gameState.GoalReady ? "¡Entrégale el pedido a Plorp!"
+                    : AchievementCatalog.AnyReady(gameState) ? "¡Hay logros por cobrar!"
+                    : FarmTips[UnityEngine.Random.Range(0, FarmTips.Length)];
+                CurvedPopup.Show(content, tip, new Vector2(285f, 330f), PixelUIFactory.Gold, 24);
+            }
+        }
+
         if (gameState != null && Time.unscaledTime >= nextHudRefresh)
         {
             nextHudRefresh = Time.unscaledTime + 1f;
@@ -175,6 +196,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void Navigate(int tab)
     {
+        currentTab = tab;
         farm.SelectTab(tab);
         menu.Show(tab);
         if (messageRoutine != null) StopCoroutine(messageRoutine);

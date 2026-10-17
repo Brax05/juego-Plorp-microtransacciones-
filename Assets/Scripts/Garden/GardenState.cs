@@ -224,8 +224,13 @@ public sealed class GardenState
             default:
                 Water -= dt * .08f; Light -= dt * .06f; break;
         }
-        // Closed curtains block the window: no sun gets in, light fades.
-        if (CurtainsClosed) Light -= dt * (Weather == GardenWeather.Sunny ? .25f : .1f);
+        // Closed curtains block the window: no sun gets in at all, light fades fast.
+        if (CurtainsClosed) Light -= dt * (Weather == GardenWeather.Sunny ? .15f + .9f : .9f);
+
+        // Recovery: excess water soaks away (drains into the plate) unless it's humid, and excess
+        // light fades when the sun isn't pouring in. Without this, "too much" lasted for many minutes.
+        if (Water > Plant.WaterMax && Weather != GardenWeather.Cloudy) Water -= dt * .6f;
+        if (Light > Plant.LightMax && (Weather != GardenWeather.Sunny || CurtainsClosed)) Light -= dt * .6f;
         Water = Mathf.Clamp(Water, 0f, 100f);
         Light = Mathf.Clamp(Light, 0f, 100f);
 

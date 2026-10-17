@@ -70,6 +70,11 @@ public sealed class GardenScreen : MonoBehaviour
     float pourTimer, particleTimer;
     bool fertilizedThisDrag;
 
+    // Tips and Plorp's visits
+    RectTransform ufoLayer, ufo;
+    float nextTip = 12f, nextUfo = 45f, ufoTime = -1f;
+    bool ufoDropped;
+
     // Pepito toast
     RectTransform toast;
     Text toastText;
@@ -112,6 +117,15 @@ public sealed class GardenScreen : MonoBehaviour
         var rng = new System.Random(4);
         for (int i = 0; i < 26; i++)
             ui.Block(cloudLayer, "Drop", rng.Next(8, 380), rng.Next(8, 275), 3, 4, new Color(.85f, .93f, 1f, .7f));
+
+        // Plorp's UFO flies past the window now and then (hidden by closed curtains).
+        ufoLayer = ui.Rect(transform, "UFO window", 92, 107, 389, 363);
+        ufoLayer.gameObject.AddComponent<RectMask2D>();
+        ufo = ui.Rect(ufoLayer, "UFO", -120, 40, 96, 54);
+        ui.Texture(ufo, "Plorp", "UI/Characters/plorp_face", 35, 3, 26, 28);
+        ui.Texture(ufo, "Dome", "UI/Garden/ufo_dome", 18, 0, 60, 24);
+        ui.Texture(ufo, "Body", "UI/Garden/ufo_body", 0, 18, 96, 30);
+        ufo.gameObject.SetActive(false);
 
         // Curtains over the window (closed = no sun gets in).
         curtainLeft = BuildCurtain("Curtain left", 86);
@@ -395,6 +409,8 @@ public sealed class GardenScreen : MonoBehaviour
 
         UpdateTool(dt);
         UpdateToast(dt);
+        UpdateTips(dt);
+        UpdateUfo(dt);
     }
 
     // ---------- Taps ----------
@@ -583,6 +599,87 @@ public sealed class GardenScreen : MonoBehaviour
         }
     }
 
+    // ---------- Arched tips ----------
+
+    void UpdateTips(float dt)
+    {
+        nextTip -= dt;
+        if (nextTip > 0f || dragTool >= 0) return;
+        nextTip = 20f + UnityEngine.Random.value * 15f;
+        CurvedPopup.Show(fxLayer, PickTip(), new Vector2(PotTop.x, 330f), PixelUIFactory.Gold, 22);
+    }
+
+    string PickTip()
+    {
+        if (garden.Bugs.Count > 0) return "¡Aplasta los bichitos!";
+        if (garden.CountLeaves(LeafState.Dusty) > 0) return "¡Toca las hojas para limpiarlas!";
+        if (garden.CountLeaves(LeafState.Withered) + garden.CountLeaves(LeafState.Burnt) > 0) return "¡Corta las hojas secas!";
+        if (garden.TooMuchLight && !garden.CurtainsClosed) return "¡Cierra las cortinas!";
+        if (garden.TooLittleWater) return "¡Arrastra la regadera!";
+        if (garden.TooLittleLight) return garden.CurtainsClosed ? "¡Abre las cortinas!" : "¡Usa la lámpara!";
+        if (garden.Bloomed && garden.StoredCoins > 0) return "¡Toca la flor!";
+        string[] general =
+        {
+            "¡A nivel 5 da la flor!", "¡La macetita es la tienda!", "¡El abono acelera todo!",
+            "¡Mira el clima en la ventana!", "¡Cuida la zona verde!",
+        };
+        return general[UnityEngine.Random.Range(0, general.Length)];
+    }
+
+    // ---------- Plorp's UFO ----------
+
+    void UpdateUfo(float dt)
+    {
+        if (ufoTime < 0f)
+        {
+            nextUfo -= dt;
+            if (nextUfo > 0f || garden.CurtainsClosed) return;
+            ufoTime = 0f;
+            ufoDropped = false;
+            ufo.gameObject.SetActive(true);
+            return;
+        }
+
+        // Crosses the window in 7 s, slowing down in the middle to drop the gifts.
+        ufoTime += dt;
+        const float duration = 7f;
+        float t = Mathf.Clamp01(ufoTime / duration);
+        float eased = t < .4f ? Mathf.Lerp(0f, .45f, t / .4f) : t < .6f ? Mathf.Lerp(.45f, .55f, (t - .4f) / .2f)
+                                                              : Mathf.Lerp(.55f, 1f, (t - .6f) / .4f);
+        float x = Mathf.Lerp(-120f, 420f, eased);
+        float y = 40f + Mathf.Sin(ufoTime * 3f) * 6f;
+        ufo.anchoredPosition = new Vector2(x, -y);
+        ufo.localEulerAngles = new Vector3(0f, 0f, Mathf.Sin(ufoTime * 2f) * 5f);
+
+        if (!ufoDropped && t >= .5f)
+        {
+            ufoDropped = true;
+            int gems = UnityEngine.Random.Range(2, 5);
+            Vector3 from = ufo.TransformPoint(new Vector3(48f, -46f, 0f));
+            for (int i = 0; i < gems; i++)
+            {
+                var pickup = ui.Texture(fxLayer, "Gift gem", "UI/Shop/icon_gem", 0, 0, 30, 26);
+                pickup.rectTransform.pivot = new Vector2(.5f, .5f);
+                pickup.raycastTarget = true;
+                float floorY = page.TransformPoint(new Vector3(0f, -(520f + UnityEngine.Random.Range(-14f, 18f)), 0f)).y;
+                float floorX = page.TransformPoint(new Vector3(160f + UnityEngine.Random.Range(0f, 250f), 0f, 0f)).x;
+                pickup.gameObject.AddComponent<GardenGemPickup>().Launch(from, new Vector2(floorX, floorY), () =>
+                {
+                    state.AddGems(1);
+                    RewardFx.Popup(pickup.rectTransform.position, "+1 gema", PixelUIFactory.Hex("#7CF2E4"));
+                });
+            }
+            ShowToast("¡Miau! Plorp pasó en su nave y te dejó " + gems + " gemas de regalo. ¡Tócalas!");
+        }
+
+        if (t >= 1f)
+        {
+            ufoTime = -1f;
+            ufo.gameObject.SetActive(false);
+            nextUfo = 150f + UnityEngine.Random.value * 150f;
+        }
+    }
+
     // ---------- Pepito toast ----------
 
     void ShowToast(string text)
@@ -715,5 +812,62 @@ public sealed class GardenParticle : MonoBehaviour
             if (spin != 0f) transform.Rotate(0f, 0f, spin * dt);
         }
         if (t >= 1f) Destroy(gameObject);
+    }
+}
+
+/// <summary>A gift gem dropped by Plorp's UFO: falls onto the sill, bounces, waits to be tapped (auto after 10 s).</summary>
+public sealed class GardenGemPickup : MonoBehaviour
+{
+    Vector3 velocity;
+    Vector2 floor;
+    float age, landedAt = -1f;
+    bool collected;
+    Action onCollect;
+
+    public void Launch(Vector3 from, Vector2 floorPoint, Action collect)
+    {
+        transform.position = from;
+        floor = floorPoint;
+        onCollect = collect;
+        float s = transform.lossyScale.x;
+        velocity = new Vector3((floor.x - from.x) / .9f, 120f * s, 0f);
+        var button = gameObject.AddComponent<Button>();
+        button.targetGraphic = GetComponent<Graphic>();
+        button.transition = Selectable.Transition.None;
+        button.onClick.AddListener(Collect);
+    }
+
+    void Collect()
+    {
+        if (collected) return;
+        collected = true;
+        onCollect?.Invoke();
+        Destroy(gameObject);
+    }
+
+    void Update()
+    {
+        float dt = Time.unscaledDeltaTime;
+        age += dt;
+        float s = transform.lossyScale.x;
+        if (landedAt < 0f)
+        {
+            velocity += Vector3.down * 900f * s * dt;
+            var p = transform.position + velocity * dt;
+            if (p.y <= floor.y && velocity.y < 0f)
+            {
+                p.y = floor.y;
+                if (Mathf.Abs(velocity.y) > 120f * s) velocity = new Vector3(velocity.x * .3f, -velocity.y * .35f, 0f); // bounce
+                else { landedAt = age; velocity = Vector3.zero; }
+            }
+            transform.position = p;
+            transform.Rotate(0f, 0f, 220f * dt);
+        }
+        else
+        {
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one * (1f + .12f * Mathf.Sin((age - landedAt) * 6f));
+            if (age - landedAt > 10f) Collect();
+        }
     }
 }

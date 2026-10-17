@@ -9,6 +9,7 @@ public sealed class FarmScreen
     readonly Action<int> navigate;
     readonly Action<string> message;
     readonly Text[] prices = new Text[3];
+    readonly Color[] priceColors = new Color[3];
     readonly Text[] levels = new Text[3];
     readonly Button[] upgradeButtons = new Button[3];
     readonly Text gold;
@@ -62,6 +63,7 @@ public sealed class FarmScreen
         {
             int index = i;
             prices[i] = Require<Text>(parent, "Price " + i);
+            priceColors[i] = prices[i].color;
             levels[i] = Require<Text>(parent, "Upgrade level " + i);
             upgradeButtons[i] = BindHit(parent, "Buy upgrade " + i, () => Buy(index));
             BuildTierInfo(parent, i);
@@ -121,7 +123,9 @@ public sealed class FarmScreen
     /// <summary>Feedback after a purchase, celebrating every 10th one (new crop / new animal / x2).</summary>
     public static string UpgradeMessage(FarmGameState state, int index, bool bought)
     {
-        if (!bought) return "Faltan monedas";
+        if (!bought)
+            return "Faltan " + FarmGameState.Format(Math.Max(0, state.Prices[index] - state.Gold)) + " monedas para " +
+                   FarmGameState.UpgradeNames[index].ToLowerInvariant();
         int level = state.Levels[index];
         bool tierUp = index != FarmEconomy.Workers &&
                       (index == FarmEconomy.Animals ? level % FarmEconomy.LevelsPerTier == 1
@@ -189,9 +193,12 @@ public sealed class FarmScreen
         for (int i = 0; i < 3; i++)
         {
             prices[i].text = state.IsMaxed(i) ? "MAX" : FarmGameState.Format(state.Prices[i]);
+            // Red price when you can't afford it yet (the button still answers with how much is missing).
+            prices[i].color = state.IsMaxed(i) || state.Gold >= state.Prices[i] ? priceColors[i] : PixelUIFactory.Hex("#FF7B6B");
             levels[i].text = "Nv." + state.Levels[i];
             RefreshTierInfo(i);
-            upgradeButtons[i].interactable = !state.IsMaxed(i) && state.Gold >= state.Prices[i];
+            // Always tappable: a disabled button felt broken ("no se puede comprar") when coins were short.
+            upgradeButtons[i].interactable = !state.IsMaxed(i);
         }
     }
 }

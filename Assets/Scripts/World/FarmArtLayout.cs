@@ -14,7 +14,7 @@ public static class FarmArtLayout
     public const float Zoom = 1.6f;
     /// <summary>The farm view now reaches down to the upgrade rows (the old harvest bar is gone).</summary>
     public const float ViewportHeight = 634f;
-    static readonly Vector2 StartView = new Vector2(-70f, 150f); // initial scroll: fields in view
+    static readonly Vector2 StartView = new Vector2(-70f, 40f); // initial scroll: chicken yard just below the header
     public const int Rows = 4, Columns = 4;
     public const int CellsPerPlot = Rows * Columns;
     const float CropSize = 30f;

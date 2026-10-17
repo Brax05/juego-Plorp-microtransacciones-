@@ -3,13 +3,13 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Compact card in the top-right of the farm with Plorp's current order: up to three foods
+/// Compact card in the top-left of the farm with Plorp's current order: up to three foods
 /// (icon + have/need) and an ENTREGAR button. Also shows the celebration when Plorp is satisfied.
-/// It sits over the painted yellow barn so the chicken yard and the fields stay visible.
+/// It sits top-left, over the trees, so the chicken yard and the fields stay visible.
 /// </summary>
 public sealed class PlorpGoalPanel : MonoBehaviour
 {
-    const float Left = 388f, Top = 112f, Width = 176f, Height = 128f;
+    const float Left = 8f, Top = 112f, Width = 176f, Height = 128f;
     const int Slots = 3;
 
     static readonly Color Wood = PixelUIFactory.Hex("#B86F3F");

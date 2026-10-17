@@ -19,7 +19,8 @@ public static class FarmEconomy
     public const int Seeds = 0, Animals = 1, Workers = 2;
     public const int LevelsPerTier = 10;
     public static readonly int[] MaxLevels = { 100, 80, 50 };
-    public static readonly int[] StartingLevels = { 1, 0, 0 };
+    // The farm starts with carrots, one chicken and one worker.
+    public static readonly int[] StartingLevels = { 1, 1, 1 };
 
     // Crops by tier: value per harvest and seconds per growth stage (2 stages to be ready).
     public static readonly CropKind[] CropTiers = { CropKind.Carrot, CropKind.Cabbage, CropKind.Tomato, CropKind.Pumpkin };

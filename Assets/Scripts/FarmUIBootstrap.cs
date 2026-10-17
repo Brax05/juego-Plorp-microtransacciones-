@@ -19,20 +19,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Create()
     {
-        // Also when the game scene is opened later from the Inicio scene.
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-        EnsureForCurrentScene();
-    }
-
-    static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode) =>
-        EnsureForCurrentScene();
-
-    static void EnsureForCurrentScene()
-    {
         if (FindAnyObjectByType<FarmUIBootstrap>() != null) return;
-        // Inicio scene has its own UI: never build (or auto-instantiate) the farm there.
-        if (BootScene.IsShowing || FindAnyObjectByType<BootScene>(FindObjectsInactive.Include) != null) return;
         new GameObject("PlorpFarm UI").AddComponent<FarmUIBootstrap>();
     }
 
@@ -73,15 +60,6 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void Compose(bool preview)
     {
-        // Never take over the Inicio scene: its canvas has its own scaling (FitScreen on top of it
-        // made the title huge) and the farm only exists in Granja.
-        if (!preview && (BootScene.IsShowing || FindAnyObjectByType<BootScene>(FindObjectsInactive.Include) != null))
-        {
-            enabled = false;
-            Destroy(gameObject);
-            return;
-        }
-
         var state = new FarmGameState();
         gameState = state;
 
@@ -89,7 +67,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (canvas == null) canvas = FindAnyObjectByType<Canvas>(FindObjectsInactive.Include);
 
 #if UNITY_EDITOR
-        if (canvas == null && !BootScene.IsShowing)
+        if (canvas == null)
         {
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PixelFarmCanvas.prefab");
             if (prefab != null)
@@ -167,9 +145,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (preview) return;
 
         // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
-        // Coming from the Inicio scene the title and loading were already shown there.
-        if (BootScene.CameFromBoot) { if (pepito != null) pepito.Begin(); }
-        else StartScreens.Create(content, state, () => { if (pepito != null) pepito.Begin(); });
+        StartScreens.Create(content, state, pepito.Begin);
 
         if (FindAnyObjectByType<EventSystem>() == null)
         {

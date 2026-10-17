@@ -37,19 +37,8 @@ public sealed class StartScreens : MonoBehaviour
     Image[][] dots;
     Text musicCaption, soundCaption;
     float loadStarted = -1f;
-    /// <summary>When set (Inicio scene), JUGAR really loads the game scene and the bar follows it.</summary>
-    Func<AsyncOperation> beginLoad;
-    AsyncOperation loadOp;
     int tipIndex;
     float nextTip;
-
-    /// <summary>Title + loading for the Inicio scene: the bar follows the real load of the game scene.</summary>
-    public static StartScreens CreateForBoot(Transform portrait, FarmGameState state, Func<AsyncOperation> beginLoad)
-    {
-        var screens = Create(portrait, state, null);
-        screens.beginLoad = beginLoad;
-        return screens;
-    }
 
     public static StartScreens Create(Transform portrait, FarmGameState state, Action onFinished)
     {
@@ -167,23 +156,17 @@ public sealed class StartScreens : MonoBehaviour
 
     void StartLoading()
     {
-        if (title != null) title.gameObject.SetActive(false);
-        if (settings != null) settings.gameObject.SetActive(false);
-        if (loading != null) loading.gameObject.SetActive(true);
+        title.gameObject.SetActive(false);
+        settings.gameObject.SetActive(false);
+        loading.gameObject.SetActive(true);
         loadStarted = Time.unscaledTime;
-        if (beginLoad != null)
-        {
-            loadOp = beginLoad();
-            if (loadOp != null) loadOp.allowSceneActivation = false; // wait until the bar is full
-        }
         tipIndex = UnityEngine.Random.Range(0, Tips.Length);
         ShowTip();
     }
 
     void ShowTip()
     {
-        if (tip != null && Tips != null && Tips.Length > 0)
-            tip.text = Tips[tipIndex % Tips.Length].ToUpperInvariant();
+        tip.text = Tips[tipIndex % Tips.Length].ToUpperInvariant();
         tipIndex++;
         nextTip = Time.unscaledTime + 1.5f;
     }
@@ -204,8 +187,6 @@ public sealed class StartScreens : MonoBehaviour
         if (loadStarted < 0f) return;
 
         float t = Mathf.Clamp01((now - loadStarted) / LoadSeconds);
-        // Real loading: never get ahead of the scene (Unity reports 0..0.9 until activation).
-        if (loadOp != null) t = Mathf.Min(t, Mathf.Clamp01(loadOp.progress / .9f));
         // Fast start, a short "thinking" pause, then a sprint to the end.
         float eased = t < .55f ? Mathf.SmoothStep(0f, .7f, t / .55f)
             : t < .75f ? .7f + .05f * ((t - .55f) / .2f)
@@ -228,11 +209,6 @@ public sealed class StartScreens : MonoBehaviour
         if (t >= 1f)
         {
             loadStarted = -1f;
-            if (loadOp != null)
-            {
-                loadOp.allowSceneActivation = true; // switches to the game scene
-                return;
-            }
             gameObject.SetActive(false);
             onFinished?.Invoke();
         }

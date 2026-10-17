@@ -240,7 +240,8 @@ public sealed class GardenState
                          * (Fertilized ? 2f : 1f)
                          * (1f + .15f * CountLeaves(LeafState.Strong) - .08f * CountLeaves(LeafState.Dusty))
                          * Mathf.Max(.2f, 1f - dry / (float)VisibleLeaves)
-                         * Mathf.Max(.1f, 1f - .3f * Bugs.Count);
+                         * Mathf.Max(.1f, 1f - .3f * Bugs.Count)
+                         * (farm.Boosts != null ? farm.Boosts.GardenMultiplier : 1f);
             Care[Current] = Mathf.Min(100f, Care[Current] + dt * rate);
         }
         else
@@ -414,10 +415,21 @@ public sealed class GardenState
         return true;
     }
 
+    public int BugsSquashed { get; private set; }
+
+    public void AddFlowerCoins(int amount)
+    {
+        FlowerCoins += amount;
+        Save();
+        Changed?.Invoke();
+    }
+
     /// <summary>Squash a bug: gives 1-2 gems.</summary>
     public int SquashBug(GardenBug bug)
     {
         if (!Bugs.Remove(bug)) return 0;
+        BugsSquashed++;
+        PlayerPrefs.SetInt(Key + "bugs", BugsSquashed);
         int gems = rng.NextDouble() < .3 ? 2 : 1;
         farm.AddGems(gems);
         Changed?.Invoke();
@@ -484,6 +496,7 @@ public sealed class GardenState
             Leaves[i] = i < leaves.Length ? (LeafState)Mathf.Clamp(leaves[i] - '0', 0, 5) : LeafState.Healthy;
         FertilizerUntil = ReadDouble("fert");
         CurtainsClosed = PlayerPrefs.GetInt(Key + "curtains", 0) == 1;
+        BugsSquashed = PlayerPrefs.GetInt(Key + "bugs", 0);
         lastProblems[1] = TooMuchWater; lastProblems[2] = TooLittleWater;
         lastProblems[3] = TooMuchLight; lastProblems[4] = TooLittleLight;
 
@@ -527,7 +540,7 @@ public sealed class GardenState
 
     public static void ResetSaved()
     {
-        foreach (string k in new[] { "current", "water", "light", "leaves", "fert", "saved", "bloomNow", "flowerCoins", "stored", "curtains" })
+        foreach (string k in new[] { "current", "water", "light", "leaves", "fert", "saved", "bloomNow", "flowerCoins", "stored", "curtains", "bugs" })
             PlayerPrefs.DeleteKey(Key + k);
         for (int i = 0; i < Species.Length; i++)
         {

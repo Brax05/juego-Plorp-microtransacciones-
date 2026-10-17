@@ -67,6 +67,11 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         int layer = feedbackTransform != null ? feedbackTransform.GetSiblingIndex() : content.childCount;
         var pepito = PepitoController.Create(content, layer, state, ShowMessage);
         var goalPanel = PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
+        // Active boosts on the farm (above the farm, under the menus).
+        var hudUi = new PixelUIFactory();
+        boostLabel = hudUi.Label(content, "Boost timers", "", 300, 112, 262, 22, 14, PixelUIFactory.Gold, TextAnchor.MiddleRight);
+        boostLabel.transform.SetSiblingIndex(layer);
+
         // Pepito speaks up when the garden plant needs something (dry, too much sun, bugs, bloom...).
         state.Garden.Alert += text => pepito.Say(text, 7f);
         RewardFx.Create(content, FindChildRecursive(content, "Gold"));
@@ -76,6 +81,13 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             ShowMessage("Zona bloqueada: más adelante...");
             pepito.Say("Miau... Plorp dice que detrás de esas nubes hay más tierra. Se abrirá más adelante. Él tampoco sabe cuándo.", 7f);
         };
+
+        // Red badge on the Logros tab with how many achievements are ready to claim.
+        achievementBadge = hudUi.Panel(content, "Achievements badge", 296, 948, 30, 26, PixelUIFactory.Hex("#D23C3C"));
+        achievementBadgeText = hudUi.Label(achievementBadge, "Count", "", 0, 0, 30, 26, 13, Color.white, TextAnchor.MiddleCenter);
+
+        // Real-money gem packs (Unity IAP, or test mode).
+        PurchaseService.Initialize(state, ShowMessage);
 
         Navigate(0);
 
@@ -102,10 +114,25 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     }
 
     FarmGameState gameState;
+    Text boostLabel;
+    RectTransform achievementBadge;
+    Text achievementBadgeText;
+    float nextHudRefresh;
 
     void Update()
     {
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
+        if (gameState != null && Time.unscaledTime >= nextHudRefresh)
+        {
+            nextHudRefresh = Time.unscaledTime + 1f;
+            if (boostLabel != null) boostLabel.text = gameState.Boosts.Summary;
+            if (achievementBadge != null)
+            {
+                int ready = AchievementCatalog.ReadyCount(gameState);
+                achievementBadge.gameObject.SetActive(ready > 0);
+                achievementBadgeText.text = ready.ToString();
+            }
+        }
         // The garden plant keeps living while the player is on other tabs.
         gameState?.Garden?.Tick(Time.unscaledDeltaTime);
     }

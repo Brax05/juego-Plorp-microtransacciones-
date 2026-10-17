@@ -90,12 +90,7 @@ public static class PepitoAdvice
         }
     }
 
-    static bool AnyAchievementReady(FarmGameState s)
-    {
-        for (int i = 0; i < FarmGameState.AchievementNames.Length; i++)
-            if (s.AchievementReady(i)) return true;
-        return false;
-    }
+    static bool AnyAchievementReady(FarmGameState s) => AchievementCatalog.AnyReady(s);
 
     static bool CanAffordUpgrade(FarmGameState s)
     {

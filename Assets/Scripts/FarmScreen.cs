@@ -55,8 +55,8 @@ public sealed class FarmScreen
         Require<Button>(parent, "Harvest").gameObject.SetActive(false);
         var harvestBar = FarmUIBootstrap.FindChildRecursive(parent, "Harvest bar");
         if (harvestBar != null) harvestBar.gameObject.SetActive(false);
-        BindHit(parent, "Open coin store", () => navigate(1));
-        BindHit(parent, "Open gem store", () => navigate(1));
+        BindHit(parent, "Open coin store", () => { StoreScreen.PendingTab = 0; navigate(1); });
+        BindHit(parent, "Open gem store", () => { StoreScreen.PendingTab = 1; navigate(1); });
 
         for (int i = 0; i < 3; i++)
         {

@@ -96,6 +96,9 @@ public sealed class FarmGameState
         }
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
+        GoldenHarvests = PlayerPrefs.GetInt("GlorpFarm.golden", 0);
+        Boosts = new BoostState();
+        FarmEconomy.Current = this;
         Garden = new GardenState(this);
     }
 
@@ -177,8 +180,65 @@ public sealed class FarmGameState
         return index >= 0 && index < Levels.Length && Levels[index] >= FarmEconomy.MaxLevels[index];
     }
 
-    /// <summary>The gardening tab's plant (its levels give bonuses to the whole farm).</summary>
+    /// <summary>The gardening tab's plant (its blooms give bonuses to the whole farm).</summary>
     public GardenState Garden { get; private set; }
+    /// <summary>Time boosts bought in the store.</summary>
+    public BoostState Boosts { get; private set; }
+    public int GoldenHarvests { get; private set; }
+    public bool StarterPackBought => PlayerPrefs.GetInt("GlorpFarm.iap.starter", 0) == 1;
+
+    public void RegisterGolden(int count)
+    {
+        if (count <= 0) return;
+        GoldenHarvests += count;
+        PlayerPrefs.SetInt("GlorpFarm.golden", GoldenHarvests);
+    }
+
+    // ---------- Store ----------
+
+    public bool BuyBoost(BoostOffer offer)
+    {
+        if (Gems < offer.Gems) return false;
+        Gems -= offer.Gems;
+        Boosts.Add(offer.Kind, offer.Minutes);
+        Save();
+        return true;
+    }
+
+    /// <summary>Gem items: time skips give the coins the farm would make in that time.</summary>
+    public string BuyGemItem(GemItem item)
+    {
+        if (Gems < item.Gems) return "Faltan gemas";
+        Gems -= item.Gems;
+        string result;
+        switch (item.Id)
+        {
+            case "skip1h":
+            case "skip4h":
+                long coins = (long)Math.Ceiling(FarmEconomy.IncomePerSecond(this) * (item.Id == "skip1h" ? 3600 : 14400));
+                Gold += coins;
+                TotalHarvestGold += coins;
+                result = "+" + Format(coins) + " monedas";
+                break;
+            default:
+                Garden.AddFlowerCoins(5);
+                result = "+5 monedas de flor";
+                break;
+        }
+        Save();
+        return result;
+    }
+
+    /// <summary>Gives what a real-money pack contains (called by PurchaseService after a successful purchase).</summary>
+    public void GrantPack(GemPack pack)
+    {
+        Gems += pack.Gems;
+        if (pack.BonusFlowerCoins > 0) Garden.AddFlowerCoins(pack.BonusFlowerCoins);
+        if (pack.BoostMinutes > 0) Boosts.Add(BoostKind.Income, pack.BoostMinutes);
+        if (pack.OncePerPlayer) PlayerPrefs.SetInt("GlorpFarm.iap.starter", 1);
+        PlayerPrefs.SetInt("GlorpFarm.iap.count", PlayerPrefs.GetInt("GlorpFarm.iap.count", 0) + 1);
+        Save();
+    }
 
     /// <summary>Pays coins and/or gems for something (gardening tools, seeds).</summary>
     public bool Spend(long gold, int gems)
@@ -322,6 +382,9 @@ public sealed class FarmGameState
 
         foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
         GardenState.ResetSaved();
+        BoostState.ResetSaved();
+        PlayerPrefs.DeleteKey("GlorpFarm.golden");
+        foreach (var a in AchievementCatalog.All) PlayerPrefs.DeleteKey("GlorpFarm.ach." + a.Id);
 
         for (int plot = 0; plot < FarmArtLayout.Fields.Length; plot++)
         {

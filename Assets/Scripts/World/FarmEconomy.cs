@@ -45,8 +45,28 @@ public static class FarmEconomy
     static double Milestone(int level, int productTiers) => Math.Pow(2, Math.Max(0, Tier(level) - (productTiers - 1)));
 
     /// <summary>Workers (+5% each) times the gardening "todo" bonus.</summary>
+    /// <summary>The running game state (for timers that have no reference to it, like crop growth).</summary>
+    public static FarmGameState Current;
+    static float Speed => Current != null && Current.Boosts != null ? Current.Boosts.SpeedMultiplier : 1f;
+
+    /// <summary>Workers (+5% each) × garden "todo" bonus × the x2 income boost.</summary>
     public static double WorkerBonus(FarmGameState s) =>
-        (1.0 + 0.05 * s.Levels[Workers]) * (s.Garden != null ? s.Garden.GlobalMultiplier : 1f);
+        (1.0 + 0.05 * s.Levels[Workers]) * (s.Garden != null ? s.Garden.GlobalMultiplier : 1f)
+        * (s.Boosts != null ? s.Boosts.IncomeMultiplier : 1f);
+
+    /// <summary>Rough coins per second of the whole farm (used by the time-skip items).</summary>
+    public static double IncomePerSecond(FarmGameState s)
+    {
+        double total = 0;
+        for (int p = 0; p < ActivePlots(s); p++)
+        {
+            var kind = PlotKind(s, p);
+            total += FarmArtLayout.CellsPerPlot * CropHarvestValue(s, kind) / (2.0 * CropStageSeconds[CropIndex(kind)]);
+        }
+        for (int sp = 0; sp < Species.Length; sp++)
+            total += AnimalCount(s, sp) * AnimalProductValue(s, sp) / (double)AnimalSeconds[sp];
+        return total;
+    }
 
     static double GardenCrops(FarmGameState s) => s.Garden != null ? s.Garden.CropMultiplier : 1f;
     static double GardenAnimals(FarmGameState s) => s.Garden != null ? s.Garden.AnimalMultiplier : 1f;
@@ -69,7 +89,7 @@ public static class FarmEconomy
         return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s) * GardenCrops(s));
     }
 
-    public static long CropStage(CropKind kind) => CropStageSeconds[CropIndex(kind)];
+    public static long CropStage(CropKind kind) => Math.Max(1, (long)Math.Round(CropStageSeconds[CropIndex(kind)] / Speed));
 
     // ---------- Animals ----------
 
@@ -98,7 +118,8 @@ public static class FarmEconomy
         return Round(AnimalValue[species] * perLevel * Milestone(level, Species.Length) * WorkerBonus(s) * GardenAnimals(s));
     }
 
-    public static long AnimalCooldown(int species) => AnimalSeconds[Mathf.Clamp(species, 0, Species.Length - 1)];
+    public static long AnimalCooldown(int species) =>
+        Math.Max(1, (long)Math.Round(AnimalSeconds[Mathf.Clamp(species, 0, Species.Length - 1)] / Speed));
 
     // ---------- Workers ----------
 
@@ -109,7 +130,7 @@ public static class FarmEconomy
     {
         int w = s.Levels[Workers];
         float speed = s.Garden != null ? s.Garden.WorkerSpeed : 1f;
-        return w <= 0 ? 0f : Mathf.Max(2f, 15f * Mathf.Pow(.93f, w - 1) / speed);
+        return w <= 0 ? 0f : Mathf.Max(1.5f, 15f * Mathf.Pow(.93f, w - 1) / speed / Speed);
     }
 
     // ---------- Prices ----------

@@ -113,6 +113,7 @@ public sealed class FarmWorldController : MonoBehaviour
         int golden = 0;
         for (int i = 0; i < crops; i++) if (UnityEngine.Random.value < GoldenChance) golden++;
         long earned = crops * value + golden * value * 9;
+        state.RegisterGolden(golden);
         var item = FarmItems.ForCrop(plot.Kind);
         state.Collect(earned, new Dictionary<string, int> { { item.Id, crops } });
         RewardFx.Collect(PlotCenter(plot), item, crops, earned, golden > 0);
@@ -129,7 +130,7 @@ public sealed class FarmWorldController : MonoBehaviour
         }
         long earned = FarmEconomy.CropHarvestValue(state, cell.Kind);
         bool golden = UnityEngine.Random.value < GoldenChance;
-        if (golden) earned *= 10;
+        if (golden) { earned *= 10; state.RegisterGolden(1); }
         state.Collect(earned, FarmItems.ForCrop(cell.Kind));
         RewardFx.Collect(cell.transform.position, FarmItems.ForCrop(cell.Kind), 1, earned, golden);
         message((golden ? "¡Dorada! " : "") + cell.CropName + " +" + FarmGameState.Format(earned));

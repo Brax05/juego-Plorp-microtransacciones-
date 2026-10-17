@@ -10,6 +10,8 @@ public sealed class FarmMenuScreen
     readonly Action<string> message;
     readonly RectTransform overlay;
     readonly GardenScreen garden;
+    readonly StoreScreen store;
+    readonly AchievementsScreen achievements;
     int selectedTab;
 
     public FarmMenuScreen(Transform parent, FarmGameState state,
@@ -29,6 +31,9 @@ public sealed class FarmMenuScreen
         EnsurePepitoAchievementCard();
         // Tab 3 is now "Jardinería": the old Mejoras page stays hidden (upgrades live on the farm screen).
         garden = GardenScreen.Create(overlay, state, message);
+        // Tienda and Logros are rebuilt at runtime too (gem packs, boosts, scrolling achievements).
+        store = StoreScreen.Create(overlay, state, message);
+        achievements = AchievementsScreen.Create(overlay, state, message);
         SyncStoreLabels();
         state.Changed += Refresh;
     }
@@ -115,8 +120,12 @@ public sealed class FarmMenuScreen
         var pUpgrades = overlay.Find("Page - Mejoras");
         var pSettings = overlay.Find("Page - Ajustes");
 
-        if (pStore != null) pStore.gameObject.SetActive(tab == 1);
-        if (pAchievements != null) pAchievements.gameObject.SetActive(tab == 2);
+        if (pStore != null) pStore.gameObject.SetActive(false);
+        if (pAchievements != null) pAchievements.gameObject.SetActive(false);
+        store.gameObject.SetActive(tab == 1);
+        achievements.gameObject.SetActive(tab == 2);
+        if (tab == 1) store.transform.SetAsLastSibling();
+        if (tab == 2) achievements.transform.SetAsLastSibling();
         if (pUpgrades != null) pUpgrades.gameObject.SetActive(false);
         garden.gameObject.SetActive(tab == 3);
         if (tab == 3) garden.transform.SetAsLastSibling();

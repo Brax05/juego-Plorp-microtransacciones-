@@ -301,7 +301,7 @@ public sealed class FarmGameState
 
         foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
 
-        for (int plot = 0; plot < 4; plot++)
+        for (int plot = 0; plot < FarmArtLayout.Fields.Length; plot++)
         {
             for (int cell = 0; cell < FarmArtLayout.CellsPerPlot; cell++)
             {

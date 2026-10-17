@@ -49,7 +49,8 @@ public static class FarmEconomy
     // ---------- Crops ----------
 
     public static int SeedTier(FarmGameState s) => Math.Min(CropTiers.Length - 1, Tier(s.Levels[Seeds]));
-    public static int ActivePlots(FarmGameState s) => SeedTier(s) + 1;
+    /// <summary>One field per seed tier; the fifth field opens with the first x2 tier.</summary>
+    public static int ActivePlots(FarmGameState s) => Math.Min(FarmArtLayout.Fields.Length, Tier(s.Levels[Seeds]) + 1);
 
     /// <summary>Field 0 always grows the newest crop; older crops move one field down.</summary>
     public static CropKind PlotKind(FarmGameState s, int plot) => CropTiers[Math.Max(0, SeedTier(s) - plot)];

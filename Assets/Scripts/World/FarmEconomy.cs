@@ -135,6 +135,43 @@ public static class FarmEconomy
         return w <= 0 ? 0f : Mathf.Max(1.5f, 15f * Mathf.Pow(.93f, w - 1) / speed / Speed);
     }
 
+    // ---------- Away from the game ("Mientras no estabas") ----------
+
+    /// <summary>The workers keep going while the game is closed, at half speed (they're slower than you).</summary>
+    public const double OfflineEfficiency = .5;
+
+    /// <summary>How long the workers keep working alone: 2 h, +10 min per worker level, up to 8 h.</summary>
+    public static double OfflineCapSeconds(FarmGameState s) =>
+        Math.Min(8 * 3600, 2 * 3600 + 600 * Math.Max(0, s.Levels[Workers] - 1));
+
+    /// <summary>Coins and food the farm made in <paramref name="seconds"/> while the player was away.</summary>
+    public static long OfflineEarnings(FarmGameState s, double seconds, System.Collections.Generic.Dictionary<string, int> items)
+    {
+        if (seconds <= 0) return 0;
+        double gold = 0;
+        for (int p = 0; p < ActivePlots(s); p++)
+        {
+            var kind = PlotKind(s, p);
+            double cycles = seconds / (2.0 * CropStageSeconds[CropIndex(kind)]) * OfflineEfficiency;
+            int crops = (int)Math.Floor(FarmArtLayout.CellsPerPlot * cycles);
+            if (crops <= 0) continue;
+            gold += crops * (double)CropHarvestValue(s, kind);
+            AddItem(items, FarmItems.ForCrop(kind).Id, crops);
+        }
+        string[] products = { "egg", "cheese", "milk" };
+        for (int sp = 0; sp < Species.Length; sp++)
+        {
+            int made = (int)Math.Floor(AnimalCount(s, sp) * seconds / AnimalSeconds[sp] * OfflineEfficiency);
+            if (made <= 0) continue;
+            gold += made * (double)AnimalProductValue(s, sp);
+            AddItem(items, products[sp], made);
+        }
+        return (long)Math.Floor(gold);
+    }
+
+    static void AddItem(System.Collections.Generic.Dictionary<string, int> items, string id, int amount) =>
+        items[id] = (items.TryGetValue(id, out int n) ? n : 0) + amount;
+
     // ---------- Prices ----------
 
     public static long Cost(int upgrade, int level)

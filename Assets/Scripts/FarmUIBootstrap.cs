@@ -150,12 +150,20 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         guide = PepitoGuide.Create(content);
         AddGuideButton(content);
 
-        // Title screen -> loading -> farm tour (first time) -> Pepito starts visiting.
+        // How long the player was away (read now, before "last seen" is updated again).
+        double awayAtStart = OfflinePanel.SecondsAway();
+
+        // Title screen -> loading -> farm tour (first time) -> "Mientras no estabas" -> Pepito starts visiting.
         StartScreens.Create(content, state, () =>
         {
             guideReady = true;
             bool firstTime = !PepitoGuide.Seen(0);
-            guide.ShowIfNew(0, () => pepito.Begin(!firstTime));
+            guide.ShowIfNew(0, () =>
+                OfflinePanel.ShowIfAway(content, state, awayAtStart, ShowMessage, () =>
+                {
+                    OfflinePanel.MarkSeen();
+                    pepito.Begin(!firstTime);
+                }));
         });
 
         if (FindAnyObjectByType<EventSystem>() == null)
@@ -186,6 +194,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     PepitoController farmPepito;
     PepitoGuide guide;
     bool guideReady;
+    float nextSeenSave;
 
     /// <summary>"VER GUÍA DE PEPITO" in Ajustes: shows every section's tour again, starting with the farm.</summary>
     void AddGuideButton(Transform root)
@@ -210,8 +219,15 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
         // Arched tips over the farm now and then.
         // The farm Pepito only walks around on the farm, and never during the welcome tour.
-        if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || PepitoGuide.Active;
-        if (gameState != null && currentTab == 0 && content != null && !PepitoGuide.Active)
+        bool popupOpen = PepitoGuide.Active || OfflinePanel.Active;
+        if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || popupOpen;
+        // Remember that the player is here (for "Mientras no estabas").
+        if (guideReady && !OfflinePanel.Active && Time.unscaledTime >= nextSeenSave)
+        {
+            nextSeenSave = Time.unscaledTime + 10f;
+            OfflinePanel.MarkSeen();
+        }
+        if (gameState != null && currentTab == 0 && content != null && !popupOpen)
         {
             nextFarmTip -= Time.unscaledDeltaTime;
             if (nextFarmTip <= 0f)
@@ -241,10 +257,27 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
-        if (paused) gameState?.Garden?.Save();
+        if (paused)
+        {
+            gameState?.Garden?.Save();
+            if (guideReady && !OfflinePanel.Active) OfflinePanel.MarkSeen();
+            PlayerPrefs.Save();
+            return;
+        }
+        // Back from the background (phone): show what the farm made meanwhile.
+        if (!guideReady || gameState == null || content == null || OfflinePanel.Active || PepitoGuide.Active) return;
+        double away = OfflinePanel.SecondsAway();
+        if (away < OfflinePanel.MinSeconds) return;
+        if (currentTab != 0) Navigate(0);
+        OfflinePanel.ShowIfAway(content, gameState, away, ShowMessage, OfflinePanel.MarkSeen);
     }
 
-    void OnApplicationQuit() => gameState?.Garden?.Save();
+    void OnApplicationQuit()
+    {
+        gameState?.Garden?.Save();
+        if (guideReady && !OfflinePanel.Active) OfflinePanel.MarkSeen();
+        PlayerPrefs.Save();
+    }
 
     /// <summary>The bottom tab "Mejoras" becomes "Jardinería" with a seed-bag icon.</summary>
     static void RenameGardenTab(Transform root)

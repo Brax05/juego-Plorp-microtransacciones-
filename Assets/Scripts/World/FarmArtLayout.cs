@@ -62,13 +62,16 @@ public static class FarmArtLayout
     // with padlocks ("Más adelante...") for areas that will open later.
     public const float MarginX = 200f, MarginY = 170f;
     public const float MapWidth = Width + 2 * MarginX, MapHeight = Height + 2 * MarginY;
+    /// <summary>Grass/trees/fence border drawn around the painting in farm_extended.png.</summary>
+    public const float Border = 56f;
+    const float CloudBand = MarginX - Border; // cloud thickness outside the fence
 
     static readonly Vector2[] LockedZones =
     {
-        new Vector2(MarginX / 2f, MarginY + Height / 2f),                    // west
-        new Vector2(MarginX + Width + MarginX / 2f, MarginY + Height / 2f),  // east
-        new Vector2(MarginX + Width / 2f, MarginY / 2f + 20f),               // north
-        new Vector2(MarginX + Width / 2f, MarginY + Height + MarginY / 2f),  // south
+        new Vector2(CloudBand / 2f, MarginY + Height / 2f),                                   // west
+        new Vector2(MarginX + Width + Border + CloudBand / 2f, MarginY + Height / 2f),        // east
+        new Vector2(MarginX + Width / 2f, (MarginY - Border) / 2f + 12f),                     // north
+        new Vector2(MarginX + Width / 2f, MarginY + Height + Border + (MarginY - Border) / 2f), // south
     };
 
     public static void Apply(RectTransform world)
@@ -109,12 +112,15 @@ public static class FarmArtLayout
             if (t != null) t.gameObject.SetActive(false);
         }
 
-        if (world.Find("Painted farm") == null)
-        {
-            var art = new PixelUIFactory().Texture(world, "Painted farm", "World/farm_background", 0, 0, Width, Height);
-            art.raycastTarget = true; // so dragging on the grass pans the farm
-            art.transform.SetAsFirstSibling();
-        }
+        // farm_extended.png = the painting plus a border of grass, trees and a fence all around,
+        // so nothing looks cut at the edges. It sticks out Border px on every side of the painting.
+        var old = world.Find("Painted farm");
+        if (old != null) old.name = "Painted farm (old)"; // keep the name free for the new one
+        if (old != null) old.gameObject.SetActive(false);
+        var art = ui.Texture(world, "Painted farm", "World/farm_extended", -Border, -Border,
+            Width + 2 * Border, Height + 2 * Border);
+        art.raycastTarget = true; // so dragging on the grass pans the farm
+        art.transform.SetAsFirstSibling();
 
         LayoutPlots(world.Find("Crop Plots"));
         LayoutPens(world.Find("Animal Pens"));
@@ -138,8 +144,10 @@ public static class FarmArtLayout
         sky.raycastTarget = true; // drag anywhere to pan
         world.SetParent(map, false);
 
+        // Not a raycast target: the cloud image covers the whole map (its hole is only
+        // transparent), so it would swallow every tap on the farm. The sky below handles drags.
         var clouds = ui.Texture(map, "Clouds", "World/clouds_frame", 0, 0, MapWidth, MapHeight);
-        clouds.raycastTarget = true;
+        clouds.raycastTarget = false;
 
         foreach (var zone in LockedZones) LockSign(map, ui, zone);
         return map;

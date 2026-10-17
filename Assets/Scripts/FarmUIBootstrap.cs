@@ -23,7 +23,42 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         new GameObject("PlorpFarm UI").AddComponent<FarmUIBootstrap>();
     }
 
-    void Awake()
+    void Awake() => Compose(false);
+
+    /// <summary>
+    /// Editor only (Tools ▸ Plorp ▸ Vista previa): builds the same UI the game builds at runtime, but on a
+    /// preview copy of the canvas, so the Scene/Game views show the current code. Skips store purchases,
+    /// screen fitting, the title screen and the EventSystem.
+    /// </summary>
+    public void BuildPreview() => Compose(true);
+
+    /// <summary>Editor preview: shows one bottom tab (0 Granja … 4 Ajustes) with its content filled in.</summary>
+    public void PreviewTab(int tab)
+    {
+        if (content == null) return;
+        var start = content.Find("Start screens");
+        if (start != null) start.gameObject.SetActive(false);
+        Navigate(tab);
+        foreach (var page in content.GetComponentsInChildren<StoreScreen>(true)) page.PreviewRefresh();
+        foreach (var page in content.GetComponentsInChildren<AchievementsScreen>(true)) page.PreviewRefresh();
+        foreach (var page in content.GetComponentsInChildren<GardenScreen>(true)) page.PreviewRefresh();
+        if (boostLabel != null) boostLabel.text = gameState.Boosts.Summary;
+    }
+
+    /// <summary>Editor preview: shows the title screen on top.</summary>
+    public void PreviewStartScreen()
+    {
+        if (content == null) return;
+        var start = content.Find("Start screens");
+        if (start == null) StartScreens.Create(content, gameState, () => { });
+        else
+        {
+            start.gameObject.SetActive(true);
+            start.SetAsLastSibling();
+        }
+    }
+
+    void Compose(bool preview)
     {
         var state = new FarmGameState();
         gameState = state;
@@ -47,7 +82,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         }
         content = portraitTransform;
         authoredScale = content.localScale;
-        FitScreen();
+        if (!preview) FitScreen();
 
         RenameGardenTab(content);
         farm = new FarmScreen(content, state, Navigate, ShowMessage);
@@ -87,9 +122,10 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         achievementBadgeText = hudUi.Label(achievementBadge, "Count", "", 0, 0, 30, 26, 13, Color.white, TextAnchor.MiddleCenter);
 
         // Real-money gem packs (Unity IAP, or test mode).
-        PurchaseService.Initialize(state, ShowMessage);
+        if (!preview) PurchaseService.Initialize(state, ShowMessage);
 
         Navigate(0);
+        if (preview) return;
 
         // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
         StartScreens.Create(content, state, pepito.Begin);

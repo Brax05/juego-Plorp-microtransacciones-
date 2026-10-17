@@ -78,7 +78,12 @@ public static class MenuPage
 
     public static void Clear(Transform content)
     {
-        for (int i = content.childCount - 1; i >= 0; i--) Object.Destroy(content.GetChild(i).gameObject);
+        for (int i = content.childCount - 1; i >= 0; i--)
+        {
+            var child = content.GetChild(i).gameObject;
+            if (Application.isPlaying) Object.Destroy(child);
+            else Object.DestroyImmediate(child); // editor preview
+        }
     }
 
     public static void SetHeight(RectTransform content, float height) =>

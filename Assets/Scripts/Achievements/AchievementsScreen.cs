@@ -30,6 +30,9 @@ public sealed class AchievementsScreen : MonoBehaviour
         return screen;
     }
 
+    /// <summary>Editor preview (OnEnable doesn't run outside Play mode).</summary>
+    public void PreviewRefresh() { if (content != null) Rebuild(); }
+
     void OnEnable()
     {
         if (content != null) Rebuild();

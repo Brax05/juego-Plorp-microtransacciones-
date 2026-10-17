@@ -757,6 +757,13 @@ public sealed class GardenScreen : MonoBehaviour
 
     void OnEnable() => Refresh();
 
+    /// <summary>Editor preview: fills bars and lays the leaves out once (Update doesn't run outside Play mode).</summary>
+    public void PreviewRefresh()
+    {
+        Refresh();
+        Update();
+    }
+
     void OnDisable() => EndTool();
 
     void OnDestroy()

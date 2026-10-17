@@ -135,7 +135,7 @@ public sealed class GardenState
             if (TooMuchLight) problems.Add(CurtainsClosed ? "¡Demasiado sol! (cortinas cerradas)" : "¡Demasiada luz! Cierra las cortinas.");
             if (TooLittleLight) problems.Add(CurtainsClosed ? "Muy oscuro: abre las cortinas." : "Le falta luz: usa la lámpara.");
             if (problems.Count > 0) return string.Join("  ", problems.ToArray());
-            if (Bugs.Count > 0) return "¡Bichitos! Aplástalos (dan gemas).";
+            if (Bugs.Count > 0) return "¡Bichitos! Aplástalos (dan monedas de flor).";
             if (CountLeaves(LeafState.Withered) + CountLeaves(LeafState.Burnt) > 0) return "Hojas secas: córtalas con las tijeras.";
             if (CountLeaves(LeafState.Dusty) > 0) return "Hojas con polvo: tócalas para limpiarlas.";
             if (Bloomed) return StoredCoins > 0 ? "Toca la flor para recoger monedas de flor." : "En flor: produciendo monedas de flor.";
@@ -289,7 +289,7 @@ public sealed class GardenState
                 if (live)
                 {
                     BugSpawned?.Invoke();
-                    Alert?.Invoke("Miau... ¡hay bichitos en la planta de Plorp! Aplástalos, Plorp dice que dan gemas.");
+                    Alert?.Invoke("Miau... ¡hay bichitos en la planta de Plorp! Aplástalos: dan monedas de flor.");
                 }
             }
         }
@@ -439,16 +439,17 @@ public sealed class GardenState
         Changed?.Invoke();
     }
 
-    /// <summary>Squash a bug: gives 1-2 gems.</summary>
+    /// <summary>Squash a bug: gives 1-2 monedas de flor (to buy plants and fertilizer).</summary>
     public int SquashBug(GardenBug bug)
     {
         if (!Bugs.Remove(bug)) return 0;
         BugsSquashed++;
         PlayerPrefs.SetInt(Key + "bugs", BugsSquashed);
-        int gems = rng.NextDouble() < .3 ? 2 : 1;
-        farm.AddGems(gems);
+        int coins = rng.NextDouble() < .3 ? 2 : 1;
+        FlowerCoins += coins;
+        Save();
         Changed?.Invoke();
-        return gems;
+        return coins;
     }
 
     /// <summary>Tap on the flower: collects the monedas de flor it made.</summary>

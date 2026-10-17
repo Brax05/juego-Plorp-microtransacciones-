@@ -60,6 +60,7 @@ public sealed class GardenScreen : MonoBehaviour
     readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
     RectTransform shop;
     RectTransform shopPulse;
+    Image shopGlow;
 
     // Dragging a tool
     int dragTool = -1;
@@ -119,14 +120,15 @@ public sealed class GardenScreen : MonoBehaviour
         // Sign with the species name: tap to open the plant shop. Weather line under it.
         signText = ui.Label(transform, "Species", "", 128, 120, 312, 40, 24, Color.white, TextAnchor.MiddleCenter);
         ui.Hit(transform, "Open plants", 110, 112, 352, 56, OpenShop);
-        // Clear button for the plant shop (the sign alone wasn't obvious).
-        var shopButton = ui.Panel(transform, "Plant shop button", 165, 164, 240, 30, PixelUIFactory.Green);
-        ui.Texture(shopButton, "Icon", "UI/Icons/semillas", 8, 1, 28, 28);
-        ui.Label(shopButton, "Caption", "TIENDA DE PLANTAS", 38, 0, 196, 30, 14, Color.white, TextAnchor.MiddleCenter);
-        ui.Hit(transform, "Open plant shop", 165, 164, 240, 30, OpenShop);
-        shopButton.pivot = new Vector2(.5f, .5f);
-        shopButton.anchoredPosition += new Vector2(120f, -15f); // keep the same place with a centred pivot
-        shopPulse = shopButton;
+        // Little sprout in a pot on the sign: it's the seed shop. It blinks now and then to be noticed.
+        shopGlow = ui.Block(transform, "Seed shop glow", 412, 112, 56, 56, new Color(1f, .95f, .5f, 0f));
+        shopGlow.rectTransform.pivot = new Vector2(.5f, .5f);
+        shopGlow.rectTransform.anchoredPosition += new Vector2(28f, -28f);
+        var pot = ui.Texture(transform, "Seed shop", "UI/Garden/seed_shop_pot", 416, 114, 48, 48);
+        pot.rectTransform.pivot = new Vector2(.5f, 0f);
+        pot.rectTransform.anchoredPosition += new Vector2(24f, -48f);
+        shopPulse = pot.rectTransform;
+        ui.Hit(transform, "Open seed shop", 406, 108, 66, 64, OpenShop);
 
         // Monedas de flor counter (top-left of the window frame).
         var pill = ui.Panel(transform, "Flower coins", 6, 96, 92, 34, PixelUIFactory.Hex("#7A3F5E"));
@@ -374,11 +376,15 @@ public sealed class GardenScreen : MonoBehaviour
                 new Vector2(Mathf.Sin(t * 3f + pair.Key.Along * 9f) * 4f, 68f + pair.Key.Along * 80f);
         }
 
-        // The plant shop button breathes while there is something new to buy.
+        // Seed-shop sprout: a quick glow + hop every 4 seconds (faster when a new plant is affordable).
         bool canBuy = false;
         for (int i = 0; i < GardenState.Species.Length; i++)
             if (!garden.Owned[i] && garden.CanUnlock(i) && garden.FlowerCoins >= GardenState.Species[i].CostFlowerCoins) canBuy = true;
-        shopPulse.localScale = Vector3.one * (canBuy ? 1f + .05f * Mathf.Sin(t * 5f) : 1f);
+        float period = canBuy ? 1.6f : 4f;
+        float phase = (t % period) / .5f; // blink lasts half a second
+        float blink = phase < 1f ? Mathf.Sin(phase * Mathf.PI) : 0f;
+        shopPulse.localScale = new Vector3(1f + .12f * blink, 1f + .2f * blink, 1f);
+        shopGlow.color = new Color(1f, .95f, .5f, .45f * blink);
 
         // Curtains slide open/closed.
         curtainOpen = Mathf.MoveTowards(curtainOpen, garden.CurtainsClosed ? 0f : 1f, dt / .35f);
@@ -408,11 +414,12 @@ public sealed class GardenScreen : MonoBehaviour
     {
         if (!bugViews.TryGetValue(bug, out var view) || view == null) return;
         Vector3 at = view.rectTransform.position;
-        int gems = garden.SquashBug(bug);
-        if (gems <= 0) return;
-        Burst(at, PixelUIFactory.Hex("#7CF2E4"), 10);
-        RewardFx.Popup(at, "+" + gems + (gems == 1 ? " gema" : " gemas"), PixelUIFactory.Hex("#7CF2E4"));
-        message("¡Plaf! +" + gems + (gems == 1 ? " gema" : " gemas"));
+        int coins = garden.SquashBug(bug);
+        if (coins <= 0) return;
+        Burst(at, PixelUIFactory.Hex("#FF8CC6"), 10);
+        for (int i = 0; i < coins; i++)
+            Particle(at, "UI/Garden/icon_flowercoin", 22f, Vector3.zero, 0f, .7f, flowerCoinText.transform, i * .08f);
+        message("¡Plaf! +" + coins + (coins == 1 ? " moneda de flor" : " monedas de flor"));
     }
 
     void CollectFlower()

@@ -47,7 +47,9 @@ public sealed class BootScene : MonoBehaviour
         var scaler = canvasGo.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(Width, Height);
-        scaler.matchWidthOrHeight = .5f;
+        // Shrink = the whole 570x1018 portrait always fits inside the screen (same as the farm's FitScreen);
+        // the dark backdrop fills the leftover bars. "Match .5" cropped the title on wide Game views.
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Shrink;
 
         // Dark backdrop for screens with another aspect ratio, then the portrait area centred.
         var back = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));

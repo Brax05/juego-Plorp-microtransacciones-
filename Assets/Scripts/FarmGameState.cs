@@ -107,6 +107,7 @@ public sealed class FarmGameState
     {
         if (earned <= 0) return;
         if (item != null) AddItem(item.Id, 1);
+        if (item != null) DailyMissions.Report(item.FromAnimal ? MissionKind.AnimalProducts : MissionKind.Crops, 1);
         AddGold(earned);
         Save();
     }
@@ -115,7 +116,12 @@ public sealed class FarmGameState
     public void Collect(long earned, IDictionary<string, int> items)
     {
         if (earned <= 0) return;
-        foreach (var pair in items) AddItem(pair.Key, pair.Value);
+        foreach (var pair in items)
+        {
+            AddItem(pair.Key, pair.Value);
+            var item = FarmItems.Get(pair.Key);
+            if (item != null) DailyMissions.Report(item.FromAnimal ? MissionKind.AnimalProducts : MissionKind.Crops, pair.Value);
+        }
         AddGold(earned);
         Save();
     }
@@ -128,6 +134,7 @@ public sealed class FarmGameState
 
     void AddGold(long earned)
     {
+        DailyMissions.Report(MissionKind.Coins, earned);
         Gold += earned;
         TotalHarvestGold += earned;
         Harvests++;
@@ -147,6 +154,7 @@ public sealed class FarmGameState
         Gold += delivered.RewardGold;
         Gems += delivered.RewardGems;
         PlorpStage++;
+        DailyMissions.Report(MissionKind.Orders, 1);
         currentGoal = null; // next order is built from what the farm produces now
         Save();
         return true;
@@ -159,6 +167,7 @@ public sealed class FarmGameState
         Gold -= goldCost;
         Gems -= gemCost;
         PepitoMeals++;
+        DailyMissions.Report(MissionKind.FeedPepito, 1);
         Save();
         return true;
     }
@@ -170,6 +179,7 @@ public sealed class FarmGameState
         Levels[index]++;
         Prices[index] = FarmEconomy.Cost(index, Levels[index]);
         Purchases++;
+        DailyMissions.Report(MissionKind.Upgrades, 1);
         FarmLevel = 1 + Purchases / 3;
         Save();
         return true;
@@ -191,6 +201,7 @@ public sealed class FarmGameState
     {
         if (count <= 0) return;
         GoldenHarvests += count;
+        DailyMissions.Report(MissionKind.Golden, count);
         PlayerPrefs.SetInt("GlorpFarm.golden", GoldenHarvests);
     }
 

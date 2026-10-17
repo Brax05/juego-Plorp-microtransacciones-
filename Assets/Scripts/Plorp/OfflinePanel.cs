@@ -194,7 +194,10 @@ public sealed class OfflinePanel : MonoBehaviour
             }
             total *= 2;
         }
-        state.Collect(total, items);
+        // What the workers did alone doesn't count for today's missions.
+        DailyMissions.Muted = true;
+        try { state.Collect(total, items); }
+        finally { DailyMissions.Muted = false; }
         // Coins fly to the counter, food to Plorp.
         FarmItem top = null;
         int topCount = 0;

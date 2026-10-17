@@ -152,6 +152,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
         // How long the player was away (read now, before "last seen" is updated again).
         double awayAtStart = OfflinePanel.SecondsAway();
+        DailyMissions.RegisterLogin();
 
         // Title screen -> loading -> farm tour (first time) -> "Mientras no estabas" -> Pepito starts visiting.
         StartScreens.Create(content, state, () =>
@@ -162,7 +163,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
                 OfflinePanel.ShowIfAway(content, state, awayAtStart, ShowMessage, () =>
                 {
                     OfflinePanel.MarkSeen();
-                    pepito.Begin(!firstTime);
+                    StreakPanel.ShowIfReady(content, state, ShowMessage, () => pepito.Begin(!firstTime));
                 }));
         });
 
@@ -219,7 +220,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
         // Arched tips over the farm now and then.
         // The farm Pepito only walks around on the farm, and never during the welcome tour.
-        bool popupOpen = PepitoGuide.Active || OfflinePanel.Active;
+        bool popupOpen = PepitoGuide.Active || OfflinePanel.Active || StreakPanel.Active;
         if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || popupOpen;
         // Remember that the player is here (for "Mientras no estabas").
         if (guideReady && !OfflinePanel.Active && Time.unscaledTime >= nextSeenSave)
@@ -234,6 +235,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             {
                 nextFarmTip = 35f + UnityEngine.Random.value * 20f;
                 string tip = gameState.GoalReady ? "¡Entrégale el pedido a Plorp!"
+                    : DailyMissions.ReadyCount(gameState) > 0 ? "¡Hay misiones por cobrar!"
                     : AchievementCatalog.AnyReady(gameState) ? "¡Hay logros por cobrar!"
                     : FarmTips[UnityEngine.Random.Range(0, FarmTips.Length)];
                 CurvedPopup.Show(content, tip, new Vector2(285f, 330f), PixelUIFactory.Gold, 24);
@@ -246,7 +248,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             if (boostLabel != null) boostLabel.text = gameState.Boosts.Summary;
             if (achievementBadge != null)
             {
-                int ready = AchievementCatalog.ReadyCount(gameState);
+                int ready = AchievementCatalog.ReadyCount(gameState) + DailyMissions.ReadyCount(gameState);
                 achievementBadge.gameObject.SetActive(ready > 0);
                 achievementBadgeText.text = ready.ToString();
             }
@@ -265,11 +267,17 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             return;
         }
         // Back from the background (phone): show what the farm made meanwhile.
-        if (!guideReady || gameState == null || content == null || OfflinePanel.Active || PepitoGuide.Active) return;
+        if (!guideReady || gameState == null || content == null || OfflinePanel.Active || PepitoGuide.Active ||
+            StreakPanel.Active) return;
+        DailyMissions.RegisterLogin(); // it may be a new day
         double away = OfflinePanel.SecondsAway();
         if (away < OfflinePanel.MinSeconds) return;
         if (currentTab != 0) Navigate(0);
-        OfflinePanel.ShowIfAway(content, gameState, away, ShowMessage, OfflinePanel.MarkSeen);
+        OfflinePanel.ShowIfAway(content, gameState, away, ShowMessage, () =>
+        {
+            OfflinePanel.MarkSeen();
+            StreakPanel.ShowIfReady(content, gameState, ShowMessage, null);
+        });
     }
 
     void OnApplicationQuit()

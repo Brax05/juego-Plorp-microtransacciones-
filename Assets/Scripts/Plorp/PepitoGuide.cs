@@ -71,10 +71,14 @@ public sealed class PepitoGuide : MonoBehaviour
         // 2 Logros
         new[]
         {
-            new Step("Miau, los LOGROS. Plorp anota todo lo que haces en una libreta... que se comió una vez."),
-            new Step(14, 216, 542, 720, "Cada logro tiene una barra de progreso. Cuando se llena, toca COBRAR " +
-                     "para recibir las gemas. Desliza para ver más."),
-            new Step(228, 946, 116, 72, "Cuando hay logros listos, aparece un número rojo en esta pestaña. ¡No los dejes ahí!"),
+            new Step("Miau, aquí están las MISIONES y los LOGROS. Plorp anota todo en una libreta... que se comió una vez."),
+            new Step(26, 216, 518, 54, "MISIONES: 3 nuevas cada día (fácil, media y difícil). LOGROS: metas para siempre. " +
+                     "Los números entre paréntesis son premios por cobrar."),
+            new Step(14, 274, 542, 190, "La RACHA DIARIA: si entras días seguidos, cada día te espera un regalo mejor. " +
+                     "¡El día 7 es el grande! Si faltas un día, vuelve al día 1."),
+            new Step(14, 464, 542, 470, "Cuando una barra se llena, toca COBRAR. Si cobras las 3 misiones del día, " +
+                     "se abre el COFRE DEL DÍA. Desliza para ver más."),
+            new Step(228, 946, 116, 72, "Cuando hay algo listo, aparece un número rojo en esta pestaña. ¡No lo dejes ahí!"),
         },
         // 3 Jardinería
         new[]

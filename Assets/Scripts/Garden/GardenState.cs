@@ -521,6 +521,7 @@ public sealed class GardenState
     {
         if (!Bugs.Remove(bug)) return 0;
         BugsSquashed++;
+        DailyMissions.Report(MissionKind.Bugs, 1);
         PlayerPrefs.SetInt(Key + "bugs", BugsSquashed);
         int coins = rng.NextDouble() < .3 ? 2 : 1;
         FlowerCoins += coins;

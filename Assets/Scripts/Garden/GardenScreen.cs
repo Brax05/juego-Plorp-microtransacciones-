@@ -612,7 +612,9 @@ public sealed class GardenScreen : MonoBehaviour
     {
         nextTip -= dt;
         if (nextTip > 0f || dragTool >= 0) return;
-        nextTip = 20f + UnityEngine.Random.value * 15f;
+        // Never on top of Pepito's toast (or right after it): one message at a time.
+        if (Time.unscaledTime < toastUntil + 4f) { nextTip = 4f; return; }
+        nextTip = 35f + UnityEngine.Random.value * 20f;
         CurvedPopup.Show(fxLayer, PickTip(), new Vector2(PotTop.x, 330f), PixelUIFactory.Gold, 22);
     }
 
@@ -698,6 +700,7 @@ public sealed class GardenScreen : MonoBehaviour
         if (!gameObject.activeInHierarchy) return;
         toastText.text = text;
         toastUntil = Time.unscaledTime + 5f;
+        CurvedPopup.Dismiss(fxLayer); // the tip would cover the toast
         toastFace.Talk(2);
         toast.SetAsLastSibling();
     }

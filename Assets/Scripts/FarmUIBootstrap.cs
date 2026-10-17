@@ -125,7 +125,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         boostLabel.transform.SetSiblingIndex(layer);
 
         // Pepito speaks up when the garden plant needs something (dry, too much sun, bugs, bloom...).
-        state.Garden.Alert += text => { if (pepito != null) pepito.Say(text, 7f); };
+        // Only on the farm tab: inside Jardinería the garden shows its own toast (Say is ignored while suppressed).
+        farmPepito = pepito;
+        state.Garden.Alert += text => { if (pepito != null && currentTab == 0) pepito.Say(text, 7f); };
         RewardFx.Create(content, FindChildRecursive(content, "Gold"));
         RewardFx.SetFoodTarget(goalPanel.transform.Find("Plorp face") ?? goalPanel.transform);
         FarmArtLayout.LockedZoneTapped = () =>
@@ -172,6 +174,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     Text achievementBadgeText;
     float nextHudRefresh;
     int currentTab;
+    PepitoController farmPepito;
     float nextFarmTip = 25f;
     static readonly string[] FarmTips =
     {
@@ -251,6 +254,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     void Navigate(int tab)
     {
         currentTab = tab;
+        if (farmPepito != null) farmPepito.Suppressed = tab != 0;
         farm.SelectTab(tab);
         menu.Show(tab);
         if (tab != 0 && content != null) CurvedPopup.Dismiss(content);

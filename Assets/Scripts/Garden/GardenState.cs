@@ -94,6 +94,29 @@ public sealed class GardenState
     public event Action<string> Alert;
     public event Action BugSpawned;
 
+    // Alerts are throttled so Pepito doesn't talk every few seconds: a normal alert needs 30 s of quiet
+    // after the previous one and the same text isn't repeated within 3 min. Level-ups and the flower
+    // always get through.
+    const float AlertGap = 30f, RepeatGap = 180f;
+    float lastAlertAt = -999f;
+    readonly Dictionary<string, float> alertTimes = new Dictionary<string, float>();
+
+    void Raise(string text)
+    {
+        float now = UnityEngine.Time.realtimeSinceStartup;
+        if (now - lastAlertAt < AlertGap) return;
+        if (alertTimes.TryGetValue(text, out float last) && now - last < RepeatGap) return;
+        RaiseImportant(text);
+    }
+
+    void RaiseImportant(string text)
+    {
+        float now = UnityEngine.Time.realtimeSinceStartup;
+        lastAlertAt = now;
+        alertTimes[text] = now;
+        Alert?.Invoke(text);
+    }
+
     public GardenSpecies Plant => Species[Current];
     public float CurrentCare => Care[Current];
     public bool Fertilized => Now < FertilizerUntil;
@@ -276,7 +299,7 @@ public sealed class GardenState
         bool[] problems = { false, TooMuchWater, TooLittleWater, TooMuchLight, TooLittleLight };
         for (int c = 1; c < problems.Length; c++)
         {
-            if (live && problems[c] && !lastProblems[c]) Alert?.Invoke(ConditionAlert(c));
+            if (live && problems[c] && !lastProblems[c]) Raise(ConditionAlert(c));
             lastProblems[c] = problems[c];
         }
 
@@ -301,7 +324,7 @@ public sealed class GardenState
                 if (live)
                 {
                     BugSpawned?.Invoke();
-                    Alert?.Invoke("Miau... ¡hay bichitos en la planta de Plorp! Aplástalos: dan monedas de flor.");
+                    Raise("Miau... ¡hay bichitos en la planta de Plorp! Aplástalos: dan monedas de flor.");
                 }
             }
         }
@@ -318,7 +341,7 @@ public sealed class GardenState
                 if (Leaves[bug.Leaf] != LeafState.Withered && Leaves[bug.Leaf] != LeafState.Burnt)
                 {
                     Leaves[bug.Leaf] = LeafState.Withered;
-                    if (live) Alert?.Invoke("Miau... los bichitos marchitaron una hoja. ¡Aplástalos!");
+                    if (live) Raise("Miau... los bichitos marchitaron una hoja. ¡Aplástalos!");
                 }
                 int next = RandomLeaf(st => st == LeafState.Healthy || st == LeafState.Strong || st == LeafState.Dusty);
                 if (next >= 0) bug.Leaf = next;
@@ -334,7 +357,7 @@ public sealed class GardenState
         if (level > lastLevel && lastLevel > 0 && level < MaxLevel)
         {
             farm.AddGems(1);
-            if (live) Alert?.Invoke("¡Miau! La " + Plant.Name.ToLowerInvariant() + " de Plorp subió a nivel " + level +
+            if (live) RaiseImportant("¡Miau! La " + Plant.Name.ToLowerInvariant() + " de Plorp subió a nivel " + level +
                                     ". En el nivel " + MaxLevel + " dará su flor. +1 gema");
         }
         lastLevel = level;
@@ -345,14 +368,14 @@ public sealed class GardenState
             Bloomed = true;
             bool first = !EverBloomed[Current];
             EverBloomed[Current] = true;
-            if (live) Alert?.Invoke(first
+            if (live) RaiseImportant(first
                 ? "¡Miau! ¡La " + Plant.Name.ToLowerInvariant() + " floreció! " + Plant.BonusText.Replace("Al florecer: ", "Bono para siempre: ")
                 : "¡Miau! Volvió a florecer la " + Plant.Name.ToLowerInvariant() + ".");
         }
         else if (Bloomed && Care[Current] < 60f)
         {
             Bloomed = false;
-            if (live) Alert?.Invoke("Miau... la flor se marchitó. Cuida la planta hasta el 100% para que vuelva.");
+            if (live) RaiseImportant("Miau... la flor se marchitó. Cuida la planta hasta el 100% para que vuelva.");
         }
         if (Bloomed && StoredCoins < MaxStoredCoins)
         {
@@ -362,7 +385,7 @@ public sealed class GardenState
                 coinTimer -= CoinSeconds;
                 StoredCoins++;
                 if (live && StoredCoins == MaxStoredCoins)
-                    Alert?.Invoke("Miau. La flor está llena de monedas de flor. Plorp quiere que las recojas.");
+                    Raise("Miau. La flor está llena de monedas de flor. Plorp quiere que las recojas.");
             }
         }
 
@@ -383,11 +406,11 @@ public sealed class GardenState
         Weather = next;
         if (!live) return;
         if (next == GardenWeather.Sunny)
-            Alert?.Invoke(CurtainsClosed
+            Raise(CurtainsClosed
                 ? "Miau... afuera hay mucho sol, menos mal que las cortinas están cerradas."
                 : "Miau... ¡entra mucho sol por la ventana! Si hace demasiada luz, cierra las cortinas.");
         else if (next == GardenWeather.Cloudy)
-            Alert?.Invoke("Miau. Se nubló y hay humedad: la planta no necesita agua por ahora.");
+            Raise("Miau. Se nubló y hay humedad: la planta no necesita agua por ahora.");
     }
 
     void WitherOne(LeafState how)
@@ -438,7 +461,7 @@ public sealed class GardenState
                 if (Leaves[i] == LeafState.Healthy || Leaves[i] == LeafState.Strong) Leaves[i] = LeafState.Dusty;
             Care[Current] = Mathf.Max(0f, Care[Current] - 5f);
             result = "¡Demasiado abono! Ensuciaste las hojas (-5% salud)";
-            Alert?.Invoke("Miau... ¡mucho abono! Las hojas quedaron sucias. Límpialas tocándolas y espera antes de echar más.");
+            RaiseImportant("Miau... ¡mucho abono! Las hojas quedaron sucias. Límpialas tocándolas y espera antes de echar más.");
         }
         else
         {

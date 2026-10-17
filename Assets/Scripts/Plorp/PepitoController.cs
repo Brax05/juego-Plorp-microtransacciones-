@@ -108,10 +108,34 @@ public sealed class PepitoController : MonoBehaviour
         Say(PepitoAdvice.Intro, AdviceSeconds + 3f);
     }
 
+    bool suppressed;
+
+    /// <summary>
+    /// True while another tab (Jardinería, Tienda, Logros...) is open: the farm Pepito hides and stays
+    /// quiet so he doesn't pop up over those screens. The garden has its own Pepito toast.
+    /// </summary>
+    public bool Suppressed
+    {
+        get => suppressed;
+        set
+        {
+            if (suppressed == value) return;
+            suppressed = value;
+            if (value)
+            {
+                if (visible) Hide();
+            }
+            else if (started)
+            {
+                nextVisit = Mathf.Max(nextVisit, Time.unscaledTime + 8f);
+            }
+        }
+    }
+
     /// <summary>Makes Pepito pop up and say something right now (used by Plorp's orders).</summary>
     public void Say(string text, float seconds = AdviceSeconds)
     {
-        if (asking) return; // never interrupt a food request
+        if (asking || suppressed) return; // never interrupt a food request; quiet on other tabs
         Show();
         if (buttonsRow != null) buttonsRow.gameObject.SetActive(false);
         if (bubbleText != null)
@@ -216,7 +240,7 @@ public sealed class PepitoController : MonoBehaviour
             else Hide();
         }
 
-        if (!visible && slide <= 0f && now >= nextVisit)
+        if (!suppressed && !visible && slide <= 0f && now >= nextVisit)
         {
             bool canAsk = state.Harvests >= 2 && now - lastRequest >= RequestCooldown;
             if (canAsk && UnityEngine.Random.value < .45f) AskForFood();

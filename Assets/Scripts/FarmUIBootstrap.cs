@@ -29,14 +29,31 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         gameState = state;
 
         var canvas = GetComponentInChildren<Canvas>(true);
-        if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
+        if (canvas == null) canvas = FindAnyObjectByType<Canvas>(FindObjectsInactive.Include);
+
+#if UNITY_EDITOR
+        if (canvas == null)
+        {
+            var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PixelFarmCanvas.prefab");
+            if (prefab != null)
+            {
+                var instance = Instantiate(prefab);
+                instance.name = prefab.name;
+                canvas = instance.GetComponent<Canvas>();
+                Debug.LogWarning("PixelFarmCanvas no estaba en la escena activa. Se instanció automáticamente desde Assets/Prefabs/PixelFarmCanvas.prefab. Para editar y guardar cambios en el canvas, abre la escena 'Assets/Scenes/SampleScene.unity'.", instance);
+            }
+        }
+#endif
 
         if (canvas == null)
         {
-            Debug.LogError("PixelFarmCanvas must be present in the scene. The UI is authored in the canvas.");
+            Debug.LogError("PixelFarmCanvas must be present in the scene. The UI is authored in the canvas. Abre la escena 'Assets/Scenes/SampleScene.unity' en la ventana Project (Assets > Scenes > SampleScene) antes de dar Play.");
             enabled = false;
             return;
         }
+
+        if (!canvas.gameObject.activeSelf) canvas.gameObject.SetActive(true);
+        if (!canvas.enabled) canvas.enabled = true;
 
         var portraitTransform = FindChildRecursive(canvas.transform, "Portrait screen") as RectTransform;
         if (portraitTransform == null)

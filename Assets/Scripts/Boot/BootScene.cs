@@ -15,11 +15,30 @@ public sealed class BootScene : MonoBehaviour
     /// <summary>True once the game scene was opened from Inicio (so it doesn't show the title again).</summary>
     public static bool CameFromBoot { get; private set; }
 
+    /// <summary>True while the Inicio scene is on screen (the farm must not build on top of it).</summary>
+    public static bool IsShowing { get; private set; }
+
+    // Statics survive between Play sessions when domain reload is off: start clean every time.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        CameFromBoot = false;
+        IsShowing = false;
+    }
+
+    void OnDestroy() => IsShowing = false;
+
     const float Width = 570f, Height = 1018f;
     const int GameSceneIndex = 1;
 
     void Awake()
     {
+        IsShowing = true;
+
+        // If the farm canvas is also loaded (both scenes open in the Hierarchy), hide it: it belongs to Granja.
+        foreach (var other in FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            if (other.isRootCanvas && other.gameObject.scene != gameObject.scene) other.gameObject.SetActive(false);
+
         var state = new FarmGameState(); // music/sound settings in AJUSTES
 
         var canvasGo = new GameObject("Inicio Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -39,7 +58,7 @@ public sealed class BootScene : MonoBehaviour
         backRect.offsetMin = backRect.offsetMax = Vector2.zero;
         back.GetComponent<Image>().color = PixelUIFactory.Hex("#14112B");
 
-        var portrait = new GameObject("Portrait screen", typeof(RectTransform)).GetComponent<RectTransform>();
+        var portrait = new GameObject("Inicio portrait", typeof(RectTransform)).GetComponent<RectTransform>();
         portrait.SetParent(canvasGo.transform, false);
         portrait.anchorMin = portrait.anchorMax = portrait.pivot = new Vector2(.5f, .5f);
         portrait.sizeDelta = new Vector2(Width, Height);

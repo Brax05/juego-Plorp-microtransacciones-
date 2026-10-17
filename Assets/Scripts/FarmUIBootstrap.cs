@@ -31,7 +31,8 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     static void EnsureForCurrentScene()
     {
         if (FindAnyObjectByType<FarmUIBootstrap>() != null) return;
-        if (FindAnyObjectByType<BootScene>() != null) return; // Inicio scene has its own UI
+        // Inicio scene has its own UI: never build (or auto-instantiate) the farm there.
+        if (BootScene.IsShowing || FindAnyObjectByType<BootScene>(FindObjectsInactive.Include) != null) return;
         new GameObject("PlorpFarm UI").AddComponent<FarmUIBootstrap>();
     }
 
@@ -79,7 +80,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (canvas == null) canvas = FindAnyObjectByType<Canvas>(FindObjectsInactive.Include);
 
 #if UNITY_EDITOR
-        if (canvas == null)
+        if (canvas == null && !BootScene.IsShowing)
         {
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PixelFarmCanvas.prefab");
             if (prefab != null)

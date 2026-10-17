@@ -56,9 +56,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (messageLabel != null)
         {
             messageLabel.gameObject.SetActive(false);
-            // Pepito lives at the bottom of the farm now, so feedback goes under Plorp's panel.
+            // Pepito lives at the bottom of the farm, so feedback goes above the fields.
             var feedbackRect = messageLabel.rectTransform;
-            feedbackRect.anchoredPosition = new Vector2(feedbackRect.anchoredPosition.x, -202f);
+            feedbackRect.anchoredPosition = new Vector2(feedbackRect.anchoredPosition.x, -250f);
         }
 
         // Plorp's order panel and Pepito sit above the farm but under the menus and feedback.

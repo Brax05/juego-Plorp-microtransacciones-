@@ -21,6 +21,9 @@ public sealed class FarmWorldController : MonoBehaviour
         state = gameState;
         message = showMessage;
 
+        // Put plots, animals and workers on the painted farm before anything reads their positions.
+        FarmArtLayout.Apply((RectTransform)transform);
+
         var pensRoot = transform.Find("Animal Pens");
         chickenPen = pensRoot != null ? pensRoot.Find("Chicken Pen") : null;
         pasturePen = pensRoot != null ? pensRoot.Find("Pasture Pen") : null;
@@ -54,10 +57,14 @@ public sealed class FarmWorldController : MonoBehaviour
     {
         long earned = 0;
         int food = 0;
+        var items = new Dictionary<string, int>();
         foreach (var plot in plots)
         {
             if (!plot.gameObject.activeInHierarchy) continue;
             earned += plot.HarvestReady(out int crops);
+            if (crops <= 0) continue;
+            string id = FarmItems.ForCrop(plot.Kind).Id;
+            items[id] = (items.TryGetValue(id, out int n) ? n : 0) + crops;
             food += crops;
         }
         foreach (var actor in actors)
@@ -65,10 +72,13 @@ public sealed class FarmWorldController : MonoBehaviour
             long produced = actor.TakeProduction();
             if (produced <= 0) continue;
             earned += produced;
+            var product = actor.Product;
+            if (product == null) continue;
+            items[product.Id] = (items.TryGetValue(product.Id, out int n) ? n : 0) + 1;
             food++;
         }
         LastHarvestFood = food;
-        if (earned > 0) state.Collect(earned, food);
+        if (earned > 0) state.Collect(earned, items);
         return earned;
     }
 
@@ -80,8 +90,8 @@ public sealed class FarmWorldController : MonoBehaviour
             message("Cultivo creciendo");
             return;
         }
-        state.Collect(earned);
-        message(cell.CropName + " +" + FarmGameState.Format(earned) + " · +1 alimento");
+        state.Collect(earned, FarmItems.ForCrop(cell.Kind));
+        message(cell.CropName + " +" + FarmGameState.Format(earned));
     }
 
     void SyncUpgrades()

@@ -14,6 +14,8 @@ public sealed class CropCell : MonoBehaviour
     float nextCheck;
 
     public bool IsReady { get { AdvanceTime(); return stage == 2; } }
+    public CropKind Kind => kind;
+
     public string CropName
     {
         get

@@ -18,6 +18,8 @@ public sealed class WorldActor : MonoBehaviour
     float nextVisualCheck;
 
     public WorldActorRole Role => role;
+    /// <summary>Food this animal gives Plorp (huevo, queso, leche). Null for workers.</summary>
+    public FarmItem Product => FarmItems.ForActor(id);
 
     public void Initialize(FarmGameState gameState, Action<string> showMessage,
         string actorId, string title, string texture, WorldActorRole actorRole,
@@ -54,8 +56,9 @@ public sealed class WorldActor : MonoBehaviour
             return;
         }
         SetCooldown();
-        state.Collect(reward);
-        message(displayName + " +" + FarmGameState.Format(reward) + " · +1 alimento");
+        state.Collect(reward, Product);
+        message(displayName + " +" + FarmGameState.Format(reward) +
+                (Product != null ? " · +1 " + Product.Single : ""));
     }
 
     void Update()

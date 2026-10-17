@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>Small persistent demo economy shared by every screen.</summary>
@@ -23,16 +24,46 @@ public sealed class FarmGameState
     public int Harvests { get; private set; }
     public int Purchases { get; private set; }
     public long TotalHarvestGold { get; private set; }
-    /// <summary>Food waiting in the barn to be delivered to Plorp.</summary>
-    public long Food { get; private set; }
+    /// <summary>Food delivered to Plorp over the whole game.</summary>
     public long TotalFood { get; private set; }
     /// <summary>Index of the current Plorp order (see PlorpGoals).</summary>
     public int PlorpStage { get; private set; }
     public int PepitoMeals { get; private set; }
-    public PlorpGoal CurrentGoal => PlorpGoals.For(PlorpStage);
     public bool PlorpSatisfied => PlorpStage >= PlorpGoals.MainCount;
-    public bool GoalReady => Food >= CurrentGoal.Food && AnimalCount >= CurrentGoal.Animals;
     public int AnimalCount => Levels[1];
+    public int UnlockedPlots => Mathf.Clamp(Levels[0], 1, 4);
+
+    // Barn: how many of each food is waiting to be delivered to Plorp.
+    readonly Dictionary<string, long> barn = new Dictionary<string, long>();
+    // Foods Plorp has already asked for at least once (new foods are asked first).
+    readonly HashSet<string> tasted = new HashSet<string>();
+    PlorpGoal currentGoal;
+
+    public long ItemCount(string id) => barn.TryGetValue(id, out long n) ? n : 0;
+
+    /// <summary>Plorp's current order. Generated from what the player can produce when the previous one is delivered.</summary>
+    public PlorpGoal CurrentGoal
+    {
+        get
+        {
+            if (currentGoal == null)
+            {
+                currentGoal = PlorpGoals.Generate(PlorpStage, FarmItems.Unlocked(this), tasted);
+                PlayerPrefs.SetString("GlorpFarm.plorpOrder", currentGoal.Serialize());
+            }
+            return currentGoal;
+        }
+    }
+
+    public bool GoalReady
+    {
+        get
+        {
+            foreach (var line in CurrentGoal.Lines)
+                if (ItemCount(line.Item.Id) < line.Amount) return false;
+            return true;
+        }
+    }
     public float FarmLevelProgress => (Purchases % 3) / 3f;
     public bool MusicEnabled { get; private set; }
     public bool SoundEnabled { get; private set; }
@@ -47,9 +78,16 @@ public sealed class FarmGameState
         Harvests = PlayerPrefs.GetInt("GlorpFarm.harvests", 0);
         Purchases = PlayerPrefs.GetInt("GlorpFarm.purchases", 0);
         TotalHarvestGold = ReadLong("harvestGold", 0);
-        Food = ReadLong("food", 0);
         TotalFood = ReadLong("totalFood", 0);
         PlorpStage = PlayerPrefs.GetInt("GlorpFarm.plorpStage", 0);
+        foreach (var item in FarmItems.All)
+        {
+            long n = ReadLong("item." + item.Id, 0);
+            if (n > 0) barn[item.Id] = n;
+        }
+        foreach (string id in PlayerPrefs.GetString("GlorpFarm.tasted", "").Split(','))
+            if (id.Length > 0) tasted.Add(id);
+        currentGoal = PlorpGoal.Parse(PlorpStage, PlayerPrefs.GetString("GlorpFarm.plorpOrder", ""));
         PepitoMeals = PlayerPrefs.GetInt("GlorpFarm.pepitoMeals", 0);
         MusicEnabled = PlayerPrefs.GetInt("GlorpFarm.music", 1) == 1;
         SoundEnabled = PlayerPrefs.GetInt("GlorpFarm.sound", 1) == 1;
@@ -62,34 +100,52 @@ public sealed class FarmGameState
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
     }
 
-    public long Harvest()
-    {
-        long earned = 10 + Levels[0] * 20L + Levels[1] * 12L + Levels[2] * 35L;
-        Collect(earned);
-        return earned;
-    }
-
-    /// <summary>Adds a harvest: coins for the player and food units for Plorp.</summary>
-    public void Collect(long earned, int foodUnits = 1)
+    /// <summary>One harvested thing: coins for the player, one food item into the barn for Plorp.</summary>
+    public void Collect(long earned, FarmItem item)
     {
         if (earned <= 0) return;
-        Gold += earned;
-        TotalHarvestGold += earned;
-        Food += Math.Max(0, foodUnits);
-        TotalFood += Math.Max(0, foodUnits);
-        Harvests++;
+        if (item != null) AddItem(item.Id, 1);
+        AddGold(earned);
         Save();
     }
 
-    /// <summary>Hands the stored food to Plorp. Returns false when the order is not complete yet.</summary>
+    /// <summary>A batch harvest (COSECHAR button or workers).</summary>
+    public void Collect(long earned, IDictionary<string, int> items)
+    {
+        if (earned <= 0) return;
+        foreach (var pair in items) AddItem(pair.Key, pair.Value);
+        AddGold(earned);
+        Save();
+    }
+
+    void AddItem(string id, long amount)
+    {
+        if (amount <= 0) return;
+        barn[id] = ItemCount(id) + amount;
+    }
+
+    void AddGold(long earned)
+    {
+        Gold += earned;
+        TotalHarvestGold += earned;
+        Harvests++;
+    }
+
+    /// <summary>Hands the order to Plorp. Returns false when something is still missing.</summary>
     public bool DeliverToPlorp(out PlorpGoal delivered)
     {
         delivered = CurrentGoal;
         if (!GoalReady) return false;
-        Food -= delivered.Food;
+        foreach (var line in delivered.Lines)
+        {
+            barn[line.Item.Id] = ItemCount(line.Item.Id) - line.Amount;
+            TotalFood += line.Amount;
+            tasted.Add(line.Item.Id);
+        }
         Gold += delivered.RewardGold;
         Gems += delivered.RewardGems;
         PlorpStage++;
+        currentGoal = null; // next order is built from what the farm produces now
         Save();
         return true;
     }
@@ -174,8 +230,10 @@ public sealed class FarmGameState
         PlayerPrefs.SetInt("GlorpFarm.harvests", Harvests);
         PlayerPrefs.SetInt("GlorpFarm.purchases", Purchases);
         PlayerPrefs.SetString("GlorpFarm.harvestGold", TotalHarvestGold.ToString());
-        PlayerPrefs.SetString("GlorpFarm.food", Food.ToString());
         PlayerPrefs.SetString("GlorpFarm.totalFood", TotalFood.ToString());
+        foreach (var pair in barn) PlayerPrefs.SetString("GlorpFarm.item." + pair.Key, pair.Value.ToString());
+        PlayerPrefs.SetString("GlorpFarm.tasted", string.Join(",", tasted));
+        PlayerPrefs.SetString("GlorpFarm.plorpOrder", CurrentGoal.Serialize());
         PlayerPrefs.SetInt("GlorpFarm.plorpStage", PlorpStage);
         PlayerPrefs.SetInt("GlorpFarm.pepitoMeals", PepitoMeals);
         PlayerPrefs.SetInt("GlorpFarm.music", MusicEnabled ? 1 : 0);
@@ -226,7 +284,7 @@ public sealed class FarmGameState
         string[] coreKeys =
         {
             "gold", "gems", "farmLevel", "harvests", "purchases", "harvestGold",
-            "food", "totalFood", "plorpStage", "pepitoMeals",
+            "food", "totalFood", "plorpStage", "pepitoMeals", "tasted", "plorpOrder",
             "progressionVersion", "animalRosterBaselineLevel", "animalTestPriceApplied"
         };
         foreach (string key in coreKeys) PlayerPrefs.DeleteKey("GlorpFarm." + key);
@@ -241,9 +299,11 @@ public sealed class FarmGameState
         PlayerPrefs.DeleteKey("GlorpFarm.price.3");
         for (int i = 0; i < AchievementNames.Length; i++) PlayerPrefs.DeleteKey("GlorpFarm.claimed." + i);
 
+        foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
+
         for (int plot = 0; plot < 4; plot++)
         {
-            for (int cell = 0; cell < 12; cell++)
+            for (int cell = 0; cell < FarmArtLayout.CellsPerPlot; cell++)
             {
                 string cropKey = "GlorpFarm.world.crop." + plot + "." + cell;
                 PlayerPrefs.DeleteKey(cropKey + ".stage");

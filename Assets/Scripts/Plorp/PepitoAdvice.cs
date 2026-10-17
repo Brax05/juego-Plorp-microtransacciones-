@@ -26,10 +26,10 @@ public static class PepitoAdvice
     // Everything Pepito says is his (very confident) translation of Plorp.
     static readonly string[] Flavor =
     {
-        "Miau... Plorp dijo \"glerp\". Creo que significa zanahorias. O guerra.",
+        "Miau... Plorp dijo \"glerp\". Creo que significa tomates. O guerra.",
         "Miau. Plorp dijo \"zep zep zep\". No sé qué es, pero las vacas se ven nerviosas.",
         "Miau... Plorp me mira cuando ronroneo. Creo que quiere aprender.",
-        "Miau. Plorp dice que en su planeta las gallinas son más grandes. No le creo.",
+        "Miau. Plorp no come animales. Solo lo que dan: huevos, queso, leche. Es muy educado.",
         "Miau... Plorp dijo \"plorp\" muy bajito. Eso significa que está pensando en comida.",
         "Miau. Plorp dice que los cultivos crecen aunque cierres el juego. Él nunca duerme.",
     };
@@ -44,21 +44,47 @@ public static class PepitoAdvice
             s => "Miau... Plorp dice \"glerp\": toca COSECHAR abajo. Todo lo que cosechas es alimento para él."),
         new AdviceDef("claim", 90, AnyAchievementReady,
             s => "Miau. Plorp dejó gemas en LOGROS. Dice que las cobres. Bueno, señaló con la antena."),
-        new AdviceDef("animals", 80, s => s.AnimalCount < s.CurrentGoal.Animals,
-            s => "Miau... Plorp quiere " + s.CurrentGoal.Animals + " animales y tienes " + s.AnimalCount +
-                 ". Compra la mejora ANIMALES. No le preguntes para qué los quiere."),
+        new AdviceDef("missing", 80, s => MissingLine(s) != null,
+            s => HowToGet(MissingLine(s).Value, s)),
+        new AdviceDef("new-food", 70, s => s.AnimalCount < 3 && s.Gold >= s.Prices[1],
+            s => "Miau... Plorp nunca ha probado " + NextAnimalFood(s) + ". Compra la mejora ANIMALES. Le brillan las antenas."),
         new AdviceDef("upgrade", 60, CanAffordUpgrade,
             s => "Miau. Plorp dice que tienes monedas para una mejora. Más granja, más comida para Plorp."),
         new AdviceDef("workers", 55, s => s.Levels[2] == 0 && s.Harvests >= 8,
             s => "Miau... Plorp dice que tocas muy lento. Contrata TRABAJADORES: cosechan solos."),
-        new AdviceDef("food", 50, s => s.Food < s.CurrentGoal.Food,
-            s => "Miau. A Plorp le faltan " + FarmGameState.Format(s.CurrentGoal.Food - s.Food) +
-                 " de alimento. Toca a las gallinas, también cuentan."),
         new AdviceDef("satisfied", 40, s => s.PlorpSatisfied,
             s => "Miau... Plorp está conforme. Igual sigue pidiendo antojos. Es su naturaleza."),
         new AdviceDef("flavor", 10, s => true,
             s => Flavor[Rng.Next(Flavor.Length)]),
     };
+
+    /// <summary>First order line the barn doesn't cover yet.</summary>
+    static OrderLine? MissingLine(FarmGameState s)
+    {
+        foreach (var line in s.CurrentGoal.Lines)
+            if (s.ItemCount(line.Item.Id) < line.Amount) return line;
+        return null;
+    }
+
+    static string HowToGet(OrderLine line, FarmGameState s)
+    {
+        long missing = line.Amount - s.ItemCount(line.Item.Id);
+        string what = missing + " " + line.Item.Name.ToLowerInvariant();
+        if (line.Item == FarmItems.Egg) return "Miau. A Plorp le faltan " + what + ". Toca a las gallinas cuando brillen.";
+        if (line.Item == FarmItems.Cheese) return "Miau... Plorp quiere " + what + ". Las ovejas dan queso. No me preguntes cómo.";
+        if (line.Item == FarmItems.Milk) return "Miau. Faltan " + what + " para Plorp. Toca a las vacas.";
+        return "Miau... a Plorp le faltan " + what + ". Cosecha y espera que crezcan. Él no sabe esperar.";
+    }
+
+    static string NextAnimalFood(FarmGameState s)
+    {
+        switch (s.AnimalCount)
+        {
+            case 0: return "un huevo";
+            case 1: return "el queso";
+            default: return "la leche";
+        }
+    }
 
     static bool AnyAchievementReady(FarmGameState s)
     {
@@ -76,6 +102,10 @@ public static class PepitoAdvice
 
     public static AdviceDef Pick(FarmGameState state, string lastId)
     {
+        // Now and then Pepito just shares one of Plorp's random thoughts.
+        if (lastId != "flavor" && !state.GoalReady && Rng.NextDouble() < .25)
+            return All[All.Length - 1];
+
         AdviceDef best = null, fallback = null;
         foreach (var advice in All)
         {

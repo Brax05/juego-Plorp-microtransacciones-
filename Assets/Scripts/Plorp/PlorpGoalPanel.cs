@@ -3,13 +3,14 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Top-of-farm panel showing Plorp's current order (food + animals) with an ENTREGAR button,
-/// plus the celebration popup when Plorp is finally satisfied ("conforme").
+/// Compact card in the top-right of the farm with Plorp's current order: up to three foods
+/// (icon + have/need) and an ENTREGAR button. Also shows the celebration when Plorp is satisfied.
+/// It sits over the painted yellow barn so the chicken yard and the fields stay visible.
 /// </summary>
 public sealed class PlorpGoalPanel : MonoBehaviour
 {
-    const float Top = 116f;
-    const float BarWidth = 196f;
+    const float Left = 388f, Top = 112f, Width = 176f, Height = 128f;
+    const int Slots = 3;
 
     static readonly Color Wood = PixelUIFactory.Hex("#B86F3F");
     static readonly Color Disabled = PixelUIFactory.Hex("#67594F");
@@ -23,9 +24,10 @@ public sealed class PlorpGoalPanel : MonoBehaviour
 
     PlorpFace face;
     Text titleText;
-    Text foodText;
-    Text animalsText;
-    RectTransform foodFill;
+    Text orderText;
+    readonly RawImage[] icons = new RawImage[Slots];
+    readonly Text[] counts = new Text[Slots];
+    readonly string[] iconPaths = new string[Slots];
     Image buttonFace;
     Text buttonCaption;
     Image readyGlow;
@@ -35,7 +37,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         Action<string> message, PepitoController pepito)
     {
         var ui = new PixelUIFactory();
-        var rect = ui.Panel(portrait, "Plorp goal", 8, Top, 554, 80, Wood);
+        var rect = ui.Panel(portrait, "Plorp goal", Left, Top, Width, Height, Wood);
         rect.SetSiblingIndex(siblingIndex);
         var panel = rect.gameObject.AddComponent<PlorpGoalPanel>();
         panel.Build(ui, portrait, state, message, pepito);
@@ -51,30 +53,43 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         message = showMessage;
         pepito = pepitoController;
 
-        ui.Block(transform, "Face frame", 9, 9, 62, 62, PixelUIFactory.Hex("#1E1838"));
-        face = PlorpFace.Create(transform, "Plorp face", 12, 12, 56);
-        ui.Hit(transform, "Plorp tap", 9, 9, 62, 62, () =>
+        ui.Block(transform, "Face frame", 9, 9, 42, 42, PixelUIFactory.Hex("#1E1838"));
+        face = PlorpFace.Create(transform, "Plorp face", 11, 12, 38);
+        ui.Hit(transform, "Plorp tap", 9, 9, 42, 42, () =>
         {
             face.Bump();
-            pepito.Say("Miau... Plorp dijo \"" + state.CurrentGoal.Quote + "\". Creo que quiere su " +
-                       state.CurrentGoal.Title.ToLowerInvariant() + ".", 6f);
+            pepito.Say("Miau... Plorp dijo \"" + state.CurrentGoal.Quote + "\". Creo que quiere " +
+                       Describe(state.CurrentGoal) + ".", 7f);
         });
 
-        titleText = ui.Label(transform, "Title", "", 80, 8, 300, 22, 15, PixelUIFactory.Gold);
+        titleText = ui.Label(transform, "Title", "", 56, 9, 112, 14, 11, PixelUIFactory.Gold);
+        orderText = ui.Paragraph(transform, "Order", "", 56, 24, 112, 26, 14, Color.white);
 
-        ui.Block(transform, "Food bar back", 80, 33, BarWidth, 18, PixelUIFactory.Hex("#4A2A22"));
-        foodFill = ui.Block(transform, "Food bar fill", 80, 33, 0, 18, PixelUIFactory.Hex("#4FC63F")).rectTransform;
-        foodText = ui.Label(transform, "Food", "", 80, 31, BarWidth, 22, 13, Color.white, TextAnchor.MiddleCenter);
-        animalsText = ui.Label(transform, "Animals", "", 80, 54, 300, 20, 13, Color.white);
+        for (int i = 0; i < Slots; i++)
+        {
+            float x = 10 + i * 52;
+            icons[i] = ui.Texture(transform, "Item icon " + i, FarmItems.Carrot.Icon, x + 14, 52, 24, 24);
+            counts[i] = ui.Label(transform, "Item count " + i, "", x, 75, 52, 15, 12, Color.white,
+                TextAnchor.MiddleCenter);
+        }
 
-        readyGlow = ui.Block(transform, "Ready glow", 386, 12, 158, 56, new Color(1f, .95f, .5f, 0f));
-        var button = ui.Panel(transform, "Deliver", 390, 16, 150, 48, Disabled);
+        readyGlow = ui.Block(transform, "Ready glow", 6, 90, 164, 34, new Color(1f, .95f, .5f, 0f));
+        var button = ui.Panel(transform, "Deliver", 9, 92, 158, 30, Disabled);
         buttonFace = button.Find("Face").GetComponent<Image>();
-        buttonCaption = ui.Label(button, "Caption", "ENTREGAR", 2, 0, 146, 48, 17, Color.white, TextAnchor.MiddleCenter);
-        ui.Hit(transform, "Deliver hit", 390, 16, 150, 48, Deliver);
+        buttonCaption = ui.Label(button, "Caption", "ENTREGAR", 2, 0, 154, 30, 14, Color.white, TextAnchor.MiddleCenter);
+        ui.Hit(transform, "Deliver hit", 9, 92, 158, 30, Deliver);
 
         state.Changed += Refresh;
         Refresh();
+    }
+
+    /// <summary>"10 zanahorias y 2 huevos" — used by Pepito.</summary>
+    public static string Describe(PlorpGoal goal)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        foreach (var line in goal.Lines) parts.Add(line.Amount + " " + line.Item.Name.ToLowerInvariant());
+        if (parts.Count == 1) return parts[0];
+        return string.Join(", ", parts.GetRange(0, parts.Count - 1).ToArray()) + " y " + parts[parts.Count - 1];
     }
 
     void Deliver()
@@ -82,10 +97,13 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         bool wasSatisfied = state.PlorpSatisfied;
         if (!state.DeliverToPlorp(out var goal))
         {
-            var g = state.CurrentGoal;
-            message(state.AnimalCount < g.Animals
-                ? "Plorp quiere " + g.Animals + " animales"
-                : "Falta alimento: " + FarmGameState.Format(g.Food - state.Food));
+            foreach (var line in state.CurrentGoal.Lines)
+            {
+                long missing = line.Amount - state.ItemCount(line.Item.Id);
+                if (missing <= 0) continue;
+                message("Faltan " + missing + " " + line.Item.Name.ToLowerInvariant());
+                return;
+            }
             return;
         }
 
@@ -98,30 +116,41 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         }
         pepito.Say(state.PlorpSatisfied
             ? "Miau... Plorp se comió todo. Dice que era un antojo. Yo no juzgo."
-            : "Miau. Plorp dijo \"" + goal.Quote + "\". Eso significa que le gustó. Ahora pide su " +
-              state.CurrentGoal.Title.ToLowerInvariant() + ".", 7f);
+            : "Miau. Plorp dijo \"" + goal.Quote + "\". Le gustó. Ahora quiere " +
+              Describe(state.CurrentGoal) + ".", 8f);
     }
 
     void Refresh()
     {
         var goal = state.CurrentGoal;
-        string prefix = state.PlorpSatisfied ? "PLORP CONFORME · " : "PLORP QUIERE · ";
-        titleText.text = prefix + goal.Title.ToUpperInvariant();
+        titleText.text = state.PlorpSatisfied ? "PLORP CONFORME" : "PLORP QUIERE";
+        orderText.text = goal.Title.ToUpperInvariant();
 
-        float food = goal.Food <= 0 ? 1f : Mathf.Clamp01(state.Food / (float)goal.Food);
-        foodFill.sizeDelta = new Vector2(BarWidth * food, foodFill.sizeDelta.y);
-        foodText.text = "ALIMENTO " + FarmGameState.Format(Math.Min(state.Food, goal.Food)) + "/" +
-                        FarmGameState.Format(goal.Food);
-
-        bool animalsOk = state.AnimalCount >= goal.Animals;
-        animalsText.text = goal.Animals > 0
-            ? "ANIMALES " + Math.Min(state.AnimalCount, goal.Animals) + "/" + goal.Animals
-            : "ANIMALES: ninguno por ahora";
-        animalsText.color = animalsOk ? Ok : Color.white;
+        for (int i = 0; i < Slots; i++)
+        {
+            bool used = i < goal.Lines.Count;
+            icons[i].gameObject.SetActive(used);
+            counts[i].gameObject.SetActive(used);
+            if (!used) continue;
+            var line = goal.Lines[i];
+            SetIcon(i, line.Item.Icon);
+            long have = state.ItemCount(line.Item.Id);
+            counts[i].text = FarmGameState.Format(Math.Min(have, line.Amount)) + "/" + FarmGameState.Format(line.Amount);
+            counts[i].color = have >= line.Amount ? Ok : Color.white;
+        }
 
         bool ready = state.GoalReady;
         buttonFace.color = ready ? PixelUIFactory.Green : Disabled;
         buttonCaption.text = ready ? "¡ENTREGAR!" : "ENTREGAR";
+    }
+
+    void SetIcon(int slot, string path)
+    {
+        if (iconPaths[slot] == path) return;
+        iconPaths[slot] = path;
+        var texture = Resources.Load<Texture2D>(path);
+        if (texture != null) texture.filterMode = FilterMode.Point;
+        icons[slot].texture = texture;
     }
 
     void Update()
@@ -145,8 +174,8 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         var bigFace = PlorpFace.Create(card, "Plorp", 180, 84, 140);
         bigFace.Bump();
         ui.Paragraph(card, "Story",
-            "Le diste " + FarmGameState.Format(state.TotalFood) + " de alimento y " + state.AnimalCount +
-            " animales. Pepito traduce: \"Miau... dice gracias. Creo. Y que volverá con antojos.\"",
+            "Le diste " + FarmGameState.Format(state.TotalFood) +
+            " comidas entre verduras, huevos, quesos y leche. Pepito traduce: \"Miau... dice gracias. Creo. Y que volverá con antojos.\"",
             30, 240, 440, 96, 18, Color.white, TextAnchor.MiddleCenter);
         ui.Label(card, "Reward", "+" + last.RewardGems + " gemas  ·  +" + FarmGameState.Format(last.RewardGold) +
             " monedas", 0, 340, 500, 30, 18, PixelUIFactory.Gold, TextAnchor.MiddleCenter);

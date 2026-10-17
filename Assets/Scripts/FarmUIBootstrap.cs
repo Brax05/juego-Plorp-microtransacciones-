@@ -19,7 +19,19 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Create()
     {
+        // Also when the game scene is opened later from the Inicio scene.
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        EnsureForCurrentScene();
+    }
+
+    static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode) =>
+        EnsureForCurrentScene();
+
+    static void EnsureForCurrentScene()
+    {
         if (FindAnyObjectByType<FarmUIBootstrap>() != null) return;
+        if (FindAnyObjectByType<BootScene>() != null) return; // Inicio scene has its own UI
         new GameObject("PlorpFarm UI").AddComponent<FarmUIBootstrap>();
     }
 
@@ -75,14 +87,14 @@ public sealed class FarmUIBootstrap : MonoBehaviour
                 var instance = Instantiate(prefab);
                 instance.name = prefab.name;
                 canvas = instance.GetComponent<Canvas>();
-                Debug.LogWarning("PixelFarmCanvas no estaba en la escena activa. Se instanció automáticamente desde Assets/Prefabs/PixelFarmCanvas.prefab. Para editar y guardar cambios en el canvas, abre la escena 'Assets/Scenes/SampleScene.unity'.", instance);
+                Debug.LogWarning("PixelFarmCanvas no estaba en la escena activa. Se instanció automáticamente desde Assets/Prefabs/PixelFarmCanvas.prefab. Para editar y guardar cambios en el canvas, abre la escena 'Assets/Scenes/Granja.unity'.", instance);
             }
         }
 #endif
 
         if (canvas == null)
         {
-            Debug.LogError("PixelFarmCanvas must be present in the scene. The UI is authored in the canvas. Abre la escena 'Assets/Scenes/SampleScene.unity' en la ventana Project (Assets > Scenes > SampleScene) antes de dar Play.");
+            Debug.LogError("PixelFarmCanvas must be present in the scene. The UI is authored in the canvas. Abre la escena 'Assets/Scenes/Granja.unity' en la ventana Project (Assets > Scenes > Granja) antes de dar Play.");
             enabled = false;
             return;
         }
@@ -145,7 +157,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (preview) return;
 
         // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
-        StartScreens.Create(content, state, pepito.Begin);
+        // Coming from the Inicio scene the title and loading were already shown there.
+        if (BootScene.CameFromBoot) pepito.Begin();
+        else StartScreens.Create(content, state, pepito.Begin);
 
         if (FindAnyObjectByType<EventSystem>() == null)
         {

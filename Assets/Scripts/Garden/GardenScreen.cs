@@ -96,7 +96,7 @@ public sealed class GardenScreen : MonoBehaviour
         bg.raycastTarget = true;
 
         // Weather seen through the window (lower panes).
-        sunLayer = ui.Rect(transform, "Sunny window", 92, 204, 389, 283);
+        sunLayer = ui.Rect(transform, "Sunny window", 92, 204, 389, 264);
         sunLayer.gameObject.AddComponent<RectMask2D>(); // keep the beams inside the glass
         ui.Block(sunLayer, "Warm light", 0, 0, 389, 283, new Color(1f, .93f, .55f, .16f));
         for (int i = 0; i < 3; i++)
@@ -104,7 +104,7 @@ public sealed class GardenScreen : MonoBehaviour
             var beam = ui.Block(sunLayer, "Beam " + i, 40 + i * 120, -60, 46, 420, new Color(1f, .97f, .7f, .2f));
             beam.rectTransform.localEulerAngles = new Vector3(0f, 0f, -28f);
         }
-        cloudLayer = ui.Rect(transform, "Cloudy window", 92, 204, 389, 283);
+        cloudLayer = ui.Rect(transform, "Cloudy window", 92, 204, 389, 264);
         cloudLayer.gameObject.AddComponent<RectMask2D>();
         ui.Block(cloudLayer, "Grey", 0, 0, 389, 283, new Color(.55f, .6f, .7f, .38f));
         var rng = new System.Random(4);
@@ -213,12 +213,13 @@ public sealed class GardenScreen : MonoBehaviour
     /// <summary>A fabric curtain made of stripes; its width is animated (gathered when open).</summary>
     RectTransform BuildCurtain(string name, float x)
     {
-        var curtain = ui.Rect(transform, name, x, 186, 34, 306);
+        // Ends just above the pot rim (the pot is painted in the background, curtains cannot go behind it).
+        var curtain = ui.Rect(transform, name, x, 186, 34, 280);
         curtain.gameObject.AddComponent<RectMask2D>();
-        ui.Block(curtain, "Fabric", 0, 0, 200, 306, PixelUIFactory.Hex("#B5443F"));
+        ui.Block(curtain, "Fabric", 0, 0, 200, 280, PixelUIFactory.Hex("#B5443F"));
         for (int i = 0; i < 10; i++)
-            ui.Block(curtain, "Fold", 6 + i * 20, 0, 6, 306, PixelUIFactory.Hex(i % 2 == 0 ? "#8E2F2C" : "#CF5B54"));
-        ui.Block(curtain, "Hem", 0, 296, 200, 10, PixelUIFactory.Hex("#E7C46A"));
+            ui.Block(curtain, "Fold", 6 + i * 20, 0, 6, 280, PixelUIFactory.Hex(i % 2 == 0 ? "#8E2F2C" : "#CF5B54"));
+        ui.Block(curtain, "Hem", 0, 270, 200, 10, PixelUIFactory.Hex("#E7C46A"));
         ui.Block(curtain, "Rod", 0, 0, 200, 6, PixelUIFactory.Hex("#5A3420"));
         return curtain;
     }

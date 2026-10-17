@@ -55,7 +55,7 @@ public sealed class WorldActor : MonoBehaviour
         }
         SetCooldown();
         state.Collect(reward);
-        message(displayName + " +" + FarmGameState.Format(reward));
+        message(displayName + " +" + FarmGameState.Format(reward) + " · +1 alimento");
     }
 
     void Update()

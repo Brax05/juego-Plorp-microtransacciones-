@@ -20,7 +20,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     static void Create()
     {
         if (FindAnyObjectByType<FarmUIBootstrap>() != null) return;
-        new GameObject("GlorpFarm UI").AddComponent<FarmUIBootstrap>();
+        new GameObject("PlorpFarm UI").AddComponent<FarmUIBootstrap>();
     }
 
     void Awake()
@@ -53,9 +53,23 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
         var feedbackTransform = FindChildRecursive(content, "Feedback");
         messageLabel = feedbackTransform != null ? feedbackTransform.GetComponent<Text>() : null;
-        if (messageLabel != null) messageLabel.gameObject.SetActive(false);
+        if (messageLabel != null)
+        {
+            messageLabel.gameObject.SetActive(false);
+            // Pepito lives at the bottom of the farm now, so feedback goes under Plorp's panel.
+            var feedbackRect = messageLabel.rectTransform;
+            feedbackRect.anchoredPosition = new Vector2(feedbackRect.anchoredPosition.x, -202f);
+        }
+
+        // Plorp's order panel and Pepito sit above the farm but under the menus and feedback.
+        int layer = feedbackTransform != null ? feedbackTransform.GetSiblingIndex() : content.childCount;
+        var pepito = PepitoController.Create(content, layer, state, ShowMessage);
+        PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
 
         Navigate(0);
+
+        // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
+        StartScreens.Create(content, state, pepito.Begin);
 
         if (FindAnyObjectByType<EventSystem>() == null)
         {

@@ -14,7 +14,19 @@ public sealed class CropCell : MonoBehaviour
     float nextCheck;
 
     public bool IsReady { get { AdvanceTime(); return stage == 2; } }
-    public string CropName => kind.ToString();
+    public string CropName
+    {
+        get
+        {
+            switch (kind)
+            {
+                case CropKind.Tomato: return "Tomate";
+                case CropKind.Pumpkin: return "Calabaza";
+                case CropKind.Cabbage: return "Repollo";
+                default: return "Zanahoria";
+            }
+        }
+    }
 
     public void Initialize(int plotId, int cellId, CropKind initialKind,
         Action<CropCell> onTapped)

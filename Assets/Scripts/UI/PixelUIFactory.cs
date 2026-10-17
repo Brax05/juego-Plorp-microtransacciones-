@@ -77,6 +77,28 @@ public sealed class PixelUIFactory
         return text;
     }
 
+    /// <summary>Multi-line label that wraps inside its box and shrinks text that does not fit.</summary>
+    public Text Paragraph(Transform parent, string name, string value, float x, float y, float width, float height,
+        int size, Color color, TextAnchor alignment = TextAnchor.MiddleLeft)
+    {
+        var text = Label(parent, name, value, x, y, width, height, size, color, alignment);
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = Mathf.Max(10, size - 6);
+        text.resizeTextMaxSize = size;
+        text.lineSpacing = .95f;
+        return text;
+    }
+
+    /// <summary>Full-rect translucent layer that swallows taps (modal backdrop).</summary>
+    public Image Backdrop(Transform parent, string name, float width, float height, Color color)
+    {
+        var image = Block(parent, name, 0, 0, width, height, color);
+        image.raycastTarget = true;
+        return image;
+    }
+
     public Button Hit(Transform parent, string name, float x, float y, float width, float height, UnityAction action)
     {
         var image = Rect(parent, name, x, y, width, height).gameObject.AddComponent<Image>();

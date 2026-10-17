@@ -106,7 +106,9 @@ public sealed class FarmScreen
     void Harvest()
     {
         long earned = world.HarvestAll();
-        message(earned > 0 ? "+" + FarmGameState.Format(earned) + " monedas" : "Nada listo para cosechar");
+        message(earned > 0
+            ? "+" + FarmGameState.Format(earned) + " monedas · +" + world.LastHarvestFood + " alimento"
+            : "Nada listo para cosechar");
     }
 
     void Buy(int index)

@@ -51,10 +51,17 @@ public sealed class CropPlot : MonoBehaviour
         foreach (var cell in cells) cell.SetKind(kind);
     }
 
-    public long HarvestReady()
+    public long HarvestReady(out int harvested)
     {
         long earned = 0;
-        foreach (var cell in cells) earned += cell.TakeHarvest();
+        harvested = 0;
+        foreach (var cell in cells)
+        {
+            long value = cell.TakeHarvest();
+            if (value <= 0) continue;
+            earned += value;
+            harvested++;
+        }
         return earned;
     }
 }

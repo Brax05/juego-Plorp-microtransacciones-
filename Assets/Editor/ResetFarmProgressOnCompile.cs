@@ -29,7 +29,7 @@ public static class ResetFarmProgressOnCompile
     static void ResetProgress(string moment)
     {
         FarmGameState.ResetSavedProgress();
-        Debug.Log("Glorp Farm: progreso de prueba reiniciado " + moment + ".");
+        Debug.Log("Plorp Farm: progreso de prueba reiniciado " + moment + ".");
     }
 }
 #endif

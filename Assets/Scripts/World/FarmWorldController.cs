@@ -47,13 +47,28 @@ public sealed class FarmWorldController : MonoBehaviour
 
     }
 
+    /// <summary>Food units gathered by the last HarvestAll call.</summary>
+    public int LastHarvestFood { get; private set; }
+
     public long HarvestAll()
     {
         long earned = 0;
+        int food = 0;
         foreach (var plot in plots)
-            if (plot.gameObject.activeInHierarchy) earned += plot.HarvestReady();
-        foreach (var actor in actors) earned += actor.TakeProduction();
-        if (earned > 0) state.Collect(earned);
+        {
+            if (!plot.gameObject.activeInHierarchy) continue;
+            earned += plot.HarvestReady(out int crops);
+            food += crops;
+        }
+        foreach (var actor in actors)
+        {
+            long produced = actor.TakeProduction();
+            if (produced <= 0) continue;
+            earned += produced;
+            food++;
+        }
+        LastHarvestFood = food;
+        if (earned > 0) state.Collect(earned, food);
         return earned;
     }
 
@@ -66,7 +81,7 @@ public sealed class FarmWorldController : MonoBehaviour
             return;
         }
         state.Collect(earned);
-        message(cell.CropName + " +" + FarmGameState.Format(earned));
+        message(cell.CropName + " +" + FarmGameState.Format(earned) + " · +1 alimento");
     }
 
     void SyncUpgrades()
@@ -115,6 +130,20 @@ public sealed class FarmWorldController : MonoBehaviour
         Vector2 home = new Vector2(marker.anchoredPosition.x, -marker.anchoredPosition.y);
         actor.Initialize(state, message, id, title, texture, role, home, reward, cooldown);
         actors.Add(actor);
+    }
+
+    float nextAutoHarvest;
+
+    // Idle loop: each worker level makes the farm harvest itself more often (15s, 12s, 9s, 6s).
+    void Update()
+    {
+        if (state == null) return;
+        int workers = Mathf.Clamp(state.Levels[2], 0, 4);
+        if (workers == 0) return;
+        float now = Time.unscaledTime;
+        if (now < nextAutoHarvest) return;
+        nextAutoHarvest = now + 18f - 3f * workers;
+        HarvestAll();
     }
 
     void OnDestroy()

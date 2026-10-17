@@ -25,7 +25,60 @@ public sealed class FarmMenuScreen
         if (!HasPrebuiltPages)
             throw new InvalidOperationException("PixelFarmCanvas is missing its menu pages.");
         overlay.gameObject.SetActive(false);
+        EnsurePepitoAchievementCard();
+        SyncStoreLabels();
         state.Changed += Refresh;
+    }
+
+    // Store offers: the labels authored in the canvas are overwritten so they always match the real values.
+    const int BagGems = 10, ChestGems = 45;
+    const long BagGold = 1500, ChestGold = 10000;
+
+    /// <summary>The canvas authors three achievement cards; the Pepito one is cloned from the last card.</summary>
+    void EnsurePepitoAchievementCard()
+    {
+        var page = overlay.Find("Page - Logros");
+        if (page == null) return;
+        string name = FarmGameState.AchievementNames[3];
+        if (page.Find(name) != null) return;
+        var template = page.Find(FarmGameState.AchievementNames[2]) as RectTransform;
+        if (template == null) return;
+
+        var card = UnityEngine.Object.Instantiate(template.gameObject, page).GetComponent<RectTransform>();
+        card.name = name;
+        card.anchoredPosition = template.anchoredPosition + new Vector2(0f, -176f);
+        SetText(card, "Name", "ALIMENTA A PEPITO");
+        SetText(card, "Reward", "+15 gemas");
+        foreach (var button in card.GetComponentsInChildren<Button>(true)) button.onClick.RemoveAllListeners();
+
+        // The footer sat where the new card goes.
+        var footer = page.Find("Footer");
+        if (footer != null) footer.gameObject.SetActive(false);
+    }
+
+    void SyncStoreLabels()
+    {
+        var page = overlay.Find("Page - Tienda");
+        if (page == null) return;
+        var bag = page.Find("Bolsa de monedas");
+        if (bag != null)
+        {
+            SetText(bag, "Reward", "+" + FarmGameState.Format(BagGold) + " monedas");
+            SetText(bag, "Cost", BagGems + " gemas");
+        }
+        var chest = page.Find("Cofre de monedas");
+        if (chest != null)
+        {
+            SetText(chest, "Reward", "+" + FarmGameState.Format(ChestGold) + " monedas");
+            SetText(chest, "Cost", ChestGems + " gemas");
+        }
+    }
+
+    static void SetText(Transform root, string child, string value)
+    {
+        var t = FarmUIBootstrap.FindChildRecursive(root, child);
+        var text = t != null ? t.GetComponent<Text>() : null;
+        if (text != null) text.text = value;
     }
 
     bool HasPrebuiltPages => overlay != null &&
@@ -85,12 +138,14 @@ public sealed class FarmMenuScreen
         var bolsa = p.Find("Bolsa de monedas");
         if (bolsa != null)
         {
-            BindActionButton(bolsa, () => message(state.BuyGold(10, 1500) ? "+1.5K monedas" : "Faltan gemas"));
+            BindActionButton(bolsa, () => message(state.BuyGold(BagGems, BagGold)
+                ? "+" + FarmGameState.Format(BagGold) + " monedas" : "Faltan gemas"));
         }
         var cofre = p.Find("Cofre de monedas");
         if (cofre != null)
         {
-            BindActionButton(cofre, () => message(state.BuyGold(45, 10000) ? "+10K monedas" : "Faltan gemas"));
+            BindActionButton(cofre, () => message(state.BuyGold(ChestGems, ChestGold)
+                ? "+" + FarmGameState.Format(ChestGold) + " monedas" : "Faltan gemas"));
         }
         var gems = p.Find("More gems");
         if (gems != null)
@@ -103,7 +158,7 @@ public sealed class FarmMenuScreen
     {
         var p = overlay.Find("Page - Logros");
         if (p == null) return;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < FarmGameState.AchievementNames.Length; i++)
         {
             int index = i;
             var card = p.Find(FarmGameState.AchievementNames[i]);

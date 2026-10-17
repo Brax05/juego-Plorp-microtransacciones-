@@ -15,11 +15,11 @@ public sealed class StartScreens : MonoBehaviour
     static readonly string[] Tips =
     {
         "¿Sabías que a Plorp le encantan las cosechas?",
-        "Pepito es un gato callejero. Plorp lo subió a la nave \"por error\".",
+        "Pepito es un gato callejero. Plorp lo subió a la nave para que le traduzca.",
         "Plorp solo dice \"plorp\". Pepito jura que lo entiende.",
         "Los cultivos siguen creciendo aunque cierres el juego.",
         "Junta alimento y animales hasta que Plorp quede conforme.",
-        "Si Pepito pide comida, dásela. Hay un logro esperando.",
+        "Si Pepito dice que Plorp tiene hambre, cómprale algo. Hay un logro.",
         "\"Zep zep zep\" significa hambre. O eso cree Pepito.",
     };
 

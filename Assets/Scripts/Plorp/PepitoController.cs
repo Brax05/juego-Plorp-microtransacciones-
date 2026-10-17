@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Pepito, the gray street cat. Slides in from the left every so often to give advice
-/// or to ask for a snack with a random price (coins or gems). Feeding him unlocks an achievement.
+/// Pepito, the gray street cat who speaks for Plorp. Slides in from the left every so often to
+/// translate Plorp's advice or to ask for a snack FOR PLORP with a random price (coins or gems).
+/// Buying the first snack unlocks an achievement.
 /// Tap Pepito for another tip; tap the bubble to send him away.
 /// </summary>
 public sealed class PepitoController : MonoBehaviour
@@ -147,7 +148,7 @@ public sealed class PepitoController : MonoBehaviour
             askGold = Mathf.Max(10, Mathf.RoundToInt(basePrice * UnityEngine.Random.Range(.5f, 1.8f) / 10f) * 10);
         }
         bubbleText.rectTransform.sizeDelta = new Vector2(436, 60);
-        bubbleText.text = "Miau... tengo hambre. ¿Me compras " + snack + "?";
+        bubbleText.text = "Miau... creo que Plorp tiene hambre. ¿Le compras " + snack + "?";
         payCaption.text = askGems > 0 ? "DAR " + askGems + " GEMAS" : "DAR " + FarmGameState.Format(askGold) + " MONEDAS";
         buttonsRow.gameObject.SetActive(true);
         RefreshPayButton();
@@ -172,17 +173,17 @@ public sealed class PepitoController : MonoBehaviour
             return;
         }
         asking = false;
-        message(first ? "¡Logro listo: Alimenta a Pepito!" : "Pepito ronronea");
+        message(first ? "¡Logro listo: Alimenta a Plorp!" : "Plorp: \"¡Plorp!\"");
         Say(first
-            ? "¡Ñam! Gracias. Te debo una. Revisa LOGROS, te dejé algo ahí."
-            : "¡Ñam ñam! Ahora sí puedo pensar. Plorp dice \"plorp\", y yo estoy de acuerdo.", 6f);
+            ? "Miau. Plorp dijo \"plorp plorp\". Eso es gracias. Revisa LOGROS, te dejó algo."
+            : "Miau. Plorp se lo comió de un bocado. Dijo \"zep\". Creo que es un cumplido.", 6f);
     }
 
     void Decline()
     {
         if (!asking) return;
         asking = false;
-        Say("Está bien. Comeré una hoja de repollo. Otra vez.", 4f);
+        Say("Miau... está bien. Plorp me está mirando raro, pero se le pasará.", 4f);
     }
 
     void Show()

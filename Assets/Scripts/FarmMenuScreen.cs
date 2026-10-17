@@ -47,7 +47,7 @@ public sealed class FarmMenuScreen
         var card = UnityEngine.Object.Instantiate(template.gameObject, page).GetComponent<RectTransform>();
         card.name = name;
         card.anchoredPosition = template.anchoredPosition + new Vector2(0f, -176f);
-        SetText(card, "Name", "ALIMENTA A PEPITO");
+        SetText(card, "Name", "ALIMENTA A PLORP");
         SetText(card, "Reward", "+15 gemas");
         foreach (var button in card.GetComponentsInChildren<Button>(true)) button.onClick.RemoveAllListeners();
 

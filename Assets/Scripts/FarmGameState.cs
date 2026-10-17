@@ -6,7 +6,7 @@ public sealed class FarmGameState
 {
     public static readonly string[] UpgradeNames = { "Semillas", "Animales", "Trabajadores" };
     public static readonly string[] AchievementNames =
-        { "Primera cosecha", "Granjero constante", "Gran inversion", "Alimenta a Pepito" };
+        { "Primera cosecha", "Granjero constante", "Gran inversion", "Alimenta a Plorp" };
     static readonly int[] AchievementGems = { 5, 20, 30, 15 };
     const int ProgressionVersion = 4;
     const string ProgressionVersionKey = "GlorpFarm.progressionVersion";
@@ -94,7 +94,7 @@ public sealed class FarmGameState
         return true;
     }
 
-    /// <summary>Pays for Pepito's snack. Exactly one of the two costs is normally non-zero.</summary>
+    /// <summary>Pays for the snack Pepito asks for on Plorp's behalf. Exactly one of the two costs is normally non-zero.</summary>
     public bool FeedPepito(long goldCost, int gemCost)
     {
         if (Gold < goldCost || Gems < gemCost) return false;
@@ -138,7 +138,7 @@ public sealed class FarmGameState
             case 0: return Math.Min(Harvests, 1) + "/1 cosecha";
             case 1: return Math.Min(Harvests, 10) + "/10 cosechas";
             case 2: return Math.Min(Purchases, 5) + "/5 mejoras";
-            default: return Math.Min(PepitoMeals, 1) + "/1 comida a Pepito";
+            default: return Math.Min(PepitoMeals, 1) + "/1 antojo de Plorp";
         }
     }
 

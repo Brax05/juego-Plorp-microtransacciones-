@@ -21,7 +21,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
     PixelUIFactory ui;
     Transform portrait;
 
-    SpriteStripAnimator face;
+    PlorpFace face;
     Text titleText;
     Text foodText;
     Text animalsText;
@@ -52,11 +52,11 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         pepito = pepitoController;
 
         ui.Block(transform, "Face frame", 9, 9, 62, 62, PixelUIFactory.Hex("#1E1838"));
-        face = SpriteStripAnimator.Create(transform, "Plorp face", "UI/Characters/plorp_talk", 11, 11, 58);
+        face = PlorpFace.Create(transform, "Plorp face", 12, 12, 56);
         ui.Hit(transform, "Plorp tap", 9, 9, 62, 62, () =>
         {
-            face.Talk(1);
-            pepito.Say("Plorp dice: \"" + state.CurrentGoal.Quote + "\" Traducción: quiere " +
+            face.Bump();
+            pepito.Say("Miau... Plorp dijo \"" + state.CurrentGoal.Quote + "\". Creo que quiere su " +
                        state.CurrentGoal.Title.ToLowerInvariant() + ".", 6f);
         });
 
@@ -89,7 +89,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
             return;
         }
 
-        face.Talk(2);
+        face.Bump();
         message("Plorp: \"" + goal.Quote + "\"  +" + goal.RewardGems + " gemas");
         if (!wasSatisfied && state.PlorpSatisfied)
         {
@@ -97,8 +97,8 @@ public sealed class PlorpGoalPanel : MonoBehaviour
             return;
         }
         pepito.Say(state.PlorpSatisfied
-            ? "Plorp se comió todo. Dice que es un antojo. Yo no juzgo."
-            : "Plorp dijo \"" + goal.Quote + "\". Creo que le gustó. Ahora quiere: " +
+            ? "Miau... Plorp se comió todo. Dice que era un antojo. Yo no juzgo."
+            : "Miau. Plorp dijo \"" + goal.Quote + "\". Eso significa que le gustó. Ahora pide su " +
               state.CurrentGoal.Title.ToLowerInvariant() + ".", 7f);
     }
 
@@ -142,11 +142,11 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         ui.Label(card, "Title", "¡PLORP ESTÁ CONFORME!", 0, 22, 500, 46, 30, PixelUIFactory.Gold,
             TextAnchor.MiddleCenter);
         ui.Block(card, "Face frame", 176, 80, 148, 148, PixelUIFactory.Hex("#1E1838"));
-        var bigFace = SpriteStripAnimator.Create(card, "Plorp", "UI/Characters/plorp_talk", 180, 84, 140);
-        bigFace.Talk(4);
+        var bigFace = PlorpFace.Create(card, "Plorp", 180, 84, 140);
+        bigFace.Bump();
         ui.Paragraph(card, "Story",
             "Le diste " + FarmGameState.Format(state.TotalFood) + " de alimento y " + state.AnimalCount +
-            " animales. Pepito traduce: \"Dice gracias. Creo. Y que volverá con antojos.\"",
+            " animales. Pepito traduce: \"Miau... dice gracias. Creo. Y que volverá con antojos.\"",
             30, 240, 440, 96, 18, Color.white, TextAnchor.MiddleCenter);
         ui.Label(card, "Reward", "+" + last.RewardGems + " gemas  ·  +" + FarmGameState.Format(last.RewardGold) +
             " monedas", 0, 340, 500, 30, 18, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
@@ -154,7 +154,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         {
             Destroy(celebration.gameObject);
             celebration = null;
-            pepito.Say("Bien hecho. Plorp está conforme. Ahora... ¿alguien me da de comer a mí?", 8f);
+            pepito.Say("Miau. Plorp está conforme. Hace años que no lo veía así de tranquilo.", 8f);
         });
     }
 

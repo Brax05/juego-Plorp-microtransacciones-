@@ -21,16 +21,17 @@ public sealed class AdviceDef
 public static class PepitoAdvice
 {
     public const string Intro =
-        "Hola. Soy Pepito, gato callejero. Plorp me subió a su nave. Quiere comida. Mucha.";
+        "Miau. Soy Pepito, gato callejero. Plorp me subió a su nave para que le traduzca. Dice que tiene hambre. Mucha.";
 
+    // Everything Pepito says is his (very confident) translation of Plorp.
     static readonly string[] Flavor =
     {
-        "Plorp dijo \"glerp\". Creo que significa zanahorias. O guerra.",
-        "Antes vivía detrás de una pescadería. Extraño ese olor.",
-        "Zep zep zep. No sé qué significa, pero las vacas se ven nerviosas.",
-        "Plorp me mira cuando ronroneo. Creo que quiere aprender.",
-        "No soy el trabajador. Yo solo doy consejos. Y duermo.",
-        "Los cultivos crecen aunque cierres el juego. Plorp no duerme nunca.",
+        "Miau... Plorp dijo \"glerp\". Creo que significa zanahorias. O guerra.",
+        "Miau. Plorp dijo \"zep zep zep\". No sé qué es, pero las vacas se ven nerviosas.",
+        "Miau... Plorp me mira cuando ronroneo. Creo que quiere aprender.",
+        "Miau. Plorp dice que en su planeta las gallinas son más grandes. No le creo.",
+        "Miau... Plorp dijo \"plorp\" muy bajito. Eso significa que está pensando en comida.",
+        "Miau. Plorp dice que los cultivos crecen aunque cierres el juego. Él nunca duerme.",
     };
 
     static readonly Random Rng = new Random();
@@ -38,23 +39,23 @@ public static class PepitoAdvice
     public static readonly AdviceDef[] All =
     {
         new AdviceDef("deliver", 100, s => s.GoalReady,
-            s => "¡Ya juntaste lo que pide Plorp! Toca ENTREGAR arriba antes de que haga \"zep zep\"."),
+            s => "¡Miau! Plorp dice que ya juntaste su pedido. Toca ENTREGAR arriba antes de que haga \"zep zep\"."),
         new AdviceDef("first-harvest", 95, s => s.Harvests == 0,
-            s => "Toca COSECHAR abajo o toca los cultivos. Todo cuenta como alimento para Plorp."),
+            s => "Miau... Plorp dice \"glerp\": toca COSECHAR abajo. Todo lo que cosechas es alimento para él."),
         new AdviceDef("claim", 90, AnyAchievementReady,
-            s => "Hay logros por cobrar. Son gemas gratis. Ve a LOGROS."),
+            s => "Miau. Plorp dejó gemas en LOGROS. Dice que las cobres. Bueno, señaló con la antena."),
         new AdviceDef("animals", 80, s => s.AnimalCount < s.CurrentGoal.Animals,
-            s => "Plorp quiere " + s.CurrentGoal.Animals + " animales y tienes " + s.AnimalCount +
-                 ". Compra la mejora ANIMALES. No preguntes para qué los quiere."),
+            s => "Miau... Plorp quiere " + s.CurrentGoal.Animals + " animales y tienes " + s.AnimalCount +
+                 ". Compra la mejora ANIMALES. No le preguntes para qué los quiere."),
         new AdviceDef("upgrade", 60, CanAffordUpgrade,
-            s => "Tienes monedas para una mejora. Más semillas, más comida. Más comida, Plorp feliz."),
+            s => "Miau. Plorp dice que tienes monedas para una mejora. Más granja, más comida para Plorp."),
         new AdviceDef("workers", 55, s => s.Levels[2] == 0 && s.Harvests >= 8,
-            s => "¿Cansado de tocar todo? Contrata TRABAJADORES: cosechan solos. Yo no, yo soy gato."),
+            s => "Miau... Plorp dice que tocas muy lento. Contrata TRABAJADORES: cosechan solos."),
         new AdviceDef("food", 50, s => s.Food < s.CurrentGoal.Food,
-            s => "Faltan " + FarmGameState.Format(s.CurrentGoal.Food - s.Food) +
-                 " de alimento para Plorp. Toca a las gallinas, también cuentan."),
+            s => "Miau. A Plorp le faltan " + FarmGameState.Format(s.CurrentGoal.Food - s.Food) +
+                 " de alimento. Toca a las gallinas, también cuentan."),
         new AdviceDef("satisfied", 40, s => s.PlorpSatisfied,
-            s => "Plorp está conforme. Igual sigue pidiendo antojos. Es su naturaleza."),
+            s => "Miau... Plorp está conforme. Igual sigue pidiendo antojos. Es su naturaleza."),
         new AdviceDef("flavor", 10, s => true,
             s => Flavor[Rng.Next(Flavor.Length)]),
     };

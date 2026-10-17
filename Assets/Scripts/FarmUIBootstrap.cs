@@ -65,6 +65,11 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         int layer = feedbackTransform != null ? feedbackTransform.GetSiblingIndex() : content.childCount;
         var pepito = PepitoController.Create(content, layer, state, ShowMessage);
         PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
+        FarmArtLayout.LockedZoneTapped = () =>
+        {
+            ShowMessage("Zona bloqueada: más adelante...");
+            pepito.Say("Miau... Plorp dice que detrás de esas nubes hay más tierra. Se abrirá más adelante. Él tampoco sabe cuándo.", 7f);
+        };
 
         Navigate(0);
 

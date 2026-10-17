@@ -6,15 +6,16 @@ using UnityEngine.UI;
 /// (Resources/World/farm_background.png, 570x530): the four soil fields, the chicken yard and the
 /// sheep/cow pasture. All coordinates are pixels of that painting, measured from its top-left corner.
 /// The older modular terrain, buildings and fences in the prefab are hidden, because the painting has them.
+/// Around the farm there is a cloud-covered map with locked zones for future areas.
 /// </summary>
 public static class FarmArtLayout
 {
     public const float Width = 570f, Height = 530f;
     /// <summary>The painting is shown bigger than the screen so the player pans around the farm.</summary>
-    public const float Zoom = 1.6f;
+    public const float Zoom = 1.4f;
     /// <summary>The farm view now reaches down to the upgrade rows (the old harvest bar is gone).</summary>
     public const float ViewportHeight = 634f;
-    static readonly Vector2 StartView = new Vector2(-70f, 40f); // initial scroll: chicken yard just below the header
+    static readonly Vector2 StartView = new Vector2(-56f, 25f); // farm offset at start: chicken yard just below the header
     public const int Rows = 4, Columns = 4;
     public const int CellsPerPlot = Rows * Columns;
     const float CropSize = 30f;
@@ -54,12 +55,35 @@ public static class FarmArtLayout
         new Vector2(60, 205), new Vector2(165, 330), new Vector2(395, 265), new Vector2(200, 435),
     };
 
+    /// <summary>Called when the player taps a padlock in the clouds (set by FarmUIBootstrap).</summary>
+    public static System.Action LockedZoneTapped;
+
+    // The farm sits in the middle of a bigger map; everything around it is covered by clouds
+    // with padlocks ("Más adelante...") for areas that will open later.
+    public const float MarginX = 200f, MarginY = 170f;
+    public const float MapWidth = Width + 2 * MarginX, MapHeight = Height + 2 * MarginY;
+
+    static readonly Vector2[] LockedZones =
+    {
+        new Vector2(MarginX / 2f, MarginY + Height / 2f),                    // west
+        new Vector2(MarginX + Width + MarginX / 2f, MarginY + Height / 2f),  // east
+        new Vector2(MarginX + Width / 2f, MarginY / 2f + 20f),               // north
+        new Vector2(MarginX + Width / 2f, MarginY + Height + MarginY / 2f),  // south
+    };
+
     public static void Apply(RectTransform world)
     {
+        var ui = new PixelUIFactory();
+        var map = EnsureMap(world, ui);
+
         world.sizeDelta = new Vector2(Width, Height);
-        world.localScale = new Vector3(Zoom, Zoom, 1f);
-        world.anchoredPosition = StartView;
-        var viewport = world.parent as RectTransform;
+        world.localScale = Vector3.one;
+        world.anchoredPosition = new Vector2(MarginX, -MarginY);
+
+        map.localScale = new Vector3(Zoom, Zoom, 1f);
+        map.anchoredPosition = new Vector2(StartView.x - MarginX * Zoom, StartView.y + MarginY * Zoom);
+
+        var viewport = map.parent as RectTransform;
         if (viewport != null)
         {
             viewport.sizeDelta = new Vector2(viewport.sizeDelta.x, ViewportHeight);
@@ -69,8 +93,8 @@ public static class FarmArtLayout
         var scroll = viewport != null ? viewport.GetComponent<ScrollRect>() : null;
         if (scroll != null)
         {
-            // Drag to pan around the farm in any direction.
-            scroll.content = world;
+            // Drag to walk around the map in any direction; it stops at the clouds' outer edge.
+            scroll.content = map;
             scroll.viewport = viewport;
             scroll.horizontal = true;
             scroll.vertical = true;
@@ -96,6 +120,39 @@ public static class FarmArtLayout
         LayoutPens(world.Find("Animal Pens"));
         for (int i = 0; i < WorkerSpots.Length; i++)
             Place(world.Find("worker-" + (i + 1)) as RectTransform, WorkerSpots[i], new Vector2(30, 37));
+    }
+
+    /// <summary>
+    /// Wraps the farm world in a bigger "Farm map": sky-colored base, the farm in the middle,
+    /// a cloud frame over the edges and padlock signs in the clouds. Safe to call twice.
+    /// </summary>
+    static RectTransform EnsureMap(RectTransform world, PixelUIFactory ui)
+    {
+        var existing = world.parent as RectTransform;
+        if (existing != null && existing.name == "Farm map") return existing;
+
+        var viewport = world.parent;
+        var map = ui.Rect(viewport, "Farm map", 0, 0, MapWidth, MapHeight);
+        map.SetSiblingIndex(world.GetSiblingIndex());
+        var sky = ui.Block(map, "Sky", 0, 0, MapWidth, MapHeight, PixelUIFactory.Hex("#E6EDF9"));
+        sky.raycastTarget = true; // drag anywhere to pan
+        world.SetParent(map, false);
+
+        var clouds = ui.Texture(map, "Clouds", "World/clouds_frame", 0, 0, MapWidth, MapHeight);
+        clouds.raycastTarget = true;
+
+        foreach (var zone in LockedZones) LockSign(map, ui, zone);
+        return map;
+    }
+
+    static void LockSign(Transform map, PixelUIFactory ui, Vector2 center)
+    {
+        const float w = 132f, h = 48f;
+        var sign = ui.Panel(map, "Locked zone", center.x - w / 2f, center.y - h / 2f, w, h,
+            PixelUIFactory.Hex("#CE8854"));
+        ui.Texture(sign, "Padlock", "UI/Icons/candado", 8, 8, 32, 32);
+        ui.Paragraph(sign, "Text", "Más adelante...", 42, 6, w - 48, h - 12, 13, Color.white);
+        ui.Hit(sign, "Tap", 0, 0, w, h, () => LockedZoneTapped?.Invoke());
     }
 
     /// <summary>Where a field's golden ticket points: the field center, in the plot's local space.</summary>

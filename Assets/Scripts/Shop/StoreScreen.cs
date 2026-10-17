@@ -56,16 +56,30 @@ public sealed class StoreScreen : MonoBehaviour
     }
 
     float rebuildAt = -1f;
+    string lastAffordKey;
+
+    string AffordKey()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var b in ShopCatalog.Boosts) sb.Append(state.Gems >= b.Gems ? '1' : '0');
+        foreach (var it in ShopCatalog.Items) sb.Append(state.Gems >= it.Gems ? '1' : '0');
+        sb.Append(state.StarterPackBought ? 'S' : 's').Append(state.Boosts.Summary.Length > 0 ? 'B' : 'b');
+        return sb.ToString();
+    }
 
     // Gold/gems change on every harvest: rebuild at most twice per second while visible.
     void OnStateChanged()
     {
-        if (gameObject.activeInHierarchy && rebuildAt < 0f) rebuildAt = Time.unscaledTime + .5f;
+        // Workers make gold every few seconds: only redraw when something became (un)affordable.
+        string key = AffordKey();
+        if (key == lastAffordKey) return;
+        lastAffordKey = key;
+        if (gameObject.activeInHierarchy && rebuildAt < 0f) rebuildAt = Time.unscaledTime + .3f;
     }
 
     void Update()
     {
-        if (rebuildAt >= 0f && Time.unscaledTime >= rebuildAt)
+        if (rebuildAt >= 0f && Time.unscaledTime >= rebuildAt && !MenuPage.IsScrolling(content))
         {
             rebuildAt = -1f;
             Rebuild();

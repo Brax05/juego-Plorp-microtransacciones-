@@ -3,84 +3,111 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Golden ticket that floats over a field or an animal when something is ready to collect.
-/// It glows and sparkles; tapping it collects. Replaces the old "TOCAR PARA COSECHAR" bar.
-/// Lives in the world's "Harvest tickets" layer (above everything) and follows its target.
+/// Shown over a field or an animal when something is ready to collect: an arched golden word
+/// ("¡COSECHA!", "¡HUEVO!"...) whose letters wave, with a pulsing golden glow and sparkles around it.
+/// Tapping it collects. Lives in the world's "Harvest tickets" layer (above everything) and follows its target.
 /// </summary>
 public sealed class HarvestTicket : MonoBehaviour
 {
-    const float Size = 30f;
+    const float HitW = 96f, HitH = 44f;
+    const int FontSize = 15;
     static readonly Color Gold = PixelUIFactory.Hex("#FFD44F");
-    static readonly Color Paper = PixelUIFactory.Hex("#FFF4D6");
 
     RectTransform rect;
     RectTransform target;
-    Vector2 targetPoint;           // point in the target's local space the ticket points at
+    Vector2 targetPoint;           // point in the target's local space the word floats over
     Func<int> readyCount;
     Func<FarmItem> item;
     Action collect;
+    bool forAnimal;
 
+    PixelUIFactory ui;
     CanvasGroup group;
-    RawImage icon;
-    Text count;
-    Image glow;
     RectTransform body;
-    readonly RectTransform[] sparkles = new RectTransform[4];
-    string iconPath;
-    float phase;
-    float nextCheck;
+    Image glow;
+    Text count;
+    RectTransform[] letters = new RectTransform[0];
+    float[] angles = new float[0];
+    float radius;
+    readonly RectTransform[] sparkles = new RectTransform[5];
+    string word;
+    float phase, nextCheck, shownAt;
     bool shown;
-    float shownAt;
 
     public static HarvestTicket Create(Transform layer, string name, RectTransform target, Vector2 targetPoint,
         Func<int> readyCount, Func<FarmItem> item, Action collect)
     {
         var ui = new PixelUIFactory();
-        var rect = ui.Rect(layer, name, 0, 0, Size, Size + 8);
-        rect.pivot = new Vector2(.5f, 0f); // bottom tip sits on the target point
+        var rect = ui.Rect(layer, name, 0, 0, HitW, HitH);
+        rect.pivot = new Vector2(.5f, 0f); // bottom centre sits on the target point
         var ticket = rect.gameObject.AddComponent<HarvestTicket>();
+        ticket.ui = ui;
         ticket.rect = rect;
         ticket.target = target;
         ticket.targetPoint = targetPoint;
         ticket.readyCount = readyCount;
         ticket.item = item;
         ticket.collect = collect;
-        ticket.Build(ui);
+        ticket.forAnimal = name.StartsWith("Ticket ") && !name.StartsWith("Ticket plot");
+        ticket.Build();
         return ticket;
     }
 
-    void Build(PixelUIFactory ui)
+    void Build()
     {
         group = gameObject.AddComponent<CanvasGroup>();
         phase = UnityEngine.Random.value * 6f;
 
-        // Golden halo behind the ticket.
-        glow = ui.Block(transform, "Glow", -6, -6, Size + 12, Size + 12, new Color(1f, .85f, .2f, .4f));
-        CenterPivot(glow.rectTransform, new Vector2(.5f, .5f));
+        // Soft golden halo (also the tap area).
+        glow = ui.Block(transform, "Glow", 0, 0, HitW, HitH, new Color(1f, .85f, .2f, .3f));
+        glow.raycastTarget = true;
 
-        body = ui.Rect(transform, "Body", 0, 0, Size, Size + 8);
-        // Scale/bob from the bottom tip.
+        body = ui.Rect(transform, "Word", 0, 0, HitW, HitH);
         body.anchorMin = body.anchorMax = body.pivot = new Vector2(.5f, 0f);
         body.anchoredPosition = Vector2.zero;
-        ui.Block(body, "Tip", Size / 2f - 4, Size - 1, 8, 7, PixelUIFactory.Ink);
-        ui.Block(body, "Tip fill", Size / 2f - 2, Size - 1, 4, 5, Gold);
-        ui.Block(body, "Border", 0, 0, Size, Size, PixelUIFactory.Ink);
-        ui.Block(body, "Gold edge", 2, 2, Size - 4, Size - 4, Gold);
-        ui.Block(body, "Paper", 4, 4, Size - 8, Size - 8, Paper);
-        icon = ui.Texture(body, "Icon", FarmItems.Carrot.Icon, 5, 3, Size - 10, Size - 10);
-        count = ui.Label(body, "Count", "", 0, Size - 14, Size + 4, 12, 10, Color.white, TextAnchor.MiddleRight);
+        count = ui.Label(body, "Count", "", -10, 0, HitW + 20, 16, 12, Color.white, TextAnchor.MiddleCenter);
+        count.rectTransform.anchorMin = count.rectTransform.anchorMax = new Vector2(.5f, 0f);
+        count.rectTransform.pivot = new Vector2(.5f, 0f);
+        count.rectTransform.anchoredPosition = new Vector2(0f, 0f);
 
         for (int i = 0; i < sparkles.Length; i++)
             sparkles[i] = ui.Block(transform, "Sparkle " + i, 0, 0, 3, 3, Color.white).rectTransform;
 
-        // Whole ticket is the button (the glow makes the hit area a bit bigger than the art).
-        glow.raycastTarget = true;
         var button = gameObject.AddComponent<Button>();
         button.targetGraphic = glow;
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(() => { if (shown) collect(); });
 
         Hide();
+    }
+
+    string WordFor(FarmItem it)
+    {
+        if (forAnimal && it != null) return "¡" + it.Single.ToUpperInvariant() + "!";
+        return "¡COSECHA!";
+    }
+
+    /// <summary>Rebuilds the letters on an arch (only when the word changes).</summary>
+    void SetWord(string text)
+    {
+        if (text == word) return;
+        word = text;
+        foreach (var l in letters) if (l != null) Destroy(l.gameObject);
+        int n = text.Length;
+        letters = new RectTransform[n];
+        angles = new float[n];
+        float spacing = FontSize * .66f;
+        radius = 70f;
+        float total = (n - 1) * spacing / radius;
+        for (int i = 0; i < n; i++)
+        {
+            var label = ui.Label(body, "Letter", text[i].ToString(), 0, 0, FontSize * 1.3f, FontSize * 1.5f,
+                FontSize, Gold, TextAnchor.MiddleCenter);
+            var rt = label.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(.5f, .5f);
+            letters[i] = rt;
+            angles[i] = -total / 2f + i * (n > 1 ? total / (n - 1) : 0f);
+        }
     }
 
     void Update()
@@ -94,8 +121,8 @@ public sealed class HarvestTicket : MonoBehaviour
             else if (ready <= 0 && shown) Hide();
             if (shown)
             {
+                SetWord(WordFor(item()));
                 count.text = ready > 1 ? "x" + ready : "";
-                SetIcon(item()?.Icon);
             }
         }
         if (!shown || target == null) return;
@@ -103,34 +130,38 @@ public sealed class HarvestTicket : MonoBehaviour
         // Follow the target (animals walk around).
         rect.position = target.TransformPoint(targetPoint);
 
-        // Pop in, then bob; the halo pulses and the sparkles circle around.
-        float pop = Mathf.Clamp01((now - shownAt) / .2f);
-        float scale = pop < 1f ? Mathf.Lerp(.3f, 1.15f, pop) : 1f + .04f * Mathf.Sin(now * 4f + phase);
-        body.localScale = new Vector3(scale, scale, 1f);
-        body.anchoredPosition = new Vector2(0f, 2f * Mathf.Sin(now * 3f + phase));
+        // Pop in with a bounce, then each letter waves on the arch.
+        float age = now - shownAt;
+        for (int i = 0; i < letters.Length; i++)
+        {
+            float a = angles[i];
+            float wave = Mathf.Sin(now * 6f + i * .6f + phase) * 2.5f;
+            letters[i].anchoredPosition = new Vector2(Mathf.Sin(a) * radius,
+                (Mathf.Cos(a) - 1f) * radius + 26f + wave);
+            letters[i].localEulerAngles = new Vector3(0f, 0f, -a * Mathf.Rad2Deg);
+            float delay = i * .03f;
+            letters[i].localScale = Vector3.one * (age < delay ? 0f : EaseOutBack(Mathf.Clamp01((age - delay) / .3f)));
+        }
 
         float pulse = .5f + .5f * Mathf.Sin(now * 5f + phase);
-        glow.color = new Color(1f, .82f + .1f * pulse, .2f, .2f + .35f * pulse);
-        glow.rectTransform.localScale = Vector3.one * (1f + .12f * pulse);
+        glow.color = new Color(1f, .82f + .1f * pulse, .2f, .12f + .25f * pulse);
+        glow.rectTransform.localScale = new Vector3(1f + .08f * pulse, 1f + .15f * pulse, 1f);
 
         for (int i = 0; i < sparkles.Length; i++)
         {
-            float a = now * 2.2f + phase + i * Mathf.PI / 2f;
-            float r = Size * .72f;
-            sparkles[i].anchoredPosition = new Vector2(Size / 2f + Mathf.Cos(a) * r - 1.5f,
-                -(Size / 2f + Mathf.Sin(a) * r * .8f) + 1.5f);
+            float a = now * 2f + phase + i * Mathf.PI * 2f / sparkles.Length;
+            sparkles[i].anchoredPosition = new Vector2(HitW / 2f + Mathf.Cos(a) * HitW * .55f,
+                -(HitH / 2f + Mathf.Sin(a) * HitH * .6f));
             float twinkle = .5f + .5f * Mathf.Sin(now * 9f + i * 1.7f);
             sparkles[i].localScale = Vector3.one * (.6f + twinkle);
             sparkles[i].GetComponent<Image>().color = Color.Lerp(Gold, Color.white, twinkle);
         }
     }
 
-    /// <summary>Changes the pivot without moving the rect on screen.</summary>
-    static void CenterPivot(RectTransform r, Vector2 pivot)
+    static float EaseOutBack(float x)
     {
-        Vector2 delta = Vector2.Scale(pivot - r.pivot, r.sizeDelta);
-        r.pivot = pivot;
-        r.anchoredPosition += delta;
+        const float c1 = 1.70158f, c3 = c1 + 1f;
+        return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
     }
 
     void Show()
@@ -146,14 +177,5 @@ public sealed class HarvestTicket : MonoBehaviour
         shown = false;
         group.alpha = 0f;
         group.blocksRaycasts = false;
-    }
-
-    void SetIcon(string path)
-    {
-        if (string.IsNullOrEmpty(path) || path == iconPath) return;
-        iconPath = path;
-        var texture = Resources.Load<Texture2D>(path);
-        if (texture != null) texture.filterMode = FilterMode.Point;
-        icon.texture = texture;
     }
 }

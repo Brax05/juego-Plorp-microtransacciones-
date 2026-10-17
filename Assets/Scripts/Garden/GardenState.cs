@@ -121,6 +121,8 @@ public sealed class GardenState
     public bool TooMuchLight => Light > Plant.LightMax;
     public bool TooLittleLight => Light < Plant.LightMin;
     public bool Comfortable => Condition == 0;
+    /// <summary>The sun is shining in through open curtains (as opposed to the player overusing the lamp).</summary>
+    public bool SunComingIn => Weather == GardenWeather.Sunny && !CurtainsClosed;
 
     int Condition => TooMuchWater ? 1 : TooLittleWater ? 2 : TooMuchLight ? 3 : TooLittleLight ? 4 : 0;
 
@@ -132,14 +134,15 @@ public sealed class GardenState
             var problems = new List<string>();
             if (TooMuchWater) problems.Add("¡Demasiada agua!");
             if (TooLittleWater) problems.Add("Se seca: riégala.");
-            if (TooMuchLight) problems.Add(CurtainsClosed ? "¡Demasiado sol! (cortinas cerradas)" : "¡Demasiada luz! Cierra las cortinas.");
+            if (TooMuchLight) problems.Add(SunComingIn ? "¡Demasiado sol! Cierra las cortinas."
+                : "¡Demasiada luz! No uses más la lámpara.");
             if (TooLittleLight) problems.Add(CurtainsClosed ? "Muy oscuro: abre las cortinas." : "Le falta luz: usa la lámpara.");
             if (problems.Count > 0) return string.Join("  ", problems.ToArray());
             if (Bugs.Count > 0) return "¡Bichitos! Aplástalos (dan monedas de flor).";
             if (CountLeaves(LeafState.Withered) + CountLeaves(LeafState.Burnt) > 0) return "Hojas secas: córtalas con las tijeras.";
             if (CountLeaves(LeafState.Dusty) > 0) return "Hojas con polvo: tócalas para limpiarlas.";
             if (Bloomed) return StoredCoins > 0 ? "Toca la flor para recoger monedas de flor." : "En flor: produciendo monedas de flor.";
-            return (Fertilized ? "Creciendo rápido con abono." : "Está feliz y creciendo.") +
+            return (Fertilized ? "Creciendo con abono." : "Está feliz y creciendo.") +
                    " Nivel " + Level + "/" + MaxLevel + ": a nivel " + MaxLevel + " da la flor.";
         }
     }
@@ -151,7 +154,11 @@ public sealed class GardenState
         {
             case 1: return "Miau... ¡la " + name + " de Plorp tiene demasiada agua! Espera a que se seque.";
             case 2: return "Miau... ¡la " + name + " de Plorp se está secando! Plorp dice \"glerp\". Riégala.";
-            case 3: return "Miau... ¡hace demasiada luz! La " + name + " de Plorp se quema. Cierra las cortinas.";
+            case 3:
+                // Only ask for the curtains when the sun is what's pouring in; if it's the lamp, stop using it.
+                return SunComingIn
+                    ? "Miau... ¡entra demasiado sol! La " + name + " de Plorp se quema. Cierra las cortinas."
+                    : "Miau... ¡ya no le des más luz! La " + name + " de Plorp se está quemando con la lámpara.";
             default: return "Miau... la " + name + " de Plorp está muy a oscuras." + (CurtainsClosed ? " Abre las cortinas o usa la lámpara." : " Dale luz con la lámpara.");
         }
     }
@@ -247,7 +254,7 @@ public sealed class GardenState
             stress = Mathf.Max(0f, stress - dt);
             int dry = CountLeaves(LeafState.Withered) + CountLeaves(LeafState.Burnt) + CountLeaves(LeafState.Empty);
             float rate = .055f
-                         * (Fertilized ? 2f : 1f)
+                         * (Fertilized ? 1.5f : 1f)
                          * (1f + .15f * CountLeaves(LeafState.Strong) - .08f * CountLeaves(LeafState.Dusty))
                          * Mathf.Max(.2f, 1f - dry / (float)VisibleLeaves)
                          * Mathf.Max(.1f, 1f - .3f * Bugs.Count)
@@ -298,17 +305,29 @@ public sealed class GardenState
                 }
             }
         }
+        // Bugs eat the plant: health drops while they're on it, and after ~40 s their leaf withers
+        // (then they move on to another leaf).
         for (int i = Bugs.Count - 1; i >= 0; i--)
         {
             var bug = Bugs[i];
             bug.Age += dt;
             if (bug.Leaf >= VisibleLeaves || Leaves[bug.Leaf] == LeafState.Empty) { Bugs.RemoveAt(i); continue; }
-            if (bug.Age >= 60f && Leaves[bug.Leaf] != LeafState.Withered)
+            Care[Current] = Mathf.Max(0f, Care[Current] - dt * .02f);
+            if (bug.Age >= 40f)
             {
-                Leaves[bug.Leaf] = LeafState.Withered;
-                bug.Age = 30f;
+                if (Leaves[bug.Leaf] != LeafState.Withered && Leaves[bug.Leaf] != LeafState.Burnt)
+                {
+                    Leaves[bug.Leaf] = LeafState.Withered;
+                    if (live) Alert?.Invoke("Miau... los bichitos marchitaron una hoja. ¡Aplástalos!");
+                }
+                int next = RandomLeaf(st => st == LeafState.Healthy || st == LeafState.Strong || st == LeafState.Dusty);
+                if (next >= 0) bug.Leaf = next;
+                bug.Age = 0f;
             }
         }
+
+        // Fertilizer load wears off slowly (too much in a short time dirties the leaves).
+        fertilizerLoad = Mathf.Max(0f, fertilizerLoad - dt / 90f);
 
         // Level ups (1 gem each, the flower comes at level 5)
         int level = LevelFor(Care[Current]);
@@ -399,15 +418,45 @@ public sealed class GardenState
     /// <summary>Lamp held over the plant (per frame).</summary>
     public void PourLight(float dt) { Light = Mathf.Min(100f, Light + 14f * dt); Changed?.Invoke(); }
 
-    /// <summary>Fertilizer poured on the plant: costs monedas de flor, doubles care growth for 3 minutes.</summary>
+    float fertilizerLoad;
+    /// <summary>True when one more dose would be too much (shown as a warning before pouring).</summary>
+    public bool FertilizerSaturated => fertilizerLoad >= 1.5f;
+
+    /// <summary>
+    /// Fertilizer: revives up to 2 withered/burnt leaves (they turn green again), gives +4% health and
+    /// a gentle growth boost for 2 minutes. Pouring too much in a short time dirties every leaf and costs health.
+    /// </summary>
     public string ApplyFertilizer()
     {
         if (FlowerCoins < FertilizerCost) return "El abono cuesta " + FertilizerCost + " monedas de flor";
         FlowerCoins -= FertilizerCost;
-        FertilizerUntil = Math.Max(Now, FertilizerUntil) + 180;
+        fertilizerLoad += 1f;
+        string result;
+        if (fertilizerLoad > 2.5f)
+        {
+            for (int i = 0; i < VisibleLeaves; i++)
+                if (Leaves[i] == LeafState.Healthy || Leaves[i] == LeafState.Strong) Leaves[i] = LeafState.Dusty;
+            Care[Current] = Mathf.Max(0f, Care[Current] - 5f);
+            result = "¡Demasiado abono! Ensuciaste las hojas (-5% salud)";
+            Alert?.Invoke("Miau... ¡mucho abono! Las hojas quedaron sucias. Límpialas tocándolas y espera antes de echar más.");
+        }
+        else
+        {
+            int revived = 0;
+            for (int i = 0; i < VisibleLeaves && revived < 2; i++)
+            {
+                if (Leaves[i] != LeafState.Withered && Leaves[i] != LeafState.Burnt) continue;
+                Leaves[i] = LeafState.Healthy;
+                revived++;
+            }
+            Care[Current] = Mathf.Min(100f, Care[Current] + 4f);
+            FertilizerUntil = Math.Max(Now, FertilizerUntil) + 120;
+            result = "Abonada: +4% salud" + (revived > 0 ? " y " + revived + (revived == 1 ? " hoja recuperada" : " hojas recuperadas") : "") +
+                     (FertilizerSaturated ? ". ¡Ojo, otra dosis ya es demasiado!" : "");
+        }
         Save();
         Changed?.Invoke();
-        return "Abonada: el cuidado sube x2 por 3 minutos";
+        return result;
     }
 
     public bool IsDry(int leaf) => leaf >= 0 && leaf < VisibleLeaves &&

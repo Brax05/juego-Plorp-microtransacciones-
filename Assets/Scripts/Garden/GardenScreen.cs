@@ -30,7 +30,7 @@ public sealed class GardenScreen : MonoBehaviour
     {
         "Arrastra la regadera sobre la planta",
         "Arrastra las tijeras sobre una hoja seca o quemada",
-        "Arrastra el abono sobre la planta (cuesta 2 monedas de flor)",
+        "Abono: recupera hojas marchitas y da salud (2 monedas de flor). ¡No eches mucho seguido!",
         "Arrastra la lámpara sobre la planta",
     };
 
@@ -49,6 +49,8 @@ public sealed class GardenScreen : MonoBehaviour
     Text waterValue, lightValue, statusText, bonusText;
     RectTransform sunLayer, cloudLayer, curtainLeft, curtainRight;
     Text curtainButtonText;
+    RawImage curtainButtonArt;
+    float curtainPress;
     float curtainOpen = 1f; // 1 open, 0 closed (animated)
     CanvasGroup toastGroup;
     readonly RawImage[] leaves = new RawImage[GardenState.LeafSlots];
@@ -72,6 +74,7 @@ public sealed class GardenScreen : MonoBehaviour
 
     // Tips and Plorp's visits
     RectTransform ufoLayer, ufo;
+    Image ufoBeam;
     float nextTip = 12f, nextUfo = 45f, ufoTime = -1f;
     bool ufoDropped;
 
@@ -121,10 +124,9 @@ public sealed class GardenScreen : MonoBehaviour
         // Plorp's UFO flies past the window now and then (hidden by closed curtains).
         ufoLayer = ui.Rect(transform, "UFO window", 92, 107, 389, 363);
         ufoLayer.gameObject.AddComponent<RectMask2D>();
-        ufo = ui.Rect(ufoLayer, "UFO", -120, 40, 96, 54);
-        ui.Texture(ufo, "Plorp", "UI/Characters/plorp_face", 35, 3, 26, 28);
-        ui.Texture(ufo, "Dome", "UI/Garden/ufo_dome", 18, 0, 60, 24);
-        ui.Texture(ufo, "Body", "UI/Garden/ufo_body", 0, 18, 96, 30);
+        ufo = ui.Rect(ufoLayer, "UFO", -130, 20, 112, 100);
+        ufoBeam = ui.Block(ufo, "Beam", 30, 86, 52, 150, new Color(.55f, .95f, 1f, 0f));
+        ui.Texture(ufo, "Ship", "UI/Garden/ufo_plorp", 0, 0, 112, 100);
         ufo.gameObject.SetActive(false);
 
         // Curtains over the window (closed = no sun gets in).
@@ -149,12 +151,13 @@ public sealed class GardenScreen : MonoBehaviour
         ui.Texture(pill, "Icon", "UI/Garden/icon_flowercoin", 6, 5, 24, 24);
         flowerCoinText = ui.Label(pill, "Count", "", 32, 2, 56, 30, 16, Color.white);
 
-        // Curtain button (top-right of the window frame).
-        var curtainButton = ui.Panel(transform, "Curtains button", 472, 96, 92, 34, PixelUIFactory.Hex("#8C3A3A"));
-        curtainButtonText = ui.Label(curtainButton, "Caption", "", 2, 0, 88, 34, 12, Color.white, TextAnchor.MiddleCenter);
-        ui.Hit(transform, "Toggle curtains", 472, 96, 92, 34, () =>
+        // Big red push button on the table (between the pot and the small pot) that opens/closes the curtains.
+        curtainButtonArt = ui.Texture(transform, "Curtains button", "UI/Garden/curtain_button_up", 380, 538, 88, 52);
+        curtainButtonText = ui.Label(transform, "Curtains caption", "", 366, 590, 116, 18, 12, Color.white, TextAnchor.MiddleCenter);
+        ui.Hit(transform, "Toggle curtains", 372, 530, 104, 78, () =>
         {
             garden.ToggleCurtains();
+            curtainPress = .18f;
             message(garden.CurtainsClosed ? "Cortinas cerradas: no entra el sol" : "Cortinas abiertas");
         });
 
@@ -274,7 +277,7 @@ public sealed class GardenScreen : MonoBehaviour
         signText.text = plant.Name.ToUpperInvariant();
         weatherText.text = garden.WeatherText;
         sunLayer.gameObject.SetActive(garden.Weather == GardenWeather.Sunny && !garden.CurtainsClosed);
-        curtainButtonText.text = garden.CurtainsClosed ? "ABRIR\nCORTINAS" : "CERRAR\nCORTINAS";
+        curtainButtonText.text = garden.CurtainsClosed ? "ABRIR CORTINAS" : "CERRAR CORTINAS";
         cloudLayer.gameObject.SetActive(garden.Weather == GardenWeather.Cloudy);
         flowerCoinText.text = FarmGameState.Format(garden.FlowerCoins);
 
@@ -399,6 +402,10 @@ public sealed class GardenScreen : MonoBehaviour
         float blink = phase < 1f ? Mathf.Sin(phase * Mathf.PI) : 0f;
         shopPulse.localScale = new Vector3(1f + .12f * blink, 1f + .2f * blink, 1f);
         shopGlow.color = new Color(1f, .95f, .5f, .45f * blink);
+
+        // Red button looks pressed for a moment (and stays a bit lower while closed).
+        curtainPress = Mathf.Max(0f, curtainPress - dt);
+        curtainButtonArt.texture = Tex(curtainPress > 0f ? "UI/Garden/curtain_button_down" : "UI/Garden/curtain_button_up");
 
         // Curtains slide open/closed.
         curtainOpen = Mathf.MoveTowards(curtainOpen, garden.CurtainsClosed ? 0f : 1f, dt / .35f);
@@ -613,15 +620,16 @@ public sealed class GardenScreen : MonoBehaviour
     {
         if (garden.Bugs.Count > 0) return "¡Aplasta los bichitos!";
         if (garden.CountLeaves(LeafState.Dusty) > 0) return "¡Toca las hojas para limpiarlas!";
-        if (garden.CountLeaves(LeafState.Withered) + garden.CountLeaves(LeafState.Burnt) > 0) return "¡Corta las hojas secas!";
-        if (garden.TooMuchLight && !garden.CurtainsClosed) return "¡Cierra las cortinas!";
+        if (garden.CountLeaves(LeafState.Withered) + garden.CountLeaves(LeafState.Burnt) > 0)
+            return UnityEngine.Random.value < .5f ? "¡Corta las hojas secas!" : "¡El abono revive hojas!";
+        if (garden.TooMuchLight) return garden.SunComingIn ? "¡Cierra las cortinas!" : "¡No más luz!";
         if (garden.TooLittleWater) return "¡Arrastra la regadera!";
         if (garden.TooLittleLight) return garden.CurtainsClosed ? "¡Abre las cortinas!" : "¡Usa la lámpara!";
         if (garden.Bloomed && garden.StoredCoins > 0) return "¡Toca la flor!";
         string[] general =
         {
             "¡A nivel 5 da la flor!", "¡La macetita es la tienda!", "¡El abono acelera todo!",
-            "¡Mira el clima en la ventana!", "¡Cuida la zona verde!",
+            "¡Mira el clima en la ventana!", "¡Cuida la zona verde!", "¡El abono revive hojas!",
         };
         return general[UnityEngine.Random.Range(0, general.Length)];
     }
@@ -646,8 +654,11 @@ public sealed class GardenScreen : MonoBehaviour
         float t = Mathf.Clamp01(ufoTime / duration);
         float eased = t < .4f ? Mathf.Lerp(0f, .45f, t / .4f) : t < .6f ? Mathf.Lerp(.45f, .55f, (t - .4f) / .2f)
                                                               : Mathf.Lerp(.55f, 1f, (t - .6f) / .4f);
-        float x = Mathf.Lerp(-120f, 420f, eased);
-        float y = 40f + Mathf.Sin(ufoTime * 3f) * 6f;
+        float x = Mathf.Lerp(-130f, 410f, eased);
+        float y = 20f + Mathf.Sin(ufoTime * 3f) * 6f;
+        // Tractor beam while it hovers in the middle.
+        float beam = t > .38f && t < .62f ? Mathf.Sin((t - .38f) / .24f * Mathf.PI) : 0f;
+        ufoBeam.color = new Color(.55f, .95f, 1f, .45f * beam);
         ufo.anchoredPosition = new Vector2(x, -y);
         ufo.localEulerAngles = new Vector3(0f, 0f, Mathf.Sin(ufoTime * 2f) * 5f);
 
@@ -655,7 +666,7 @@ public sealed class GardenScreen : MonoBehaviour
         {
             ufoDropped = true;
             int gems = UnityEngine.Random.Range(2, 5);
-            Vector3 from = ufo.TransformPoint(new Vector3(48f, -46f, 0f));
+            Vector3 from = ufo.TransformPoint(new Vector3(56f, -96f, 0f));
             for (int i = 0; i < gems; i++)
             {
                 var pickup = ui.Texture(fxLayer, "Gift gem", "UI/Shop/icon_gem", 0, 0, 30, 26);

@@ -43,7 +43,7 @@ public sealed class AchievementsScreen : MonoBehaviour
 
     void Update()
     {
-        if (rebuildAt >= 0f && Time.unscaledTime >= rebuildAt)
+        if (rebuildAt >= 0f && Time.unscaledTime >= rebuildAt && !MenuPage.IsScrolling(content))
         {
             rebuildAt = -1f;
             Rebuild();

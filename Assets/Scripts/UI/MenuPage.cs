@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -40,9 +41,39 @@ public static class MenuPage
         scroll.horizontal = false;
         scroll.vertical = true;
         scroll.movementType = ScrollRect.MovementType.Elastic;
+        scroll.elasticity = .1f;
+        scroll.inertia = true;
         scroll.scrollSensitivity = 30f;
-        scroll.decelerationRate = .12f;
+        scroll.decelerationRate = .135f;
+        viewport.gameObject.AddComponent<ScrollActivity>();
         return content;
+    }
+
+    /// <summary>
+    /// True while the player is dragging the list or it is still gliding. Pages must not rebuild their
+    /// cards then: destroying the card under the finger cancels the drag and makes scrolling jump.
+    /// </summary>
+    public static bool IsScrolling(RectTransform content)
+    {
+        var activity = content != null ? content.GetComponentInParent<ScrollActivity>() : null;
+        return activity != null && activity.Busy;
+    }
+
+    sealed class ScrollActivity : MonoBehaviour, IBeginDragHandler, IEndDragHandler
+    {
+        bool dragging;
+        ScrollRect scroll;
+        public bool Busy
+        {
+            get
+            {
+                if (scroll == null) scroll = GetComponent<ScrollRect>();
+                return dragging || (scroll != null && scroll.velocity.sqrMagnitude > 25f);
+            }
+        }
+        public void OnBeginDrag(PointerEventData e) => dragging = true;
+        public void OnEndDrag(PointerEventData e) => dragging = false;
+        void OnDisable() => dragging = false;
     }
 
     public static void Clear(Transform content)

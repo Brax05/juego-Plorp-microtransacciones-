@@ -76,7 +76,7 @@ public sealed class HarvestTicket : MonoBehaviour
         var button = gameObject.AddComponent<Button>();
         button.targetGraphic = glow;
         button.transition = Selectable.Transition.None;
-        button.onClick.AddListener(() => { if (shown) collect(); });
+        button.onClick.AddListener(() => { if (shown && collect != null) collect(); });
 
         Hide();
     }
@@ -112,7 +112,7 @@ public sealed class HarvestTicket : MonoBehaviour
 
     void Update()
     {
-        if (readyCount == null || body == null || glow == null) return;
+        if (readyCount == null || body == null || glow == null || rect == null) return;
         float now = Time.unscaledTime;
         if (now >= nextCheck)
         {
@@ -175,14 +175,20 @@ public sealed class HarvestTicket : MonoBehaviour
     {
         shown = true;
         shownAt = Time.unscaledTime;
-        group.alpha = 1f;
-        group.blocksRaycasts = true;
+        if (group != null)
+        {
+            group.alpha = 1f;
+            group.blocksRaycasts = true;
+        }
     }
 
     void Hide()
     {
         shown = false;
-        group.alpha = 0f;
-        group.blocksRaycasts = false;
+        if (group != null)
+        {
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+        }
     }
 }

@@ -174,11 +174,14 @@ public sealed class StartScreens : MonoBehaviour
     void Update()
     {
         float now = Time.unscaledTime;
-        if (title.gameObject.activeSelf)
+        if (title != null && title.gameObject.activeSelf)
         {
-            var c = playGlow.color;
-            c.a = .05f + .07f * (.5f + .5f * Mathf.Sin(now * 3f));
-            playGlow.color = c;
+            if (playGlow != null)
+            {
+                var c = playGlow.color;
+                c.a = .05f + .07f * (.5f + .5f * Mathf.Sin(now * 3f));
+                playGlow.color = c;
+            }
         }
 
         if (loadStarted < 0f) return;
@@ -188,11 +191,18 @@ public sealed class StartScreens : MonoBehaviour
         float eased = t < .55f ? Mathf.SmoothStep(0f, .7f, t / .55f)
             : t < .75f ? .7f + .05f * ((t - .55f) / .2f)
             : Mathf.SmoothStep(.75f, 1f, (t - .75f) / .25f);
-        barFill.sizeDelta = new Vector2(barWidth * eased, barFill.sizeDelta.y);
+        if (barFill != null)
+            barFill.sizeDelta = new Vector2(barWidth * eased, barFill.sizeDelta.y);
 
         int active = (int)(now / .3f) % 3;
-        for (int i = 0; i < 3; i++)
-            foreach (var part in dots[i]) part.color = i == active ? DotOn : DotOff;
+        if (dots != null)
+        {
+            for (int i = 0; i < dots.Length; i++)
+            {
+                if (dots[i] == null) continue;
+                foreach (var part in dots[i]) if (part != null) part.color = i == active ? DotOn : DotOff;
+            }
+        }
 
         if (now >= nextTip && t < .9f) ShowTip();
 

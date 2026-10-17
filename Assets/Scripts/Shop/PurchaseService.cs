@@ -76,22 +76,23 @@ public static class PurchaseService
 
     public static void Buy(GemPack pack)
     {
-        if (pack.OncePerPlayer && state.StarterPackBought)
+        if (pack == null) return;
+        if (pack.OncePerPlayer && state != null && state.StarterPackBought)
         {
-            message("Ya compraste este pack");
+            message?.Invoke("Ya compraste este pack");
             return;
         }
 #if PLORP_IAP
         if (Store.Controller == null)
         {
-            message("La tienda aún no está lista. Revisa tu conexión.");
+            message?.Invoke("La tienda aún no está lista. Revisa tu conexión.");
             Store.Init();
             return;
         }
         Store.Controller.InitiatePurchase(pack.ProductId);
 #else
         Grant(pack);
-        message("Modo prueba: compra simulada de " + pack.Name);
+        message?.Invoke("Modo prueba: compra simulada de " + pack.Name);
 #endif
     }
 
@@ -100,17 +101,18 @@ public static class PurchaseService
     {
 #if PLORP_IAP && UNITY_IOS
         Store.Extensions?.GetExtension<IAppleExtensions>()?.RestoreTransactions((ok, error) =>
-            message(ok ? "Compras restauradas" : "No se pudo restaurar: " + error));
+            message?.Invoke(ok ? "Compras restauradas" : "No se pudo restaurar: " + error));
 #else
-        message("En Android las compras se restauran solas al abrir el juego");
+        message?.Invoke("En Android las compras se restauran solas al abrir el juego");
 #endif
     }
 
     static void Grant(GemPack pack)
     {
+        if (pack == null || state == null) return;
         if (pack.OncePerPlayer && state.StarterPackBought) return; // already delivered (restore)
         state.GrantPack(pack);
-        message("¡Gracias! +" + pack.Gems + " gemas");
+        message?.Invoke("¡Gracias! +" + pack.Gems + " gemas");
         Changed?.Invoke();
     }
 

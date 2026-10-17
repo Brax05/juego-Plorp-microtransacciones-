@@ -90,13 +90,13 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         boostLabel.transform.SetSiblingIndex(layer);
 
         // Pepito speaks up when the garden plant needs something (dry, too much sun, bugs, bloom...).
-        state.Garden.Alert += text => pepito.Say(text, 7f);
+        state.Garden.Alert += text => { if (pepito != null) pepito.Say(text, 7f); };
         RewardFx.Create(content, FindChildRecursive(content, "Gold"));
         RewardFx.SetFoodTarget(goalPanel.transform.Find("Plorp face") ?? goalPanel.transform);
         FarmArtLayout.LockedZoneTapped = () =>
         {
             ShowMessage("Zona bloqueada: más adelante...");
-            pepito.Say("Miau... Plorp dice que detrás de esas nubes hay más tierra. Se abrirá más adelante. Él tampoco sabe cuándo.", 7f);
+            if (pepito != null) pepito.Say("Miau... Plorp dice que detrás de esas nubes hay más tierra. Se abrirá más adelante. Él tampoco sabe cuándo.", 7f);
         };
 
         // Red badge on the Logros tab with how many achievements are ready to claim.
@@ -147,7 +147,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
         // Arched tips over the farm now and then.
-        if (gameState != null && currentTab == 0)
+        if (gameState != null && currentTab == 0 && content != null)
         {
             nextFarmTip -= Time.unscaledDeltaTime;
             if (nextFarmTip <= 0f)
@@ -217,6 +217,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         currentTab = tab;
         farm.SelectTab(tab);
         menu.Show(tab);
+        if (tab != 0 && content != null) CurvedPopup.Dismiss(content);
         if (messageRoutine != null) StopCoroutine(messageRoutine);
         if (messageLabel != null) messageLabel.gameObject.SetActive(false);
     }

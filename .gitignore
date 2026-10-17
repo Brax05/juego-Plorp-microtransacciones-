@@ -9,6 +9,8 @@
 /UserSettings/
 /MemoryCaptures/
 /Recordings/
+/[Aa]ssets/_Recovery/
+/[Aa]ssets/_Recovery.meta
 
 # IDE and generated project files
 /.vscode/

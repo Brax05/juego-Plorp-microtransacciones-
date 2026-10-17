@@ -87,7 +87,7 @@ public sealed class WorldActor : MonoBehaviour
         RefreshReady();
     }
 
-    void RefreshReady() { sprite.SetReady(role != WorldActorRole.Animal || Ready()); }
+    void RefreshReady() { if (sprite != null) sprite.SetReady(role != WorldActorRole.Animal || Ready()); }
 
     string SaveKey => "GlorpFarm.world.actor." + id + ".readyAt";
 }

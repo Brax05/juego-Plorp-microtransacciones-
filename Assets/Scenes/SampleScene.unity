@@ -365,6 +365,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1648999464531456539, guid: 4f9bb75e6a9b5bb42a2ad9fa0ffb5fd6, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 209
+      objectReference: {fileID: 0}
+    - target: {fileID: 1648999464531456539, guid: 4f9bb75e6a9b5bb42a2ad9fa0ffb5fd6, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -445
+      objectReference: {fileID: 0}
     - target: {fileID: 2313409287695819974, guid: 4f9bb75e6a9b5bb42a2ad9fa0ffb5fd6, type: 3}
       propertyPath: m_Name
       value: Pixel Farm Canvas

@@ -14,9 +14,18 @@ public sealed class CurvedPopup : MonoBehaviour
     float[] baseAngle;
     float radius, age;
 
+    /// <summary>Dismisses any active CurvedPopup under the given parent.</summary>
+    public static void Dismiss(Transform parent)
+    {
+        if (parent == null) return;
+        var existing = parent.Find("Tip popup");
+        if (existing != null) Destroy(existing.gameObject);
+    }
+
     /// <summary>Shows <paramref name="text"/> arched above <paramref name="center"/> (local position in <paramref name="parent"/>).</summary>
     public static CurvedPopup Show(RectTransform parent, string text, Vector2 center, Color color, int size = 24)
     {
+        Dismiss(parent);
         var ui = new PixelUIFactory();
         var root = ui.Rect(parent, "Tip popup", 0, 0, 10, 10);
         root.anchoredPosition = new Vector2(center.x, -center.y);
@@ -49,6 +58,7 @@ public sealed class CurvedPopup : MonoBehaviour
 
     void Update()
     {
+        if (letters == null || texts == null) return;
         age += Time.unscaledDeltaTime;
         float t = age / Life;
         float pop = age < .35f ? EaseOutBack(age / .35f) : 1f;
@@ -56,6 +66,7 @@ public sealed class CurvedPopup : MonoBehaviour
         float alpha = 1f - rise;
         for (int i = 0; i < letters.Length; i++)
         {
+            if (letters[i] == null || texts[i] == null) continue;
             float a = baseAngle[i];
             float wave = Mathf.Sin(age * 6f + i * .5f) * 3f;
             // Points on a circle whose centre is below the text → letters form an arch.

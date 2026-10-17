@@ -122,21 +122,27 @@ public sealed class PlorpGoalPanel : MonoBehaviour
 
     void Refresh()
     {
+        if (state == null || titleText == null || orderText == null || buttonFace == null || buttonCaption == null) return;
         var goal = state.CurrentGoal;
+        if (goal == null) return;
         titleText.text = state.PlorpSatisfied ? "PLORP CONFORME" : "PLORP QUIERE";
-        orderText.text = goal.Title.ToUpperInvariant();
+        orderText.text = goal.Title != null ? goal.Title.ToUpperInvariant() : "";
 
         for (int i = 0; i < Slots; i++)
         {
-            bool used = i < goal.Lines.Count;
+            if (icons[i] == null || counts[i] == null) continue;
+            bool used = goal.Lines != null && i < goal.Lines.Count;
             icons[i].gameObject.SetActive(used);
             counts[i].gameObject.SetActive(used);
             if (!used) continue;
             var line = goal.Lines[i];
-            SetIcon(i, line.Item.Icon);
-            long have = state.ItemCount(line.Item.Id);
-            counts[i].text = FarmGameState.Format(Math.Min(have, line.Amount)) + "/" + FarmGameState.Format(line.Amount);
-            counts[i].color = have >= line.Amount ? Ok : Color.white;
+            if (line.Item != null)
+            {
+                SetIcon(i, line.Item.Icon);
+                long have = state.ItemCount(line.Item.Id);
+                counts[i].text = FarmGameState.Format(Math.Min(have, line.Amount)) + "/" + FarmGameState.Format(line.Amount);
+                counts[i].color = have >= line.Amount ? Ok : Color.white;
+            }
         }
 
         bool ready = state.GoalReady;

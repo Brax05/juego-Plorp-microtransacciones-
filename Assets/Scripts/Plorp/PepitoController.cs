@@ -113,10 +113,13 @@ public sealed class PepitoController : MonoBehaviour
     {
         if (asking) return; // never interrupt a food request
         Show();
-        buttonsRow.gameObject.SetActive(false);
-        bubbleText.rectTransform.sizeDelta = new Vector2(436, 96);
-        bubbleText.text = text;
-        face.Talk(2);
+        if (buttonsRow != null) buttonsRow.gameObject.SetActive(false);
+        if (bubbleText != null)
+        {
+            bubbleText.rectTransform.sizeDelta = new Vector2(436, 96);
+            bubbleText.text = text;
+        }
+        if (face != null) face.Talk(2);
         hideAt = Time.unscaledTime + seconds;
     }
 
@@ -147,18 +150,22 @@ public sealed class PepitoController : MonoBehaviour
             float basePrice = 80f + 60f * state.FarmLevel;
             askGold = Mathf.Max(10, Mathf.RoundToInt(basePrice * UnityEngine.Random.Range(.5f, 1.8f) / 10f) * 10);
         }
-        bubbleText.rectTransform.sizeDelta = new Vector2(436, 60);
-        bubbleText.text = "Miau... creo que Plorp tiene hambre. ¿Le compras " + snack + "?";
-        payCaption.text = askGems > 0 ? "DAR " + askGems + " GEMAS" : "DAR " + FarmGameState.Format(askGold) + " MONEDAS";
-        buttonsRow.gameObject.SetActive(true);
+        if (bubbleText != null)
+        {
+            bubbleText.rectTransform.sizeDelta = new Vector2(436, 60);
+            bubbleText.text = "Miau... creo que Plorp tiene hambre. ¿Le compras " + snack + "?";
+        }
+        if (payCaption != null)
+            payCaption.text = askGems > 0 ? "DAR " + askGems + " GEMAS" : "DAR " + FarmGameState.Format(askGold) + " MONEDAS";
+        if (buttonsRow != null) buttonsRow.gameObject.SetActive(true);
         RefreshPayButton();
-        face.Talk(1);
+        if (face != null) face.Talk(1);
         hideAt = Time.unscaledTime + RequestSeconds;
     }
 
     void RefreshPayButton()
     {
-        if (!asking) return;
+        if (!asking || payFace == null || state == null) return;
         bool affordable = state.Gold >= askGold && state.Gems >= askGems;
         payFace.color = affordable ? PixelUIFactory.Green : PixelUIFactory.Hex("#67594F");
     }
@@ -226,6 +233,7 @@ public sealed class PepitoController : MonoBehaviour
 
     void ApplySlide()
     {
+        if (root == null || group == null) return;
         // Ease-out slide from the left edge.
         float eased = 1f - Mathf.Pow(1f - slide, 3f);
         root.anchoredPosition = new Vector2(Mathf.Lerp(-580f, 0f, eased), -Top);

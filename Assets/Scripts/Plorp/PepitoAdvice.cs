@@ -21,7 +21,7 @@ public sealed class AdviceDef
 public static class PepitoAdvice
 {
     public const string Intro =
-        "Miau. Soy Pepito, gato callejero. Plorp me subió a su nave para que le traduzca. Dice que tiene hambre. Mucha.";
+        "Miau. Soy Pepito. Plorp me subió a su nave para que le traduzca. Dice que tiene hambre. Mucha.";
 
     // Everything Pepito says is his (very confident) translation of Plorp.
     static readonly string[] Flavor =

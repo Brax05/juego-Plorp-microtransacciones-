@@ -67,6 +67,8 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         int layer = feedbackTransform != null ? feedbackTransform.GetSiblingIndex() : content.childCount;
         var pepito = PepitoController.Create(content, layer, state, ShowMessage);
         var goalPanel = PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
+        // Pepito speaks up when the garden plant needs something (dry, too much sun, bugs, bloom...).
+        state.Garden.Alert += text => pepito.Say(text, 7f);
         RewardFx.Create(content, FindChildRecursive(content, "Gold"));
         RewardFx.SetFoodTarget(goalPanel.transform.Find("Plorp face") ?? goalPanel.transform);
         FarmArtLayout.LockedZoneTapped = () =>

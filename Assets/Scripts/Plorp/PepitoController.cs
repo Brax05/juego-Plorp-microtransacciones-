@@ -99,12 +99,18 @@ public sealed class PepitoController : MonoBehaviour
     }
 
     /// <summary>Starts Pepito's visits (after the loading screen).</summary>
-    public void Begin()
+    public void Begin(bool sayIntro = true)
     {
         if (started) return;
         started = true;
-        nextVisit = Time.unscaledTime + 1.2f;
         lastAdvice = "intro";
+        if (!sayIntro)
+        {
+            // He just gave the welcome tour: first visit a bit later.
+            nextVisit = Time.unscaledTime + 25f;
+            return;
+        }
+        nextVisit = Time.unscaledTime + 1.2f;
         Say(PepitoAdvice.Intro, AdviceSeconds + 3f);
     }
 

@@ -610,6 +610,7 @@ public sealed class GardenScreen : MonoBehaviour
 
     void UpdateTips(float dt)
     {
+        if (PepitoGuide.Active) return;
         nextTip -= dt;
         if (nextTip > 0f || dragTool >= 0) return;
         // Never on top of Pepito's toast (or right after it): one message at a time.
@@ -697,7 +698,7 @@ public sealed class GardenScreen : MonoBehaviour
 
     void ShowToast(string text)
     {
-        if (!gameObject.activeInHierarchy) return;
+        if (!gameObject.activeInHierarchy || PepitoGuide.Active) return;
         toastText.text = text;
         toastUntil = Time.unscaledTime + 5f;
         CurvedPopup.Dismiss(fxLayer); // the tip would cover the toast

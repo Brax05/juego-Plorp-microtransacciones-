@@ -146,8 +146,17 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         Navigate(0);
         if (preview) return;
 
-        // Title screen -> loading -> farm. Pepito starts visiting once the farm is visible.
-        StartScreens.Create(content, state, pepito.Begin);
+        // Pepito's welcome tour: the first time in each section he explains what everything is.
+        guide = PepitoGuide.Create(content);
+        AddGuideButton(content);
+
+        // Title screen -> loading -> farm tour (first time) -> Pepito starts visiting.
+        StartScreens.Create(content, state, () =>
+        {
+            guideReady = true;
+            bool firstTime = !PepitoGuide.Seen(0);
+            guide.ShowIfNew(0, () => pepito.Begin(!firstTime));
+        });
 
         if (FindAnyObjectByType<EventSystem>() == null)
         {
@@ -175,6 +184,20 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     float nextHudRefresh;
     int currentTab;
     PepitoController farmPepito;
+    PepitoGuide guide;
+    bool guideReady;
+
+    /// <summary>"VER GUÍA DE PEPITO" in Ajustes: shows every section's tour again, starting with the farm.</summary>
+    void AddGuideButton(Transform root)
+    {
+        var settings = FindChildRecursive(root, "Page - Ajustes");
+        if (settings == null) return;
+        new PixelUIFactory().ActionButton(settings, "Guide button", "VER GUÍA DE PEPITO", 110, 656, 350, 60, () =>
+        {
+            PepitoGuide.ResetAll();
+            Navigate(0);
+        });
+    }
     float nextFarmTip = 25f;
     static readonly string[] FarmTips =
     {
@@ -186,7 +209,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
         // Arched tips over the farm now and then.
-        if (gameState != null && currentTab == 0 && content != null)
+        // The farm Pepito only walks around on the farm, and never during the welcome tour.
+        if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || PepitoGuide.Active;
+        if (gameState != null && currentTab == 0 && content != null && !PepitoGuide.Active)
         {
             nextFarmTip -= Time.unscaledDeltaTime;
             if (nextFarmTip <= 0f)
@@ -257,6 +282,11 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (farmPepito != null) farmPepito.Suppressed = tab != 0;
         farm.SelectTab(tab);
         menu.Show(tab);
+        if (guideReady && guide != null)
+        {
+            guide.LeaveSection(tab);
+            guide.ShowIfNew(tab);
+        }
         if (tab != 0 && content != null) CurvedPopup.Dismiss(content);
         if (messageRoutine != null) StopCoroutine(messageRoutine);
         if (messageLabel != null) messageLabel.gameObject.SetActive(false);

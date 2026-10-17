@@ -26,6 +26,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     void Awake()
     {
         var state = new FarmGameState();
+        gameState = state;
 
         var canvas = GetComponentInChildren<Canvas>(true);
         if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
@@ -48,6 +49,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         authoredScale = content.localScale;
         FitScreen();
 
+        RenameGardenTab(content);
         farm = new FarmScreen(content, state, Navigate, ShowMessage);
         menu = new FarmMenuScreen(content, state, Navigate, ShowMessage);
 
@@ -64,7 +66,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         // Plorp's order panel and Pepito sit above the farm but under the menus and feedback.
         int layer = feedbackTransform != null ? feedbackTransform.GetSiblingIndex() : content.childCount;
         var pepito = PepitoController.Create(content, layer, state, ShowMessage);
-        PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
+        var goalPanel = PlorpGoalPanel.Create(content, layer, state, ShowMessage, pepito);
+        RewardFx.Create(content, FindChildRecursive(content, "Gold"));
+        RewardFx.SetFoodTarget(goalPanel.transform.Find("Plorp face") ?? goalPanel.transform);
         FarmArtLayout.LockedZoneTapped = () =>
         {
             ShowMessage("Zona bloqueada: más adelante...");
@@ -95,9 +99,40 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         return null;
     }
 
+    FarmGameState gameState;
+
     void Update()
     {
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
+        // The garden plant keeps living while the player is on other tabs.
+        gameState?.Garden?.Tick(Time.unscaledDeltaTime);
+    }
+
+    void OnApplicationPause(bool paused)
+    {
+        if (paused) gameState?.Garden?.Save();
+    }
+
+    void OnApplicationQuit() => gameState?.Garden?.Save();
+
+    /// <summary>The bottom tab "Mejoras" becomes "Jardinería" with a seed-bag icon.</summary>
+    static void RenameGardenTab(Transform root)
+    {
+        var label = FindChildRecursive(root, "Navigation label Mejoras");
+        var text = label != null ? label.GetComponent<Text>() : null;
+        if (text != null)
+        {
+            text.text = "JARDINERÍA";
+            text.fontSize = 13;
+        }
+        var icon = FindChildRecursive(root, "Navigation icon Mejoras");
+        var raw = icon != null ? icon.GetComponent<RawImage>() : null;
+        var seeds = Resources.Load<Texture2D>("UI/Icons/semillas");
+        if (raw != null && seeds != null)
+        {
+            seeds.filterMode = FilterMode.Point;
+            raw.texture = seeds;
+        }
     }
 
     void FitScreen()

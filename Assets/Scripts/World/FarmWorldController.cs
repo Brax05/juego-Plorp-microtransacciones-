@@ -72,7 +72,9 @@ public sealed class FarmWorldController : MonoBehaviour
             if (!plot.gameObject.activeInHierarchy) continue;
             int crops = plot.HarvestReady();
             if (crops <= 0) continue;
-            earned += crops * FarmEconomy.CropHarvestValue(state, plot.Kind);
+            long plotGold = crops * FarmEconomy.CropHarvestValue(state, plot.Kind);
+            earned += plotGold;
+            RewardFx.Popup(PlotCenter(plot), "+" + FarmGameState.Format(plotGold), new Color(1f, 1f, 1f, .9f));
             Add(items, FarmItems.ForCrop(plot.Kind).Id, crops);
             food += crops;
         }
@@ -93,15 +95,28 @@ public sealed class FarmWorldController : MonoBehaviour
     static void Add(Dictionary<string, int> items, string id, int amount) =>
         items[id] = (items.TryGetValue(id, out int n) ? n : 0) + amount;
 
+    /// <summary>Chance for each picked crop to be golden (worth 10x).</summary>
+    const float GoldenChance = .04f;
+
+    Vector3 PlotCenter(CropPlot plot)
+    {
+        int index = Mathf.Max(0, plots.IndexOf(plot));
+        return plot.transform.TransformPoint(FarmArtLayout.PlotTicketPoint(index));
+    }
+
     /// <summary>Tap on a field's golden ticket: picks every ripe crop in that field.</summary>
     void CollectPlot(CropPlot plot)
     {
         int crops = plot.HarvestReady();
         if (crops <= 0) return;
-        long earned = crops * FarmEconomy.CropHarvestValue(state, plot.Kind);
+        long value = FarmEconomy.CropHarvestValue(state, plot.Kind);
+        int golden = 0;
+        for (int i = 0; i < crops; i++) if (UnityEngine.Random.value < GoldenChance) golden++;
+        long earned = crops * value + golden * value * 9;
         var item = FarmItems.ForCrop(plot.Kind);
         state.Collect(earned, new Dictionary<string, int> { { item.Id, crops } });
-        message("+" + FarmGameState.Format(earned) + " monedas · +" + crops + " " +
+        RewardFx.Collect(PlotCenter(plot), item, crops, earned, golden > 0);
+        message((golden > 0 ? "¡Cosecha dorada! " : "") + "+" + FarmGameState.Format(earned) + " monedas · +" + crops + " " +
                 (crops == 1 ? item.Single : item.Name.ToLowerInvariant()));
     }
 
@@ -113,8 +128,11 @@ public sealed class FarmWorldController : MonoBehaviour
             return;
         }
         long earned = FarmEconomy.CropHarvestValue(state, cell.Kind);
+        bool golden = UnityEngine.Random.value < GoldenChance;
+        if (golden) earned *= 10;
         state.Collect(earned, FarmItems.ForCrop(cell.Kind));
-        message(cell.CropName + " +" + FarmGameState.Format(earned));
+        RewardFx.Collect(cell.transform.position, FarmItems.ForCrop(cell.Kind), 1, earned, golden);
+        message((golden ? "¡Dorada! " : "") + cell.CropName + " +" + FarmGameState.Format(earned));
     }
 
     void SyncUpgrades()

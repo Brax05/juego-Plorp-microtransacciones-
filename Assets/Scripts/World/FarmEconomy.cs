@@ -44,7 +44,12 @@ public static class FarmEconomy
     /// <summary>×2 for every 10 levels after the last product has been unlocked.</summary>
     static double Milestone(int level, int productTiers) => Math.Pow(2, Math.Max(0, Tier(level) - (productTiers - 1)));
 
-    public static double WorkerBonus(FarmGameState s) => 1.0 + 0.05 * s.Levels[Workers];
+    /// <summary>Workers (+5% each) times the gardening "todo" bonus.</summary>
+    public static double WorkerBonus(FarmGameState s) =>
+        (1.0 + 0.05 * s.Levels[Workers]) * (s.Garden != null ? s.Garden.GlobalMultiplier : 1f);
+
+    static double GardenCrops(FarmGameState s) => s.Garden != null ? s.Garden.CropMultiplier : 1f;
+    static double GardenAnimals(FarmGameState s) => s.Garden != null ? s.Garden.AnimalMultiplier : 1f;
 
     // ---------- Crops ----------
 
@@ -61,7 +66,7 @@ public static class FarmEconomy
     {
         int level = s.Levels[Seeds];
         double perLevel = 1.0 + 0.2 * Math.Max(0, level - 1);
-        return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s));
+        return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s) * GardenCrops(s));
     }
 
     public static long CropStage(CropKind kind) => CropStageSeconds[CropIndex(kind)];
@@ -90,7 +95,7 @@ public static class FarmEconomy
         int level = s.Levels[Animals];
         int levelsInSpecies = Math.Max(0, level - species * LevelsPerTier - 1);
         double perLevel = 1.0 + 0.15 * levelsInSpecies;
-        return Round(AnimalValue[species] * perLevel * Milestone(level, Species.Length) * WorkerBonus(s));
+        return Round(AnimalValue[species] * perLevel * Milestone(level, Species.Length) * WorkerBonus(s) * GardenAnimals(s));
     }
 
     public static long AnimalCooldown(int species) => AnimalSeconds[Mathf.Clamp(species, 0, Species.Length - 1)];
@@ -103,7 +108,8 @@ public static class FarmEconomy
     public static float AutoHarvestSeconds(FarmGameState s)
     {
         int w = s.Levels[Workers];
-        return w <= 0 ? 0f : Mathf.Max(3f, 15f * Mathf.Pow(.93f, w - 1));
+        float speed = s.Garden != null ? s.Garden.WorkerSpeed : 1f;
+        return w <= 0 ? 0f : Mathf.Max(2f, 15f * Mathf.Pow(.93f, w - 1) / speed);
     }
 
     // ---------- Prices ----------

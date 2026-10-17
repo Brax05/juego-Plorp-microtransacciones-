@@ -9,6 +9,7 @@ public sealed class FarmMenuScreen
     readonly Action<int> navigate;
     readonly Action<string> message;
     readonly RectTransform overlay;
+    readonly GardenScreen garden;
     int selectedTab;
 
     public FarmMenuScreen(Transform parent, FarmGameState state,
@@ -26,6 +27,8 @@ public sealed class FarmMenuScreen
             throw new InvalidOperationException("PixelFarmCanvas is missing its menu pages.");
         overlay.gameObject.SetActive(false);
         EnsurePepitoAchievementCard();
+        // Tab 3 is now "Jardinería": the old Mejoras page stays hidden (upgrades live on the farm screen).
+        garden = GardenScreen.Create(overlay, state, message);
         SyncStoreLabels();
         state.Changed += Refresh;
     }
@@ -114,7 +117,9 @@ public sealed class FarmMenuScreen
 
         if (pStore != null) pStore.gameObject.SetActive(tab == 1);
         if (pAchievements != null) pAchievements.gameObject.SetActive(tab == 2);
-        if (pUpgrades != null) pUpgrades.gameObject.SetActive(tab == 3);
+        if (pUpgrades != null) pUpgrades.gameObject.SetActive(false);
+        garden.gameObject.SetActive(tab == 3);
+        if (tab == 3) garden.transform.SetAsLastSibling();
         if (pSettings != null) pSettings.gameObject.SetActive(tab == 4);
 
         RefreshPrebuilt();

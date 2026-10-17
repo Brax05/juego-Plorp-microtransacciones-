@@ -64,6 +64,7 @@ public sealed class WorldActor : MonoBehaviour
         long value = Reward;
         SetCooldown();
         state.Collect(value, Product);
+        RewardFx.Collect(transform.position, Product, 1, value);
         message(displayName + " +" + FarmGameState.Format(value) +
                 (Product != null ? " · +1 " + Product.Single : ""));
     }

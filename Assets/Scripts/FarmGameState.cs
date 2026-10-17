@@ -96,6 +96,7 @@ public sealed class FarmGameState
         }
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
+        Garden = new GardenState(this);
     }
 
     /// <summary>One harvested thing: coins for the player, one food item into the barn for Plorp.</summary>
@@ -174,6 +175,26 @@ public sealed class FarmGameState
     public bool IsMaxed(int index)
     {
         return index >= 0 && index < Levels.Length && Levels[index] >= FarmEconomy.MaxLevels[index];
+    }
+
+    /// <summary>The gardening tab's plant (its levels give bonuses to the whole farm).</summary>
+    public GardenState Garden { get; private set; }
+
+    /// <summary>Pays coins and/or gems for something (gardening tools, seeds).</summary>
+    public bool Spend(long gold, int gems)
+    {
+        if (Gold < gold || Gems < gems) return false;
+        Gold -= gold;
+        Gems -= gems;
+        Save();
+        return true;
+    }
+
+    public void AddGems(int gems)
+    {
+        if (gems <= 0) return;
+        Gems += gems;
+        Save();
     }
 
     public bool BuyGold(int gemCost, long goldAmount)
@@ -300,6 +321,7 @@ public sealed class FarmGameState
         for (int i = 0; i < AchievementNames.Length; i++) PlayerPrefs.DeleteKey("GlorpFarm.claimed." + i);
 
         foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
+        GardenState.ResetSaved();
 
         for (int plot = 0; plot < FarmArtLayout.Fields.Length; plot++)
         {

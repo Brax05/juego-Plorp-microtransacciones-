@@ -1,4 +1,4 @@
-﻿# PlorpFarm
+# PlorpFarm
 
 ## Canvas como fuente de verdad
 
@@ -15,5 +15,5 @@ compradas, manteniendo la posicion y el aspecto definidos en el prefab.
 Haz los cambios antes de Play y guarda la escena o el prefab con Ctrl+S. Unity
 descarta los cambios realizados durante Play al salir de ese modo.
 
-`Tools > Plorp > Modularize Farm Canvas` solo agrega piezas faltantes y conserva
-las que ya hayas editado. `Pixel UI frame` queda desactivado como atlas de origen.
+`Tools > Plorp > Vista previa de la escena` permite previsualizar en modo edición
+la composición completa de la UI y cada pestaña sin tener que dar Play (atajo Ctrl/Cmd+Shift+P).

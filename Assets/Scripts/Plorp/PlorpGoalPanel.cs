@@ -155,6 +155,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
 
     void Update()
     {
+        if (state == null || readyGlow == null) return;
         var c = readyGlow.color;
         c.a = state.GoalReady ? .25f + .25f * Mathf.Sin(Time.unscaledTime * 5f) : 0f;
         readyGlow.color = c;

@@ -200,7 +200,7 @@ public sealed class PepitoController : MonoBehaviour
 
     void Update()
     {
-        if (!started) return;
+        if (!started || state == null) return;
         float now = Time.unscaledTime;
 
         if (visible && now >= hideAt)

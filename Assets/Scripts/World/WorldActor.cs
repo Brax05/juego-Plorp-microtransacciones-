@@ -73,7 +73,7 @@ public sealed class WorldActor : MonoBehaviour
 
     void Update()
     {
-        if (Time.unscaledTime < nextVisualCheck) return;
+        if (sprite == null || Time.unscaledTime < nextVisualCheck) return;
         nextVisualCheck = Time.unscaledTime + .5f;
         RefreshReady();
     }

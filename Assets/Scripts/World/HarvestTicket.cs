@@ -112,6 +112,7 @@ public sealed class HarvestTicket : MonoBehaviour
 
     void Update()
     {
+        if (readyCount == null || body == null || glow == null) return;
         float now = Time.unscaledTime;
         if (now >= nextCheck)
         {
@@ -121,8 +122,8 @@ public sealed class HarvestTicket : MonoBehaviour
             else if (ready <= 0 && shown) Hide();
             if (shown)
             {
-                SetWord(WordFor(item()));
-                count.text = ready > 1 ? "x" + ready : "";
+                if (item != null) SetWord(WordFor(item()));
+                if (count != null) count.text = ready > 1 ? "x" + ready : "";
             }
         }
         if (!shown || target == null) return;
@@ -132,15 +133,19 @@ public sealed class HarvestTicket : MonoBehaviour
 
         // Pop in with a bounce, then each letter waves on the arch.
         float age = now - shownAt;
-        for (int i = 0; i < letters.Length; i++)
+        if (letters != null)
         {
-            float a = angles[i];
-            float wave = Mathf.Sin(now * 6f + i * .6f + phase) * 2.5f;
-            letters[i].anchoredPosition = new Vector2(Mathf.Sin(a) * radius,
-                (Mathf.Cos(a) - 1f) * radius + 26f + wave);
-            letters[i].localEulerAngles = new Vector3(0f, 0f, -a * Mathf.Rad2Deg);
-            float delay = i * .03f;
-            letters[i].localScale = Vector3.one * (age < delay ? 0f : EaseOutBack(Mathf.Clamp01((age - delay) / .3f)));
+            for (int i = 0; i < letters.Length; i++)
+            {
+                if (letters[i] == null) continue;
+                float a = angles[i];
+                float wave = Mathf.Sin(now * 6f + i * .6f + phase) * 2.5f;
+                letters[i].anchoredPosition = new Vector2(Mathf.Sin(a) * radius,
+                    (Mathf.Cos(a) - 1f) * radius + 26f + wave);
+                letters[i].localEulerAngles = new Vector3(0f, 0f, -a * Mathf.Rad2Deg);
+                float delay = i * .03f;
+                letters[i].localScale = Vector3.one * (age < delay ? 0f : EaseOutBack(Mathf.Clamp01((age - delay) / .3f)));
+            }
         }
 
         float pulse = .5f + .5f * Mathf.Sin(now * 5f + phase);
@@ -149,12 +154,14 @@ public sealed class HarvestTicket : MonoBehaviour
 
         for (int i = 0; i < sparkles.Length; i++)
         {
+            if (sparkles[i] == null) continue;
             float a = now * 2f + phase + i * Mathf.PI * 2f / sparkles.Length;
             sparkles[i].anchoredPosition = new Vector2(HitW / 2f + Mathf.Cos(a) * HitW * .55f,
                 -(HitH / 2f + Mathf.Sin(a) * HitH * .6f));
             float twinkle = .5f + .5f * Mathf.Sin(now * 9f + i * 1.7f);
             sparkles[i].localScale = Vector3.one * (.6f + twinkle);
-            sparkles[i].GetComponent<Image>().color = Color.Lerp(Gold, Color.white, twinkle);
+            var img = sparkles[i].GetComponent<Image>();
+            if (img != null) img.color = Color.Lerp(Gold, Color.white, twinkle);
         }
     }
 

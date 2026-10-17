@@ -204,6 +204,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void FitScreen()
     {
+        if (content == null) return;
         lastWidth = Screen.width;
         lastHeight = Screen.height;
         float scale = Mathf.Min(Screen.width / Mathf.Max(1f, content.rect.width),

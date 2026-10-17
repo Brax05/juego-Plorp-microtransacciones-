@@ -41,17 +41,17 @@ public static class PepitoAdvice
         new AdviceDef("deliver", 100, s => s.GoalReady,
             s => "¡Miau! Plorp dice que ya juntaste su pedido. Toca ENTREGAR arriba antes de que haga \"zep zep\"."),
         new AdviceDef("first-harvest", 95, s => s.Harvests == 0,
-            s => "Miau... Plorp dice \"glerp\": toca COSECHAR abajo. Todo lo que cosechas es alimento para él."),
+            s => "Miau... cuando algo esté listo verás un ticket dorado encima. Tócalo. Plorp dice \"glerp\"."),
         new AdviceDef("claim", 90, AnyAchievementReady,
             s => "Miau. Plorp dejó gemas en LOGROS. Dice que las cobres. Bueno, señaló con la antena."),
         new AdviceDef("missing", 80, s => MissingLine(s) != null,
             s => HowToGet(MissingLine(s).Value, s)),
-        new AdviceDef("new-food", 70, s => s.AnimalCount < 3 && s.Gold >= s.Prices[1],
-            s => "Miau... Plorp nunca ha probado " + NextAnimalFood(s) + ". Compra la mejora ANIMALES. Le brillan las antenas."),
+        new AdviceDef("new-food", 70, s => s.AnimalSpecies < 3 && s.Gold >= s.Prices[1],
+            s => "Miau... Plorp nunca ha probado " + NextAnimalFood(s) + ". Sigue comprando ANIMALES: cada 10 llega uno nuevo. Le brillan las antenas."),
         new AdviceDef("upgrade", 60, CanAffordUpgrade,
-            s => "Miau. Plorp dice que tienes monedas para una mejora. Más granja, más comida para Plorp."),
+            s => "Miau. Tienes monedas para una mejora. Cada 10 SEMILLAS sale un cultivo mejor. Plorp ya está babeando."),
         new AdviceDef("workers", 55, s => s.Levels[2] == 0 && s.Harvests >= 8,
-            s => "Miau... Plorp dice que tocas muy lento. Contrata TRABAJADORES: cosechan solos."),
+            s => "Miau... Plorp dice que tocas muy lento. Contrata TRABAJADORES: cosechan solos y cada uno suma +5%."),
         new AdviceDef("satisfied", 40, s => s.PlorpSatisfied,
             s => "Miau... Plorp está conforme. Igual sigue pidiendo antojos. Es su naturaleza."),
         new AdviceDef("flavor", 10, s => true,
@@ -73,12 +73,12 @@ public static class PepitoAdvice
         if (line.Item == FarmItems.Egg) return "Miau. A Plorp le faltan " + what + ". Toca a las gallinas cuando brillen.";
         if (line.Item == FarmItems.Cheese) return "Miau... Plorp quiere " + what + ". Las ovejas dan queso. No me preguntes cómo.";
         if (line.Item == FarmItems.Milk) return "Miau. Faltan " + what + " para Plorp. Toca a las vacas.";
-        return "Miau... a Plorp le faltan " + what + ". Cosecha y espera que crezcan. Él no sabe esperar.";
+        return "Miau... a Plorp le faltan " + what + ". Toca los tickets dorados sobre los campos. Él no sabe esperar.";
     }
 
     static string NextAnimalFood(FarmGameState s)
     {
-        switch (s.AnimalCount)
+        switch (s.AnimalSpecies)
         {
             case 0: return "un huevo";
             case 1: return "el queso";

@@ -188,7 +188,7 @@ public sealed class FarmMenuScreen
             var level = card.Find("Level")?.GetComponent<Text>();
             if (level != null)
             {
-                level.text = "Nivel " + state.Levels[i];
+                level.text = "Nivel " + state.Levels[i] + " · " + FarmEconomy.CurrentLabel(state, i);
             }
             var price = card.Find("Price")?.GetComponent<Text>();
             if (price != null)
@@ -196,9 +196,8 @@ public sealed class FarmMenuScreen
                 price.text = state.IsMaxed(i) ? "Nivel maximo" : FarmGameState.Format(state.Prices[i]) + " monedas";
             }
             var button = BindActionButton(card, () =>
-                message(state.BuyUpgrade(index)
-                    ? (index == 1 ? "Nuevo animal desbloqueado" : "Mejora comprada")
-                    : "Faltan monedas"));
+                message(state.IsMaxed(index) ? "Mejora al maximo"
+                    : FarmScreen.UpgradeMessage(state, index, state.BuyUpgrade(index))));
             if (button != null) button.interactable = !state.IsMaxed(i) && state.Gold >= state.Prices[i];
         }
     }

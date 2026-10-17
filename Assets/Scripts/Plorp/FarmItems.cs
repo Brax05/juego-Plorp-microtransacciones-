@@ -16,7 +16,7 @@ public sealed class FarmItem
 }
 
 /// <summary>
-/// Catalog of everything Plorp can ask for. Crops come from the plots unlocked with "Semillas";
+/// Catalog of everything Plorp can ask for. Crops come from the seed tiers (every 10 "Semillas");
 /// animal products come from the animals unlocked with "Animales" (gallina → huevo, oveja → queso, vaca → leche).
 /// </summary>
 public static class FarmItems
@@ -30,7 +30,7 @@ public static class FarmItems
     public static readonly FarmItem Milk    = new FarmItem("milk",    "Leche",      "leche",     "UI/Items/milk",           true);
 
     public static readonly FarmItem[] All = { Carrot, Tomato, Pumpkin, Cabbage, Egg, Cheese, Milk };
-    static readonly FarmItem[] PlotCrops = { Carrot, Tomato, Pumpkin, Cabbage };   // plot 0..3
+    static readonly FarmItem[] CropsByTier = { Carrot, Cabbage, Tomato, Pumpkin }; // FarmEconomy.CropTiers
     static readonly FarmItem[] AnimalProducts = { Egg, Cheese, Milk };             // species 0..2
 
     public static FarmItem Get(string id)
@@ -63,10 +63,9 @@ public static class FarmItems
     public static List<FarmItem> Unlocked(FarmGameState state)
     {
         var list = new List<FarmItem>();
-        for (int i = 0; i < PlotCrops.Length; i++)
-            if (i < state.UnlockedPlots) list.Add(PlotCrops[i]);
+        for (int i = 0; i <= FarmEconomy.SeedTier(state); i++) list.Add(CropsByTier[i]);
         for (int i = 0; i < AnimalProducts.Length; i++)
-            if (state.AnimalCount > i) list.Add(AnimalProducts[i]);
+            if (FarmEconomy.AnimalCount(state, i) > 0) list.Add(AnimalProducts[i]);
         return list;
     }
 }

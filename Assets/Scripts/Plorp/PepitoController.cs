@@ -10,7 +10,7 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class PepitoController : MonoBehaviour
 {
-    const float Top = 404f;            // just above the harvest bar
+    const float Top = 512f;            // bottom of the farm view, just above the upgrades
     const float AdviceSeconds = 9f;
     const float RequestSeconds = 20f;
     const float RequestCooldown = 90f;

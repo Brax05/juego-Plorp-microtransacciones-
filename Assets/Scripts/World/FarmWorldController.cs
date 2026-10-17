@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Builds and manages the modular farm world with separated terrain, buildings, animal pens, and crop plots.</summary>
+/// <summary>
+/// Runs the farm world: fields, animals, workers and the golden harvest tickets.
+/// What exists and what it is worth comes from FarmEconomy, so every upgrade is reflected here.
+/// </summary>
 public sealed class FarmWorldController : MonoBehaviour
 {
-    static readonly CropKind[] InitialKinds = { CropKind.Carrot, CropKind.Tomato, CropKind.Pumpkin, CropKind.Cabbage };
-
     readonly List<CropPlot> plots = new List<CropPlot>();
     readonly List<WorldActor> actors = new List<WorldActor>();
     readonly HashSet<string> actorIds = new HashSet<string>();
@@ -15,6 +16,8 @@ public sealed class FarmWorldController : MonoBehaviour
 
     Transform chickenPen;
     Transform pasturePen;
+    Transform ticketLayer;
+    float nextAutoHarvest;
 
     public void Initialize(FarmGameState gameState, Action<string> showMessage)
     {
@@ -31,15 +34,21 @@ public sealed class FarmWorldController : MonoBehaviour
         if (cropsRoot == null)
             throw new InvalidOperationException("PixelFarmCanvas is missing Crop Plots.");
 
+        // Tickets are drawn above every field and animal.
+        ticketLayer = new PixelUIFactory().Rect(transform, "Harvest tickets", 0, 0, FarmArtLayout.Width, FarmArtLayout.Height);
+        ticketLayer.SetAsLastSibling();
+
         plots.Clear();
         var existingPlots = cropsRoot.GetComponentsInChildren<CropPlot>(true);
         for (int i = 0; i < existingPlots.Length; i++)
         {
-            var p = existingPlots[i];
-            var kind = i < InitialKinds.Length ? InitialKinds[i] : (CropKind)(i % 4);
-            p.Initialize(i, kind);
-            p.BindCells(OnCropTapped);
-            plots.Add(p);
+            var plot = existingPlots[i];
+            plot.Initialize(i, FarmEconomy.PlotKind(state, i));
+            plot.BindCells(OnCropTapped);
+            plots.Add(plot);
+            HarvestTicket.Create(ticketLayer, "Ticket plot " + i, (RectTransform)plot.transform,
+                FarmArtLayout.PlotTicketPoint(i), () => plot.ReadyCount,
+                () => FarmItems.ForCrop(plot.Kind), () => CollectPlot(plot));
         }
 
         foreach (var actor in GetComponentsInChildren<WorldActor>(true))
@@ -47,12 +56,12 @@ public sealed class FarmWorldController : MonoBehaviour
 
         state.Changed += SyncUpgrades;
         SyncUpgrades();
-
     }
 
     /// <summary>Food units gathered by the last HarvestAll call.</summary>
     public int LastHarvestFood { get; private set; }
 
+    /// <summary>Collects everything that is ready (used by the workers).</summary>
     public long HarvestAll()
     {
         long earned = 0;
@@ -61,10 +70,10 @@ public sealed class FarmWorldController : MonoBehaviour
         foreach (var plot in plots)
         {
             if (!plot.gameObject.activeInHierarchy) continue;
-            earned += plot.HarvestReady(out int crops);
+            int crops = plot.HarvestReady();
             if (crops <= 0) continue;
-            string id = FarmItems.ForCrop(plot.Kind).Id;
-            items[id] = (items.TryGetValue(id, out int n) ? n : 0) + crops;
+            earned += crops * FarmEconomy.CropHarvestValue(state, plot.Kind);
+            Add(items, FarmItems.ForCrop(plot.Kind).Id, crops);
             food += crops;
         }
         foreach (var actor in actors)
@@ -72,9 +81,8 @@ public sealed class FarmWorldController : MonoBehaviour
             long produced = actor.TakeProduction();
             if (produced <= 0) continue;
             earned += produced;
-            var product = actor.Product;
-            if (product == null) continue;
-            items[product.Id] = (items.TryGetValue(product.Id, out int n) ? n : 0) + 1;
+            if (actor.Product == null) continue;
+            Add(items, actor.Product.Id, 1);
             food++;
         }
         LastHarvestFood = food;
@@ -82,53 +90,74 @@ public sealed class FarmWorldController : MonoBehaviour
         return earned;
     }
 
+    static void Add(Dictionary<string, int> items, string id, int amount) =>
+        items[id] = (items.TryGetValue(id, out int n) ? n : 0) + amount;
+
+    /// <summary>Tap on a field's golden ticket: picks every ripe crop in that field.</summary>
+    void CollectPlot(CropPlot plot)
+    {
+        int crops = plot.HarvestReady();
+        if (crops <= 0) return;
+        long earned = crops * FarmEconomy.CropHarvestValue(state, plot.Kind);
+        var item = FarmItems.ForCrop(plot.Kind);
+        state.Collect(earned, new Dictionary<string, int> { { item.Id, crops } });
+        message("+" + FarmGameState.Format(earned) + " monedas · +" + crops + " " +
+                (crops == 1 ? item.Single : item.Name.ToLowerInvariant()));
+    }
+
     void OnCropTapped(CropCell cell)
     {
-        long earned = cell.TakeHarvest();
-        if (earned == 0)
+        if (cell.TakeHarvest() == 0)
         {
-            message("Cultivo creciendo");
+            message(cell.CropName + " creciendo");
             return;
         }
+        long earned = FarmEconomy.CropHarvestValue(state, cell.Kind);
         state.Collect(earned, FarmItems.ForCrop(cell.Kind));
         message(cell.CropName + " +" + FarmGameState.Format(earned));
     }
 
     void SyncUpgrades()
     {
-        int unlockedPlots = Mathf.Clamp(state.Levels[0], 1, plots.Count);
-        for (int i = 0; i < plots.Count; i++) plots[i].gameObject.SetActive(i < unlockedPlots);
+        // Fields: one more per seed tier; the newest (most profitable) crop goes in field 0.
+        int active = FarmEconomy.ActivePlots(state);
+        for (int i = 0; i < plots.Count; i++)
+        {
+            bool on = i < active;
+            plots[i].gameObject.SetActive(on);
+            if (on) plots[i].SetKind(FarmEconomy.PlotKind(state, i));
+        }
 
-        for (int i = 0; i < state.AnimalCount; i++) SpawnAnimal(i);
+        // Animals: one per purchase, a new species every 10 purchases.
+        for (int species = 0; species < FarmEconomy.Species.Length; species++)
+            for (int n = 0; n < FarmEconomy.AnimalCount(state, species); n++)
+                SpawnAnimal(species, n);
 
-        int workers = Mathf.Clamp(state.Levels[2], 0, 4);
-        if (workers > 0) Spawn(transform, "worker-1", "Trabajador", "worker_blue", WorldActorRole.Worker, 80, 45);
-        if (workers > 1) Spawn(transform, "worker-2", "Trabajador", "worker_red", WorldActorRole.Worker, 80, 45);
-        if (workers > 2) Spawn(transform, "worker-3", "Trabajador", "worker_blue", WorldActorRole.Worker, 80, 45);
-        if (workers > 3) Spawn(transform, "worker-4", "Trabajador", "worker_red", WorldActorRole.Worker, 80, 45);
-
+        string[] workerTextures = { "worker_blue", "worker_red" };
+        for (int i = 0; i < FarmEconomy.VisibleWorkers(state); i++)
+            Spawn(transform, "worker-" + (i + 1), "Trabajador", workerTextures[i % 2], WorldActorRole.Worker);
     }
 
-    void SpawnAnimal(int index)
+    void SpawnAnimal(int species, int slot)
     {
-        int species = index % 3;
-        int slot = index / 3;
         int number = slot + 1;
-        if (species == 0)
-            Spawn(chickenPen, "chicken-" + number, "Gallina",
-                slot % 2 == 0 ? "chicken_white" : "chicken_brown",
-                WorldActorRole.Animal, 55, 35);
-        else if (species == 1)
-            Spawn(pasturePen, "sheep-" + number, "Oveja",
-                slot % 2 == 0 ? "sheep_white" : "sheep_gray",
-                WorldActorRole.Animal, 90, 48);
-        else
-            Spawn(pasturePen, "cow-" + number, "Vaca", "cow",
-                WorldActorRole.Animal, 120, 65);
+        switch (species)
+        {
+            case 0:
+                Spawn(chickenPen, "chicken-" + number, "Gallina",
+                    slot % 2 == 0 ? "chicken_white" : "chicken_brown", WorldActorRole.Animal);
+                break;
+            case 1:
+                Spawn(pasturePen, "sheep-" + number, "Oveja",
+                    slot % 2 == 0 ? "sheep_white" : "sheep_gray", WorldActorRole.Animal);
+                break;
+            default:
+                Spawn(pasturePen, "cow-" + number, "Vaca", "cow", WorldActorRole.Animal);
+                break;
+        }
     }
 
-    void Spawn(Transform parent, string id, string title, string texture, WorldActorRole role,
-        long reward, long cooldown)
+    void Spawn(Transform parent, string id, string title, string texture, WorldActorRole role)
     {
         if (parent == null || actorIds.Contains(id)) return;
         var marker = parent.Find(id) as RectTransform;
@@ -138,21 +167,28 @@ public sealed class FarmWorldController : MonoBehaviour
         actorIds.Add(id);
         marker.gameObject.SetActive(true);
         Vector2 home = new Vector2(marker.anchoredPosition.x, -marker.anchoredPosition.y);
-        actor.Initialize(state, message, id, title, texture, role, home, reward, cooldown);
+        actor.Initialize(state, message, id, title, texture, role, home, 0, 0);
         actors.Add(actor);
+
+        if (role == WorldActorRole.Animal)
+        {
+            // Ticket floats just above the animal's head and walks with it.
+            Vector2 head = new Vector2(marker.sizeDelta.x / 2f, 2f);
+            HarvestTicket.Create(ticketLayer, "Ticket " + id, marker, head,
+                () => actor.IsReady ? 1 : 0, () => actor.Product, actor.Collect);
+        }
     }
 
-    float nextAutoHarvest;
-
-    // Idle loop: each worker level makes the farm harvest itself more often (15s, 12s, 9s, 6s).
+    // Idle loop: workers harvest everything on their own, faster with every level.
     void Update()
     {
         if (state == null) return;
-        int workers = Mathf.Clamp(state.Levels[2], 0, 4);
-        if (workers == 0) return;
+        float interval = FarmEconomy.AutoHarvestSeconds(state);
+        if (interval <= 0f) return;
         float now = Time.unscaledTime;
+        if (nextAutoHarvest <= 0f) nextAutoHarvest = now + interval;
         if (now < nextAutoHarvest) return;
-        nextAutoHarvest = now + 18f - 3f * workers;
+        nextAutoHarvest = now + interval;
         HarvestAll();
     }
 
@@ -160,5 +196,4 @@ public sealed class FarmWorldController : MonoBehaviour
     {
         if (state != null) state.Changed -= SyncUpgrades;
     }
-
 }

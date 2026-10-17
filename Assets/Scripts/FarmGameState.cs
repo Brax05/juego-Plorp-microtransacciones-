@@ -9,11 +9,9 @@ public sealed class FarmGameState
     public static readonly string[] AchievementNames =
         { "Primera cosecha", "Granjero constante", "Gran inversion", "Alimenta a Plorp" };
     static readonly int[] AchievementGems = { 5, 20, 30, 15 };
-    const int ProgressionVersion = 4;
+    const int ProgressionVersion = 5; // 5: idle economy with tiers (old saves restart)
     const string ProgressionVersionKey = "GlorpFarm.progressionVersion";
-    static readonly long[] StartingPrices = { 300, 750, 2000 };
-    static readonly int[] StartingLevels = { 1, 0, 0 };
-    static readonly int[] MaxLevels = { 4, 18, 4 };
+    static readonly int[] StartingLevels = FarmEconomy.StartingLevels;
 
     public readonly int[] Levels = new int[3];
     public readonly long[] Prices = new long[3];
@@ -30,8 +28,8 @@ public sealed class FarmGameState
     public int PlorpStage { get; private set; }
     public int PepitoMeals { get; private set; }
     public bool PlorpSatisfied => PlorpStage >= PlorpGoals.MainCount;
-    public int AnimalCount => Levels[1];
-    public int UnlockedPlots => Mathf.Clamp(Levels[0], 1, 4);
+    /// <summary>Animal species on the farm (0..3): gallina, oveja, vaca.</summary>
+    public int AnimalSpecies => FarmEconomy.SpeciesUnlocked(this);
 
     // Barn: how many of each food is waiting to be delivered to Plorp.
     readonly Dictionary<string, long> barn = new Dictionary<string, long>();
@@ -94,7 +92,7 @@ public sealed class FarmGameState
         for (int i = 0; i < Levels.Length; i++)
         {
             Levels[i] = PlayerPrefs.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
-            Prices[i] = ReadLong("price." + i, StartingPrices[i]);
+            Prices[i] = FarmEconomy.Cost(i, Levels[i]);
         }
         for (int i = 0; i < Claimed.Length; i++)
             Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
@@ -166,7 +164,7 @@ public sealed class FarmGameState
         if (index < 0 || index >= Prices.Length || IsMaxed(index) || Gold < Prices[index]) return false;
         Gold -= Prices[index];
         Levels[index]++;
-        Prices[index] = (long)Math.Ceiling(Prices[index] * 1.48d);
+        Prices[index] = FarmEconomy.Cost(index, Levels[index]);
         Purchases++;
         FarmLevel = 1 + Purchases / 3;
         Save();
@@ -175,7 +173,7 @@ public sealed class FarmGameState
 
     public bool IsMaxed(int index)
     {
-        return index >= 0 && index < Levels.Length && Levels[index] >= MaxLevels[index];
+        return index >= 0 && index < Levels.Length && Levels[index] >= FarmEconomy.MaxLevels[index];
     }
 
     public bool BuyGold(int gemCost, long goldAmount)
@@ -241,7 +239,6 @@ public sealed class FarmGameState
         for (int i = 0; i < Levels.Length; i++)
         {
             PlayerPrefs.SetInt("GlorpFarm.level." + i, Levels[i]);
-            PlayerPrefs.SetString("GlorpFarm.price." + i, Prices[i].ToString());
         }
         for (int i = 0; i < Claimed.Length; i++)
             PlayerPrefs.SetInt("GlorpFarm.claimed." + i, Claimed[i] ? 1 : 0);
@@ -268,12 +265,15 @@ public sealed class FarmGameState
         for (int i = 0; i < StartingLevels.Length; i++)
         {
             PlayerPrefs.SetInt("GlorpFarm.level." + i, StartingLevels[i]);
-            PlayerPrefs.SetString("GlorpFarm.price." + i, StartingPrices[i].ToString());
+            PlayerPrefs.DeleteKey("GlorpFarm.price." + i);
         }
         for (int i = 0; i < AchievementNames.Length; i++) PlayerPrefs.SetInt("GlorpFarm.claimed." + i, 0);
 
         PlayerPrefs.DeleteKey("GlorpFarm.animalRosterBaselineLevel");
         PlayerPrefs.DeleteKey("GlorpFarm.animalTestPriceApplied");
+        foreach (string key in new[] { "plorpStage", "plorpOrder", "tasted", "totalFood", "pepitoMeals" })
+            PlayerPrefs.DeleteKey("GlorpFarm." + key);
+        foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
         PlayerPrefs.SetInt(ProgressionVersionKey, ProgressionVersion);
         PlayerPrefs.Save();
     }

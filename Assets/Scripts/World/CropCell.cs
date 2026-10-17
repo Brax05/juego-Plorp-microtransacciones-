@@ -4,7 +4,6 @@ using UnityEngine;
 /// <summary>One saved crop. Stages advance with real time, including while the game is closed.</summary>
 public sealed class CropCell : MonoBehaviour
 {
-    const long GrowthSeconds = 22;
     CropKind kind;
     WorldSprite sprite;
     Action<CropCell> tapped;
@@ -16,19 +15,7 @@ public sealed class CropCell : MonoBehaviour
     public bool IsReady { get { AdvanceTime(); return stage == 2; } }
     public CropKind Kind => kind;
 
-    public string CropName
-    {
-        get
-        {
-            switch (kind)
-            {
-                case CropKind.Tomato: return "Tomate";
-                case CropKind.Pumpkin: return "Calabaza";
-                case CropKind.Cabbage: return "Repollo";
-                default: return "Zanahoria";
-            }
-        }
-    }
+    public string CropName => FarmEconomy.CropName(kind);
 
     public void Initialize(int plotId, int cellId, CropKind initialKind,
         Action<CropCell> onTapped)
@@ -61,13 +48,7 @@ public sealed class CropCell : MonoBehaviour
         stageStarted = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         Save();
         Refresh();
-        switch (kind)
-        {
-            case CropKind.Tomato: return 45;
-            case CropKind.Pumpkin: return 55;
-            case CropKind.Cabbage: return 40;
-            default: return 35;
-        }
+        return 1; // one crop harvested; its value comes from FarmEconomy
     }
 
     void Update()
@@ -82,10 +63,11 @@ public sealed class CropCell : MonoBehaviour
         if (stage >= 2) return;
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         bool changed = false;
-        while (stage < 2 && now - stageStarted >= GrowthSeconds)
+        long growth = FarmEconomy.CropStage(kind);
+        while (stage < 2 && now - stageStarted >= growth)
         {
             stage++;
-            stageStarted += GrowthSeconds;
+            stageStarted += growth;
             changed = true;
         }
         if (!changed) return;

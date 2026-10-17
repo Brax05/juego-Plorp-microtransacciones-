@@ -12,8 +12,7 @@ public sealed class WorldActor : MonoBehaviour
     WorldActorRole role;
     string id;
     string displayName;
-    long reward;
-    long cooldownSeconds;
+    int species = -1;
     long nextReady;
     float nextVisualCheck;
 
@@ -30,8 +29,7 @@ public sealed class WorldActor : MonoBehaviour
         id = actorId;
         displayName = title;
         role = actorRole;
-        reward = payout;
-        cooldownSeconds = cooldown;
+        species = FarmEconomy.SpeciesOf(actorId);
         long.TryParse(PlayerPrefs.GetString(SaveKey, "0"), out nextReady);
         sprite = GetComponent<WorldSprite>() ?? gameObject.AddComponent<WorldSprite>();
         sprite.Initialize(texture, OnTapped, true);
@@ -40,26 +38,37 @@ public sealed class WorldActor : MonoBehaviour
         RefreshReady();
     }
 
+    /// <summary>Current value of one product (grows with the Animales level and workers).</summary>
+    long Reward => species >= 0 ? FarmEconomy.AnimalProductValue(state, species) : 0;
+
+    public bool IsReady => role == WorldActorRole.Animal && Ready();
+
     public long TakeProduction()
     {
-        if (role != WorldActorRole.Animal || !Ready()) return 0;
+        if (!IsReady) return 0;
+        long value = Reward;
         SetCooldown();
-        return reward;
+        return value;
     }
 
-    void OnTapped()
+    /// <summary>Player collects this animal's product (tap on the animal or its ticket).</summary>
+    public void Collect()
     {
+        if (role != WorldActorRole.Animal) return;
         if (!Ready())
         {
             long remaining = Math.Max(1, nextReady - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             message(displayName + ": listo en " + remaining + " s");
             return;
         }
+        long value = Reward;
         SetCooldown();
-        state.Collect(reward, Product);
-        message(displayName + " +" + FarmGameState.Format(reward) +
+        state.Collect(value, Product);
+        message(displayName + " +" + FarmGameState.Format(value) +
                 (Product != null ? " · +1 " + Product.Single : ""));
     }
+
+    void OnTapped() => Collect();
 
     void Update()
     {
@@ -72,12 +81,12 @@ public sealed class WorldActor : MonoBehaviour
 
     void SetCooldown()
     {
-        nextReady = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + cooldownSeconds;
+        nextReady = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + FarmEconomy.AnimalCooldown(species);
         PlayerPrefs.SetString(SaveKey, nextReady.ToString());
         RefreshReady();
     }
 
-    void RefreshReady() { sprite.SetReady(Ready()); }
+    void RefreshReady() { sprite.SetReady(role != WorldActorRole.Animal || Ready()); }
 
     string SaveKey => "GlorpFarm.world.actor." + id + ".readyAt";
 }

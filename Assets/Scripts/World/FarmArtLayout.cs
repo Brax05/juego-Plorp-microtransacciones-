@@ -10,6 +10,11 @@ using UnityEngine.UI;
 public static class FarmArtLayout
 {
     public const float Width = 570f, Height = 530f;
+    /// <summary>The painting is shown bigger than the screen so the player pans around the farm.</summary>
+    public const float Zoom = 1.6f;
+    /// <summary>The farm view now reaches down to the upgrade rows (the old harvest bar is gone).</summary>
+    public const float ViewportHeight = 634f;
+    static readonly Vector2 StartView = new Vector2(-70f, 150f); // initial scroll: fields in view
     public const int Rows = 4, Columns = 4;
     public const int CellsPerPlot = Rows * Columns;
     const float CropSize = 30f;
@@ -52,13 +57,26 @@ public static class FarmArtLayout
     public static void Apply(RectTransform world)
     {
         world.sizeDelta = new Vector2(Width, Height);
-        world.anchoredPosition = Vector2.zero;
+        world.localScale = new Vector3(Zoom, Zoom, 1f);
+        world.anchoredPosition = StartView;
         var viewport = world.parent as RectTransform;
+        if (viewport != null)
+        {
+            viewport.sizeDelta = new Vector2(viewport.sizeDelta.x, ViewportHeight);
+            if (viewport.GetComponent<RectMask2D>() == null && viewport.GetComponent<Mask>() == null)
+                viewport.gameObject.AddComponent<RectMask2D>();
+        }
         var scroll = viewport != null ? viewport.GetComponent<ScrollRect>() : null;
         if (scroll != null)
         {
-            scroll.horizontal = false;
-            scroll.vertical = false;
+            // Drag to pan around the farm in any direction.
+            scroll.content = world;
+            scroll.viewport = viewport;
+            scroll.horizontal = true;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.inertia = true;
+            scroll.decelerationRate = .12f;
         }
 
         foreach (string hidden in new[] { "Terrain", "Buildings" })
@@ -70,6 +88,7 @@ public static class FarmArtLayout
         if (world.Find("Painted farm") == null)
         {
             var art = new PixelUIFactory().Texture(world, "Painted farm", "World/farm_background", 0, 0, Width, Height);
+            art.raycastTarget = true; // so dragging on the grass pans the farm
             art.transform.SetAsFirstSibling();
         }
 
@@ -77,6 +96,15 @@ public static class FarmArtLayout
         LayoutPens(world.Find("Animal Pens"));
         for (int i = 0; i < WorkerSpots.Length; i++)
             Place(world.Find("worker-" + (i + 1)) as RectTransform, WorkerSpots[i], new Vector2(30, 37));
+    }
+
+    /// <summary>Where a field's golden ticket points: the field center, in the plot's local space.</summary>
+    public static Vector2 PlotTicketPoint(int plot)
+    {
+        var field = Fields[Mathf.Clamp(plot, 0, Fields.Length - 1)];
+        float minX = Mathf.Min(field[3].x, field[0].x), minY = field[0].y;
+        Vector2 center = (field[0] + field[1] + field[2] + field[3]) / 4f;
+        return new Vector2(center.x - minX, -(center.y - minY) + 6f);
     }
 
     static void LayoutPlots(Transform root)

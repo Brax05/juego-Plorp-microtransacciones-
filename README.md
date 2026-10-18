@@ -307,6 +307,33 @@ Los minijuegos están en el **computador verde de Plorp**, dentro de su casa: Pe
 
 ---
 
+## Sonido y música
+
+Todo el audio está en `Assets/Resources/Audio/` y se pide por nombre (`GameAudio`). Para cambiar un sonido, reemplaza el archivo **con el mismo nombre**. Los interruptores Música y Sonidos de Ajustes apagan cada parte.
+
+| Lugar | Música | Ambiente |
+|---|---|---|
+| Portada y carga | `music_menu_loading` | — |
+| Granja de día / de noche | `music_farm_day` / `music_farm_night` | viento + pájaros o grillos (+ lluvia en el evento) |
+| Jardinería | `music_garden` | — |
+| Casa de Plorp y cocina | `music_house` | olla hirviendo mientras cocina |
+| Computador de Plorp (minijuegos) | `music_arcade` | — |
+| Estanque (pesca) | `music_pond` | — |
+| Viaje estelar | `music_star_trip_jingle` (una vez) | — |
+
+**Efectos (`Audio/SFX`):**
+- **Recompensas:** `sfx_gem_drop`, `sfx_gem_pickup`, `sfx_coin`, `sfx_coin_shower`.
+- **Cosecha:** `sfx_harvest_ready`, `sfx_harvest_pop`.
+- **Planta:** `sfx_water`, `sfx_light`, `sfx_cut`, `sfx_fertilizer`, `sfx_leaf_clean`, `sfx_bug_squash`, `sfx_curtain_close`, `sfx_curtain_open`.
+- **Granja y eventos:** `sfx_crow`, `sfx_fox`, `sfx_truck_honk`, `sfx_apple_drop`, `sfx_ufo_pass`.
+- **Casa:** `sfx_cat_purr`, `sfx_dish_ready`.
+- **Pesca:** `sfx_fish_cast`, `sfx_fish_bite`.
+- **Minijuegos:** `sfx_beam`, `sfx_egg_catch`, `sfx_stone_hit`, `sfx_countdown`, `sfx_countdown_go`, `sfx_minigame_end`.
+- **Progreso:** `sfx_upgrade`, `sfx_tier_up`, `sfx_order_delivered`, `sfx_achievement`, `sfx_streak_reward`.
+- **Personajes e interfaz:** `sfx_pepito_meow`, `sfx_plorp_voice`, `sfx_ui_click`, `sfx_ui_error`.
+
+**Formatos:** música en `.ogg` estéreo (Streaming), ambientes en `.ogg` y efectos en `.wav` mono, normalizados a −1 dBFS. Los scripts que los generan están en `AudioSource/`.
+
 ## Cómo se juntan todos los multiplicadores
 
 ```
@@ -341,4 +368,6 @@ plato = 1,6 × suma de sus ingredientes
 | `Scripts/Minigames/` | Computador PLORP-OS, pesca, Abducción, Atrapa huevos, boletos |
 | `Scripts/Shop/`, `Scripts/Achievements/` | Tienda, compras reales y logros |
 | `Scripts/UI/` | `PixelUIFactory` (usa el canvas primero), `Art` (imágenes por nombre), `UiUtil` (ayudas comunes), `Popup` (ventanas), textos curvos, recompensas, portada |
+| `Scripts/Core/GameAudio.cs` | Música, ambientes y efectos |
 | `Editor/PlorpCanvasBaker.cs` | Menú **Plorp ▸ Hornear UI en el canvas** |
+| `AudioSource/` (fuera de Assets) | Scripts en Python que generan la música y los efectos |

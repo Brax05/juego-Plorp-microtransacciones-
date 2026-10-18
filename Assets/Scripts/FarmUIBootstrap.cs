@@ -166,14 +166,13 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
         // Areas behind the clouds (pond, orchard, hives, launch pad) and the games room.
         if (worldController != null) FarmZones.Create(worldController, state, pepito, content, ShowMessage);
-        if (worldController != null) GamesSign.Create(worldController, () => GamesHub.Open(content, state, ShowMessage));
 
-        // Plorp's kitchen: sign on the farm (opens tab 5) and Pepito says when a dish is done.
-        if (worldController != null) KitchenSign.Create(worldController, () => Navigate(5));
+        // Plorp's house (the yellow barn): kitchen + computer with the minigames + cats. Tab 5.
+        if (worldController != null) HouseEntrance.Create(worldController, () => Navigate(5));
         Kitchen.DishReady += recipe =>
         {
             if (pepito != null && currentTab == 0 && recipe != null)
-                pepito.Say("Miau... ¡" + recipe.Name + " lista! Toca la COCINA para sacarla de la olla.", 6f);
+                pepito.Say("Miau... ¡" + recipe.Name + " lista! Entra a la CASA DE PLORP (el granero amarillo) para sacarla de la olla.", 6f);
         };
 
         // Pepito's welcome tour: the first time in each section he explains what everything is.
@@ -269,7 +268,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         "¡Toca los tickets dorados!", "¡Arrastra para recorrer la granja!", "¡Cada 10 compras, algo nuevo!",
         "¡Los trabajadores cosechan solos!", "¡Mira la planta en JARDINERÍA!",
-        "¡Hay zonas por abrir en las nubes!", "¡Prueba la sala de JUEGOS!", "¡Cocina platos para Plorp!",
+        "¡Hay zonas por abrir en las nubes!", "¡Juega en el computador de Plorp!", "¡Cocina platos para Plorp!",
     };
 
     void Update()
@@ -295,7 +294,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             {
                 nextFarmTip = 35f + UnityEngine.Random.value * 20f;
                 string tip = gameState.GoalReady ? "¡Entrégale el pedido a Plorp!"
-                    : Kitchen.ReadyCount() > 0 ? "¡Hay platos listos en la COCINA!"
+                    : Kitchen.ReadyCount() > 0 ? "¡Hay platos listos en la casa de Plorp!"
                     : DailyMissions.ReadyCount(gameState) > 0 ? "¡Hay misiones por cobrar!"
                     : AchievementCatalog.AnyReady(gameState) ? "¡Hay logros por cobrar!"
                     : FarmTips[UnityEngine.Random.Range(0, FarmTips.Length)];

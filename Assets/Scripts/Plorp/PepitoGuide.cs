@@ -104,7 +104,18 @@ public sealed class PepitoGuide : MonoBehaviour
             new Step(104, 764, 362, 72, "Y si quieres que te vuelva a explicar todo, toca VER GUÍA DE PEPITO. " +
                      "Me encanta hablar. Miau."),
         },
-        // 5 Cocina (from the sign on the farm; page starts at y = 108)
+        // 5 Casa de Plorp (the yellow barn; page starts at y = 108)
+        new[]
+        {
+            new Step("¡Miau! Bienvenido a la CASA DE PLORP. Aquí vive... bueno, aquí guarda sus cosas. Vive en la nave."),
+            new Step(30, 330, 172, 330, "La COCINA: toca la estufa para cocinar platos con lo del granero. " +
+                     "Cuando la olla brilla y dice ¡LISTO!, hay un plato esperando."),
+            new Step(308, 398, 208, 252, "El COMPUTADOR de Plorp. Tócalo y se abre PLORP-OS con los minijuegos: " +
+                     "pesca, abducción y atrapa huevos. El botón rojo lo apaga."),
+            new Step(20, 640, 530, 300, "Y estos son los gatos de la casa. No hacen nada útil, igual que yo. Tócalos, les gusta."),
+            new Step(8, 112, 112, 48, "Con VOLVER regresas a la granja. El granero amarillo te avisa cuando hay un plato listo."),
+        },
+        // 6 Cocina (the stove in the house; page starts at y = 108)
         new[]
         {
             new Step("¡Miau! La COCINA DE PLORP. Aquí lo del granero se convierte en platos. Yo pruebo todo, por seguridad."),
@@ -112,7 +123,7 @@ public sealed class PepitoGuide : MonoBehaviour
                      "Cuando brilla y dice ¡LISTO!, tócala para sacar el plato. La tercera olla se compra con gemas."),
             new Step(14, 440, 542, 500, "Las RECETAS. Verde: tienes los ingredientes; rojo: faltan. Toca COCINAR. " +
                      "Los platos valen más que sus ingredientes y Plorp los pide en sus pedidos."),
-            new Step(20, 128, 112, 46, "Con VOLVER regresas a la granja. El cartel COCINA de la granja te avisa cuando hay algo listo. Miau."),
+            new Step(20, 128, 112, 46, "Con VOLVER regresas a la casa de Plorp. Miau."),
         },
     };
 

@@ -57,6 +57,16 @@ public static class Popup
         return root;
     }
 
+    /// <summary>An empty full-screen window (counted like the others); the caller draws everything.</summary>
+    public static RectTransform OpenBlank(Transform portrait, string name, Action onClosed = null)
+    {
+        var root = new PixelUIFactory().Rect(portrait, name, 0, 0, W, H);
+        root.SetAsLastSibling();
+        root.gameObject.AddComponent<Marker>().OnClosed = onClosed;
+        open++;
+        return root;
+    }
+
     public static void Close(RectTransform root)
     {
         if (root == null) return;

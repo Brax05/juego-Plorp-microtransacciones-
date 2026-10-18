@@ -18,7 +18,7 @@ Juego idle de granja en Unity (6000.5, uGUI, vertical 570×1018). Plorp es un ex
 8. [Módulo 1: Mientras no estabas](#módulo-1-mientras-no-estabas)
 9. [Módulo 2: Misiones diarias y racha](#módulo-2-misiones-diarias-y-racha)
 10. [Módulo 3: Eventos en la granja](#módulo-3-eventos-en-la-granja)
-11. [Módulo 4: Cocina de Plorp](#módulo-4-cocina-de-plorp)
+11. [Casa de Plorp](#casa-de-plorp) y [Módulo 4: Cocina de Plorp](#módulo-4-cocina-de-plorp)
 12. [Módulo 5: Día y noche, y estaciones](#módulo-5-día-y-noche-y-estaciones)
 13. [Módulo 6: Zonas en las nubes y pesca](#módulo-6-zonas-en-las-nubes-y-pesca)
 14. [Módulos 7 y 8: Sala de juegos](#módulos-7-y-8-sala-de-juegos)
@@ -126,7 +126,7 @@ Pestaña LOGROS ▸ sub-pestaña LOGROS. Son metas permanentes que dan gemas: co
 
 ## Guía de bienvenida de Pepito
 
-- La primera vez que entras a cada sección (Granja, Tienda, Logros, Jardinería, Ajustes y Cocina), Pepito la explica paso a paso.
+- La primera vez que entras a cada sección (Granja, Tienda, Logros, Jardinería, Ajustes, Casa de Plorp y Cocina), Pepito la explica paso a paso.
 - Oscurece la pantalla y marca cada cosa con un marco dorado y una flecha que salta. Tiene botones **SIGUIENTE** y **SALTAR**, y al tocar el globo se completa el texto.
 - En Ajustes, **VER GUÍA DE PEPITO** la repite entera.
 
@@ -162,9 +162,21 @@ Cada 2 a 3 minutos, solo mientras miras la granja, pasa algo. Pepito lo anuncia 
 | Zorro | Va al gallinero y roba hasta 3 huevos del granero. | Tócalo: huye y da **1 gema**. |
 | Camión de feria | Se estaciona 45 s. | Tócalo: compra a **precio doble** la comida que te sobra (no toca lo del pedido de Plorp). |
 
+## Casa de Plorp
+
+El **granero amarillo** de la granja es la casa de Plorp. Al tocarlo (o su placa "CASA DE PLORP") se abre el interior, con piso de madera, ventana, póster de Plorp, repisas y alfombra.
+
+- **Estufa:** abre la **cocina** (Módulo 4). La olla de encima brilla y dice **¡LISTO!** cuando hay un plato terminado. En la granja, sobre el techo del granero, aparece el mismo aviso.
+- **Computador verde de Plorp:** abre **PLORP-OS** con los minijuegos (pesca, Abducción y Atrapa huevos).
+  - Al tocarlo, la pantallita del escritorio **se agranda** hasta llenar la ventana.
+  - El botón rojo **APAGAR** la **encoge de vuelta** al computador.
+  - Al terminar un juego vuelves al computador.
+- **Gatos de la casa:** 4 gatos (gris, naranjo, negro y blanco) caminan por el piso. Al tocarlos se detienen y maúllan.
+- **VOLVER** regresa a la granja. La primera vez, Pepito explica la casa con su guía.
+
 ## Módulo 4: Cocina de Plorp
 
-- **Acceso:** cartel **COCINA** frente al granero amarillo. Avisa con ¡LISTO! y abre la página de la cocina. Para salir, VOLVER.
+- **Acceso:** la estufa dentro de la casa de Plorp. Para salir, VOLVER (regresa a la casa).
 - **Ollas:** se parte con 2 y la 3ª cuesta 50 gemas. Cocinan con tiempo real, también con el juego cerrado. Al terminar brillan, y al tocarlas el plato pasa al granero.
 - **Recetas:** se habilitan cuando la granja produce todos los ingredientes.
 
@@ -227,7 +239,7 @@ Peces:
 
 ## Módulos 7 y 8: Sala de juegos
 
-El cartel **JUEGOS** en la granja (en el camino junto al gallinero) abre la sala con Pesca, Abducción y Atrapa huevos.
+Los minijuegos están en el **computador verde de Plorp**, dentro de su casa: Pesca, Abducción y Atrapa huevos.
 
 - Cada minijuego arcade dura **30 s**, con cuenta regresiva 3-2-1.
 - Usan **boletos**: 3 por juego, y vuelve 1 cada 20 min.
@@ -291,8 +303,9 @@ plato = 1,6 × suma de sus ingredientes
 | `Scripts/World/FarmClock.cs`, `FarmAmbience.cs` | Módulo 5 (día/noche, estaciones, insignia) |
 | `Scripts/World/FarmZones.cs` | Módulos 6, 9 y 10 (zonas en las nubes, colmenas, huerto) |
 | `Scripts/World/StarTrip.cs` | Módulo 10 (viaje estelar) |
-| `Scripts/Minigames/` | Pesca, sala de juegos, Abducción, Atrapa huevos, boletos |
-| `Scripts/Kitchen/` | Módulo 4 (recetas, ollas, página y cartel) |
+| `Scripts/House/` | Casa de Plorp (interior, gatos) y la entrada en el granero amarillo |
+| `Scripts/Minigames/` | Computador de Plorp (PLORP-OS), pesca, Abducción, Atrapa huevos, boletos |
+| `Scripts/Kitchen/` | Módulo 4 (recetas, ollas y página de la cocina) |
 | `Scripts/Daily/` | Módulo 2 (misiones y racha) |
 | `Scripts/Plorp/` | Plorp, pedidos, Pepito, guía, Mientras no estabas, comida (`FarmItems`) |
 | `Scripts/Garden/` | Jardinería |

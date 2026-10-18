@@ -149,6 +149,19 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         // Crows, rain, foxes and the fair truck now and then.
         var worldRoot = FindChildRecursive(content, "Modular farm world");
         var worldController = worldRoot != null ? worldRoot.GetComponent<FarmWorldController>() : null;
+        // Day/night and seasons over the farm, with the season badge on the HUD.
+        if (worldController != null) ambience = FarmAmbience.Create(worldController, content, layer);
+        if (ambience != null)
+            ambience.BadgeTapped = () =>
+            {
+                var season = FarmClock.CurrentSeason;
+                string crop = FarmItems.ForCrop(FarmClock.SeasonCrop(season)).Name.ToLowerInvariant();
+                string sky = FarmClock.IsNight
+                    ? "Ahora es de noche: las cosechas doradas salen el doble."
+                    : "Falta " + Mathf.Max(1, FarmClock.SecondsToNight / 60) + " min para la noche (cosechas doradas x2).";
+                pepito.Say("Miau. Es " + FarmClock.SeasonName(season) + ": los " + crop + " valen x1,5 hoy. " +
+                           "Mañana cambia la estación. " + sky, 8f);
+            };
         if (worldController != null) farmEvents = FarmEvents.Create(worldController, state, pepito, content, ShowMessage);
 
         // Plorp's kitchen: sign on the farm (opens tab 5) and Pepito says when a dish is done.
@@ -210,6 +223,27 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     bool guideReady;
     float nextSeenSave;
     FarmEvents farmEvents;
+    FarmAmbience ambience;
+    bool wasNight;
+    const string SeasonAnnouncedKey = "GlorpFarm.season.announced";
+
+    /// <summary>Pepito tells the new season (once a day) and when night falls.</summary>
+    void AnnounceClock(bool canTalk)
+    {
+        bool night = FarmClock.IsNight;
+        bool nightFell = night && !wasNight;
+        wasNight = night;
+        if (!canTalk || farmPepito == null) return;
+        string today = System.DateTime.Now.ToString("yyyy-MM-dd");
+        if (PlayerPrefs.GetString(SeasonAnnouncedKey, "") != today)
+        {
+            PlayerPrefs.SetString(SeasonAnnouncedKey, today);
+            farmPepito.Say(FarmClock.SeasonLine(FarmClock.CurrentSeason), 8f);
+            return;
+        }
+        if (nightFell)
+            farmPepito.Say("Miau... se hizo de noche. Mira las luciérnagas. De noche las cosechas doradas salen el doble.", 6f);
+    }
 
     /// <summary>"VER GUÍA DE PEPITO" in Ajustes: shows every section's tour again, starting with the farm.</summary>
     void AddGuideButton(Transform root)
@@ -236,8 +270,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         // The farm Pepito only walks around on the farm, and never during the welcome tour.
         bool popupOpen = PepitoGuide.Active || OfflinePanel.Active || StreakPanel.Active;
         if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || popupOpen;
-        if (farmEvents != null)
-            farmEvents.Running = guideReady && farmPepito != null && farmPepito.Started && currentTab == 0 && !popupOpen;
+        bool farmQuiet = guideReady && farmPepito != null && farmPepito.Started && currentTab == 0 && !popupOpen;
+        if (farmEvents != null) farmEvents.Running = farmQuiet;
+        AnnounceClock(farmQuiet);
         // Remember that the player is here (for "Mientras no estabas").
         if (guideReady && !OfflinePanel.Active && Time.unscaledTime >= nextSeenSave)
         {

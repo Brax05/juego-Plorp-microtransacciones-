@@ -97,7 +97,7 @@ public sealed class FarmWorldController : MonoBehaviour
         items[id] = (items.TryGetValue(id, out int n) ? n : 0) + amount;
 
     /// <summary>Chance for each picked crop to be golden (worth 10x).</summary>
-    const float GoldenChance = .04f;
+    const float GoldenChance = .04f; // ×2 at night (FarmClock)
 
     Vector3 PlotCenter(CropPlot plot)
     {
@@ -112,7 +112,7 @@ public sealed class FarmWorldController : MonoBehaviour
         if (crops <= 0) return;
         long value = FarmEconomy.CropHarvestValue(state, plot.Kind);
         int golden = 0;
-        for (int i = 0; i < crops; i++) if (UnityEngine.Random.value < GoldenChance) golden++;
+        for (int i = 0; i < crops; i++) if (UnityEngine.Random.value < GoldenChance * FarmClock.GoldenMultiplier) golden++;
         long earned = crops * value + golden * value * 9;
         state.RegisterGolden(golden);
         var item = FarmItems.ForCrop(plot.Kind);
@@ -130,7 +130,7 @@ public sealed class FarmWorldController : MonoBehaviour
             return;
         }
         long earned = FarmEconomy.CropHarvestValue(state, cell.Kind);
-        bool golden = UnityEngine.Random.value < GoldenChance;
+        bool golden = UnityEngine.Random.value < GoldenChance * FarmClock.GoldenMultiplier;
         if (golden) { earned *= 10; state.RegisterGolden(1); }
         state.Collect(earned, FarmItems.ForCrop(cell.Kind));
         RewardFx.Collect(cell.transform.position, FarmItems.ForCrop(cell.Kind), 1, earned, golden);

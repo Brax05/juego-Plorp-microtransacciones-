@@ -106,7 +106,8 @@ public static class FarmEconomy
     {
         int level = s.Levels[Seeds];
         double perLevel = 1.0 + 0.08 * Math.Max(0, level - 1);
-        return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s) * GardenCrops(s));
+        return Round(CropValue[CropIndex(kind)] * perLevel * Milestone(level, CropTiers.Length) * WorkerBonus(s) * GardenCrops(s)
+                     * FarmClock.CropBonus(kind)); // crop of the season ×1.5
     }
 
     public static long CropStage(CropKind kind) => Math.Max(1, (long)Math.Round(CropStageSeconds[CropIndex(kind)] / Speed));

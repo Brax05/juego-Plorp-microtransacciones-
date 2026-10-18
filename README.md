@@ -221,7 +221,7 @@ Los 4 candados de las nubes ahora son zonas. Se abren tocando su cartel, y queda
 | Este | HUERTO | 20.000 monedas (Módulo 9) |
 | Sur | DESPEGUE | se abre solo cuando Plorp queda conforme (Módulo 10) |
 
-**Pesca** (cartel del estanque, o sala de JUEGOS):
+**Pesca** (cartel del estanque, o el computador de Plorp):
 1. **LANZAR** usa 1 cebo y tira el corcho al agua.
 2. Espera **sin tocar**. Cuando el corcho se hunde y sale **¡PICA!**, toca rápido. Si tocas antes, el pez se asusta; si tardas, se va.
 3. **Tira:** una barra amarilla va y viene, y hay que tocar cuando está sobre la zona verde.

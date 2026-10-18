@@ -57,9 +57,8 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         face = PlorpFace.Create(transform, "Plorp face", 11, 12, 38);
         ui.Hit(transform, "Plorp tap", 9, 9, 42, 42, () =>
         {
-            GameAudio.Play("sfx_order_delivered");
-        GameAudio.Play("sfx_plorp_voice", .8f, .1f);
-        face.Bump();
+            GameAudio.Play("sfx_plorp_voice", .8f, .1f);
+            face.Bump();
             pepito.Say("Miau... Plorp dijo \"" + state.CurrentGoal.Quote + "\". Creo que quiere " +
                        Describe(state.CurrentGoal) + ".", 7f);
         });

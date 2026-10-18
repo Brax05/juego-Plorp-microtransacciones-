@@ -64,7 +64,8 @@ public sealed class FarmScreen
         {
             int index = i;
             prices[i] = Require<Text>(parent, "Price " + i);
-            priceColors[i] = prices[i].color;
+            // The red "can't afford" colour may have been saved into the canvas by the bake: then use gold.
+            priceColors[i] = IsShortColor(prices[i].color) ? PixelUIFactory.Gold : prices[i].color;
             levels[i] = Require<Text>(parent, "Upgrade level " + i);
             upgradeButtons[i] = BindHit(parent, "Buy upgrade " + i, () => Buy(index));
             BuildTierInfo(parent, i);
@@ -85,6 +86,10 @@ public sealed class FarmScreen
         Refresh();
     }
 
+
+    static readonly Color ShortColor = PixelUIFactory.Hex("#FF7B6B");
+    static bool IsShortColor(Color c) => Mathf.Abs(c.r - ShortColor.r) < .02f && Mathf.Abs(c.g - ShortColor.g) < .02f &&
+                                         Mathf.Abs(c.b - ShortColor.b) < .02f;
 
     static T Require<T>(Transform parent, string name) where T : Component
     {
@@ -199,7 +204,7 @@ public sealed class FarmScreen
         {
             prices[i].text = state.IsMaxed(i) ? "MAX" : FarmGameState.Format(state.Prices[i]);
             // Red price when you can't afford it yet (the button still answers with how much is missing).
-            prices[i].color = state.IsMaxed(i) || state.Gold >= state.Prices[i] ? priceColors[i] : PixelUIFactory.Hex("#FF7B6B");
+            prices[i].color = state.IsMaxed(i) || state.Gold >= state.Prices[i] ? priceColors[i] : ShortColor;
             levels[i].text = "Nv." + state.Levels[i];
             RefreshTierInfo(i);
             // Always tappable: a disabled button felt broken ("no se puede comprar") when coins were short.

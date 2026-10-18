@@ -137,11 +137,17 @@ public sealed class GardenScreen : MonoBehaviour
         ui.Hit(transform, "Open plants", 110, 112, 352, 56, OpenShop);
         // Little sprout in a pot on the sign: it's the seed shop. It blinks now and then to be noticed.
         shopGlow = ui.Block(transform, "Seed shop glow", 412, 112, 56, 56, new Color(1f, .95f, .5f, 0f));
-        shopGlow.rectTransform.pivot = new Vector2(.5f, .5f);
-        shopGlow.rectTransform.anchoredPosition += new Vector2(28f, -28f);
+        if (!ui.Reused)
+        {
+            shopGlow.rectTransform.pivot = new Vector2(.5f, .5f);
+            shopGlow.rectTransform.anchoredPosition += new Vector2(28f, -28f);
+        }
         var pot = ui.Texture(transform, "Seed shop", "seed_shop_pot", 416, 114, 48, 48);
-        pot.rectTransform.pivot = new Vector2(.5f, 0f);
-        pot.rectTransform.anchoredPosition += new Vector2(24f, -48f);
+        if (!ui.Reused)
+        {
+            pot.rectTransform.pivot = new Vector2(.5f, 0f);
+            pot.rectTransform.anchoredPosition += new Vector2(24f, -48f);
+        }
         shopPulse = pot.rectTransform;
         ui.Hit(transform, "Open seed shop", 406, 108, 66, 64, OpenShop);
 

@@ -15,6 +15,9 @@ public static class FarmArtLayout
     public const float Zoom = 1.15f;
     /// <summary>The farm view reaches down to the upgrade rows (the old harvest bar is gone).</summary>
     public const float ViewportHeight = 634f;
+    /// <summary>Top of the farm view covered by the level/coins/Plorp panels: the map may scroll this far
+    /// past the top edge so what is up there (the hives) can be seen below them.</summary>
+    public const float CoveredTop = 244f;
     /// <summary>Farm offset at start (screen px): chicken yard and the first field below the header.</summary>
     static readonly Vector2 StartView = new Vector2(-200f, 110f);
     public const int Rows = 4, Columns = 4;
@@ -106,7 +109,10 @@ public static class FarmArtLayout
         {
             // Drag to walk around the map in any direction; it stops at the clouds' outer edge.
             scroll.content = map;
-            scroll.viewport = viewport;
+            // The scroll limits use a rect that starts under the HUD; the mask (drawing) stays full size.
+            var bounds = ui.Rect(viewport, "Scroll bounds", 0, CoveredTop, viewport.rect.width, ViewportHeight - CoveredTop);
+            if (!ui.Reused) bounds.sizeDelta = new Vector2(viewport.rect.width, ViewportHeight - CoveredTop);
+            scroll.viewport = bounds;
             scroll.horizontal = true;
             scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped;

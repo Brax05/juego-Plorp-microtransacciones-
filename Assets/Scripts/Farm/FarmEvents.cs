@@ -534,7 +534,7 @@ public sealed class FarmEvents : MonoBehaviour
         float x = w / 2f - (FarmArtLayout.MarginX + designPoint.x) * zoom;
         float y = (FarmArtLayout.MarginY + designPoint.y) * zoom - h / 2f;
         x = Mathf.Clamp(x, Mathf.Min(0f, w - FarmArtLayout.MapWidth * zoom), 0f);
-        y = Mathf.Clamp(y, 0f, Mathf.Max(0f, FarmArtLayout.MapHeight * zoom - h));
+        y = Mathf.Clamp(y, -FarmArtLayout.CoveredTop, Mathf.Max(0f, FarmArtLayout.MapHeight * zoom - h));
         panFrom = map.anchoredPosition;
         panTo = new Vector2(x, y);
         panT = 0f;

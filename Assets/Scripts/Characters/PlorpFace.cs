@@ -19,12 +19,16 @@ public sealed class PlorpFace : MonoBehaviour
     {
         float height = size;
         float width = size * ArtWidth / ArtHeight;
-        var raw = new PixelUIFactory().Texture(parent, name, "plorp_face",
-            x + (size - width) / 2f, y, width, height);
+        var factory = new PixelUIFactory();
+        var raw = factory.Texture(parent, name, "plorp_face", x + (size - width) / 2f, y, width, height);
         var face = raw.gameObject.GetOrAdd<PlorpFace>();
         face.art = raw.rectTransform;
-        face.art.pivot = new Vector2(.5f, 0f); // squash from the bottom
-        face.art.anchoredPosition += new Vector2(width / 2f, -height);
+        if (!factory.Reused)
+        {
+            // Squash from the bottom. Only when created: a portrait from the canvas already has it.
+            face.art.pivot = new Vector2(.5f, 0f);
+            face.art.anchoredPosition += new Vector2(width / 2f, -height);
+        }
         face.home = face.art.anchoredPosition;
         face.phase = Random.value * 6f;
         return face;

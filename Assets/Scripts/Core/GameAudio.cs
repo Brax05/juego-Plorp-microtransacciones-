@@ -56,7 +56,11 @@ public sealed class GameAudio : MonoBehaviour
 
     void Setup()
     {
-        for (int i = 0; i < Voices; i++) voices[i] = NewSource(false);
+        for (int i = 0; i < Voices; i++)
+        {
+            voices[i] = NewSource(false);
+            voices[i].volume = 1f; // PlayOneShot is scaled by this: at 0 no effect was heard
+        }
         musicA = NewSource(true);
         musicB = NewSource(true);
         jingle = NewSource(false);

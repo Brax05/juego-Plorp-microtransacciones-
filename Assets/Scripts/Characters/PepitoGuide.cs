@@ -250,6 +250,10 @@ public sealed class PepitoGuide : MonoBehaviour
     {
         section = tab;
         steps = Tours[tab];
+        // Seen from the moment it opens: closing the game halfway must not bring the whole tour back
+        // (it can be watched again with "VER GUÍA DE PEPITO" in Ajustes).
+        PlayerPrefs.SetInt(SeenKey + tab, 1);
+        PlayerPrefs.Save();
         onDone = done;
         index = 0;
         Active = true;

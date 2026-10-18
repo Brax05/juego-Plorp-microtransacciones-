@@ -116,6 +116,7 @@ public sealed class FarmWorldController : MonoBehaviour
         long earned = crops * value + golden * value * 9;
         state.RegisterGolden(golden);
         var item = FarmItems.ForCrop(plot.Kind);
+        GameAudio.Play("sfx_harvest_pop", 1f, .1f);
         state.Collect(earned, new Dictionary<string, int> { { item.Id, crops } });
         RewardFx.Collect(PlotCenter(plot), item, crops, earned, golden > 0);
         message((golden > 0 ? "¡Cosecha dorada! " : "") + "+" + FarmGameState.Format(earned) + " monedas · +" + crops + " " +
@@ -132,6 +133,7 @@ public sealed class FarmWorldController : MonoBehaviour
         long earned = FarmEconomy.CropHarvestValue(state, cell.Kind);
         bool golden = UnityEngine.Random.value < GoldenChance * FarmClock.GoldenMultiplier;
         if (golden) { earned *= 10; state.RegisterGolden(1); }
+        GameAudio.Play("sfx_harvest_pop", 1f, .12f);
         state.Collect(earned, FarmItems.ForCrop(cell.Kind));
         RewardFx.Collect(cell.transform.position, FarmItems.ForCrop(cell.Kind), 1, earned, golden);
         message((golden ? "¡Dorada! " : "") + cell.CropName + " +" + FarmGameState.Format(earned));

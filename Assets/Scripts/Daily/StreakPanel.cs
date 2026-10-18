@@ -93,6 +93,7 @@ public sealed class StreakPanel : MonoBehaviour
         long coins = DailyMissions.StreakCoins(state, DailyMissions.StreakDay);
         if (DailyMissions.ClaimStreak(state))
         {
+            GameAudio.Play("sfx_streak_reward");
             RewardFx.Collect(card.position, null, 0, coins);
             message?.Invoke("¡Racha cobrada! +" + gems + " gemas y +" + FarmGameState.Format(coins) + " monedas");
         }

@@ -140,6 +140,7 @@ public sealed class HouseScreen : MonoBehaviour
 
     void Pet(Cat cat)
     {
+        GameAudio.Play("sfx_cat_purr", .8f, .1f, 1.2f);
         string line = CatLines[UnityEngine.Random.Range(0, CatLines.Length)];
         var label = ui.Label(catLayer, "Miau", line, 0, 0, 160, 28, 16, Color.white, TextAnchor.MiddleCenter);
         label.rectTransform.pivot = new Vector2(.5f, .5f);

@@ -51,6 +51,8 @@ public sealed class RewardFx : MonoBehaviour
 
     void Play(Vector3 from, FarmItem item, int count, long gold, bool golden)
     {
+        if (golden) GameAudio.Play("sfx_gem_pickup");
+        if (gold > 0) GameAudio.Play(count >= 5 || golden ? "sfx_coin_shower" : "sfx_coin", .8f, .08f, .05f);
         layer.SetAsLastSibling();
         var startScreens = transform.parent.Find("Start screens");
         if (startScreens != null) startScreens.SetAsLastSibling();

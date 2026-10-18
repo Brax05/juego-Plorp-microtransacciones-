@@ -195,11 +195,13 @@ public sealed class FarmEvents : MonoBehaviour
             long coins = Math.Max(20, (long)(FarmEconomy.IncomePerSecond(state) * 15));
             state.BuyGold(0, coins);
             RewardFx.Collect(actor.position, null, 0, coins);
+            GameAudio.Play("sfx_crow");
             message("¡Fuera, cuervo! +" + FarmGameState.Format(coins) + " monedas");
         });
         PanTo(to);
         string crop = FarmItems.ForCrop(targetPlot.Kind).Name.ToLowerInvariant();
         Say("¡Miau! Un cuervo viene por tus " + crop + ". ¡Tócalo para espantarlo!");
+        GameAudio.Play("sfx_crow", .6f);
         CurvedPopup.Show(portrait as RectTransform, "¡UN CUERVO!", new Vector2(285f, 300f), PixelUIFactory.Gold, 26);
     }
 
@@ -306,6 +308,7 @@ public sealed class FarmEvents : MonoBehaviour
             if (actorArt != null) actorArt.uvRect = new Rect(1, 0, -1, 1); // face right to run away
             state.AddGems(1);
             RewardFx.Popup(actor.position, "+1 gema", PixelUIFactory.Hex("#9FE8FF"));
+            GameAudio.Play("sfx_fox");
             message("¡El zorro huyó! Las gallinas te regalan 1 gema");
         });
         PanTo((FoxStart + FoxEnd) / 2f);
@@ -358,6 +361,7 @@ public sealed class FarmEvents : MonoBehaviour
         Spawn("Truck", "truck", 92, 62, from, OpenSale);
         PanTo(TruckPark);
         Say("¡Miau! Llegó el CAMIÓN DE FERIA. Compra comida a precio doble. Tócalo para venderle.");
+        GameAudio.Play("sfx_truck_honk");
         CurvedPopup.Show(portrait as RectTransform, "¡CAMIÓN DE FERIA!", new Vector2(285f, 300f), PixelUIFactory.Gold, 24);
     }
 

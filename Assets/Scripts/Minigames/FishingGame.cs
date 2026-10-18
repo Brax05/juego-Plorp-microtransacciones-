@@ -62,6 +62,7 @@ public sealed class FishingGame : MonoBehaviour
 
     public static void Open(Transform portrait, FarmGameState state, Action<string> message)
     {
+        GameAudio.PushMusic("music_pond");
         var root = Popup.Open(portrait, "Fishing", "ESTANQUE", 120, 790, out var card);
         var game = root.gameObject.GetOrAdd<FishingGame>();
         game.root = root;
@@ -155,6 +156,7 @@ public sealed class FishingGame : MonoBehaviour
             message("Sin cebos: llega 1 cada 8 minutos");
             return;
         }
+        GameAudio.Play("sfx_fish_cast");
         // Which fish will bite.
         float roll = UnityEngine.Random.value;
         kind = roll < .10f ? 2 : roll < .40f ? 1 : 0;
@@ -203,6 +205,7 @@ public sealed class FishingGame : MonoBehaviour
 
     void Escaped(string why)
     {
+        GameAudio.Play("sfx_ui_error", .6f);
         status.text = why;
         status.color = PixelUIFactory.Hex("#FFB39A");
         SetPhaseKeepStatus(Phase.Done);
@@ -234,7 +237,7 @@ public sealed class FishingGame : MonoBehaviour
                 // A couple of nibbles before the real bite.
                 if (phaseTime > biteAt - .8f) PlaceFloat(floatPos + new Vector2(Mathf.Sin(phaseTime * 40f) * 2f, bob));
                 Ripple(phaseTime * .6f % 1f, .35f);
-                if (phaseTime >= biteAt) SetPhase(Phase.Bite);
+                if (phaseTime >= biteAt) { SetPhase(Phase.Bite); GameAudio.Play("sfx_fish_bite"); }
                 break;
             }
             case Phase.Bite:
@@ -268,4 +271,6 @@ public sealed class FishingGame : MonoBehaviour
         ripple.anchoredPosition = new Vector2(floatPos.x + 7f - w / 2f, -(floatPos.y + 16f - w * .35f / 2f));
         rippleImage.color = new Color(1f, 1f, 1f, (1f - t) * .5f * strength);
     }
+
+    void OnDestroy() => GameAudio.PopMusic("music_pond");
 }

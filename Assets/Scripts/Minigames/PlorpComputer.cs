@@ -38,6 +38,8 @@ public sealed class PlorpComputer : MonoBehaviour
 
     void Build(RectTransform computerScreen)
     {
+        GameAudio.PushMusic("music_arcade");
+        GameAudio.Play("sfx_ui_click");
         backdrop = ui.Backdrop(root, "Backdrop", Popup.W, Popup.H, new Color(0f, 0f, .05f, 0f));
 
         // Monitor: green bezel, dark screen with scanlines.
@@ -159,4 +161,6 @@ public sealed class PlorpComputer : MonoBehaviour
         card.localScale = new Vector3(s, s, 1f);
         backdrop.color = new Color(0f, 0f, .05f, .7f * e);
     }
+
+    void OnDestroy() => GameAudio.PopMusic("music_arcade");
 }

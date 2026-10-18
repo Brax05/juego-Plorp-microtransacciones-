@@ -136,7 +136,7 @@ public sealed class AchievementsScreen : MonoBehaviour
         var def = a;
         ui.ActionButton(card, "Claim", claimed ? "LISTO" : ready ? "COBRAR" : "EN CURSO", 410, 26, 110, 52, () =>
         {
-            if (AchievementCatalog.Claim(state, def)) message("+" + def.Gems + " gemas: " + def.Name);
+            if (AchievementCatalog.Claim(state, def)) { GameAudio.Play("sfx_achievement"); message("+" + def.Gems + " gemas: " + def.Name); }
         }, ready);
         return y + 112;
     }
@@ -190,7 +190,7 @@ public sealed class AchievementsScreen : MonoBehaviour
                 " GEMAS Y " + FarmGameState.Format(coins), 16, 132, 498, 36, () =>
             {
                 int g = DailyMissions.StreakGems[DailyMissions.StreakDay];
-                if (DailyMissions.ClaimStreak(state)) message("¡Racha cobrada! +" + g + " gemas");
+                if (DailyMissions.ClaimStreak(state)) { GameAudio.Play("sfx_streak_reward"); message("¡Racha cobrada! +" + g + " gemas"); }
             });
             var caption = FarmUIBootstrap.FindChildRecursive(card, "Caption");
             if (caption != null) caption.GetComponent<Text>().fontSize = 15;
@@ -231,7 +231,10 @@ public sealed class AchievementsScreen : MonoBehaviour
         {
             long coins = DailyMissions.MissionCoins(state, mission);
             if (DailyMissions.Claim(state, mission))
+            {
+                GameAudio.Play("sfx_achievement");
                 message("+" + mission.Gems + " gemas y +" + FarmGameState.Format(coins) + " monedas");
+            }
         }, ready);
         return y + 112;
     }
@@ -249,7 +252,9 @@ public sealed class AchievementsScreen : MonoBehaviour
         ui.Label(card, "Reward", "+" + DailyMissions.BonusGems, 358, 28, 50, 26, 15, PixelUIFactory.Gold);
         ui.ActionButton(card, "Claim", claimed ? "LISTO" : ready ? "ABRIR" : "CERRADO", 410, 16, 110, 52, () =>
         {
-            if (DailyMissions.ClaimBonus(state)) message("¡Cofre del día! +" + DailyMissions.BonusGems + " gemas");
+            if (!DailyMissions.ClaimBonus(state)) return;
+            GameAudio.Play("sfx_achievement");
+            message("¡Cofre del día! +" + DailyMissions.BonusGems + " gemas");
         }, ready);
         return y + 92;
     }

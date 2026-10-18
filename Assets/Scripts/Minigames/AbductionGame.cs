@@ -93,6 +93,7 @@ public sealed class AbductionGame : ArcadeGame
                 if (w.beam >= LiftTime)
                 {
                     w.lifting = true;
+                    GameAudio.Play(w.isPepito ? "sfx_pepito_meow" : "sfx_beam", .8f, .1f);
                     score += w.points;
                     Float(new Vector2(w.x, GroundY - 70f), (w.points > 0 ? "+" : "") + w.points,
                         w.points > 0 ? PixelUIFactory.Gold : PixelUIFactory.Hex("#FF7B6B"));

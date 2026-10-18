@@ -76,6 +76,7 @@ public static class StarTrip
     {
         int gain = SeedsToGain(s);
         if (gain <= 0) return;
+        GameAudio.PlayJingle("music_star_trip_jingle"); // keeps playing while the farm reloads
         int stars = Stars + gain;
         PlayerPrefs.SetInt(StarsKey, stars);
         PlayerPrefs.SetInt(TripsKey, Trips + 1);

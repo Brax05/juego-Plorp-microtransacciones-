@@ -124,6 +124,7 @@ public abstract class ArcadeGame : MonoBehaviour
         score = 0;
         timeLeft = RoundSeconds;
         countdownLeft = 3f;
+        GameAudio.Play("sfx_countdown", .7f, 0f);
         playing = false;
         ResetRound();
     }
@@ -133,9 +134,11 @@ public abstract class ArcadeGame : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
         if (countdownLeft > 0f)
         {
+            int before = Mathf.CeilToInt(countdownLeft);
             countdownLeft -= dt;
             countdown.text = countdownLeft > 0f ? Mathf.CeilToInt(countdownLeft).ToString() : "";
-            if (countdownLeft <= 0f) { playing = true; countdown.text = ""; }
+            if (countdownLeft > 0f && Mathf.CeilToInt(countdownLeft) != before) GameAudio.Play("sfx_countdown", .7f, 0f);
+            if (countdownLeft <= 0f) { playing = true; countdown.text = ""; GameAudio.Play("sfx_countdown_go", .8f, 0f); }
         }
         else if (playing)
         {
@@ -149,6 +152,7 @@ public abstract class ArcadeGame : MonoBehaviour
 
     void Finish()
     {
+        GameAudio.Play("sfx_minigame_end");
         playing = false;
         int final = Mathf.Max(0, score);
         bool record = MinigameTickets.SaveBest(GameId, final);

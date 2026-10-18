@@ -146,6 +146,7 @@ public sealed class PepitoController : MonoBehaviour
     public void Say(string text, float seconds = AdviceSeconds)
     {
         if (asking || suppressed) return; // never interrupt a food request; quiet on other tabs
+        GameAudio.Play("sfx_pepito_meow", .5f, .08f, 6f);
         Show();
         if (buttonsRow != null) buttonsRow.gameObject.SetActive(false);
         if (bubbleText != null)

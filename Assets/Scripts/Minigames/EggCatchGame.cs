@@ -85,6 +85,7 @@ public sealed class EggCatchGame : ArcadeGame
             {
                 int points = d.kind == 0 ? 1 : d.kind == 1 ? 5 : -3;
                 score += points;
+                GameAudio.Play(d.kind == 2 ? "sfx_stone_hit" : d.kind == 1 ? "sfx_gem_pickup" : "sfx_egg_catch", .8f, .1f);
                 if (d.kind == 0) eggsCaught += 1;
                 if (d.kind == 1) eggsCaught += 3;
                 if (d.kind == 2) flash = .3f;

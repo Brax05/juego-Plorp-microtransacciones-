@@ -57,7 +57,9 @@ public sealed class PlorpGoalPanel : MonoBehaviour
         face = PlorpFace.Create(transform, "Plorp face", 11, 12, 38);
         ui.Hit(transform, "Plorp tap", 9, 9, 42, 42, () =>
         {
-            face.Bump();
+            GameAudio.Play("sfx_order_delivered");
+        GameAudio.Play("sfx_plorp_voice", .8f, .1f);
+        face.Bump();
             pepito.Say("Miau... Plorp dijo \"" + state.CurrentGoal.Quote + "\". Creo que quiere " +
                        Describe(state.CurrentGoal) + ".", 7f);
         });
@@ -101,6 +103,7 @@ public sealed class PlorpGoalPanel : MonoBehaviour
             {
                 long missing = line.Amount - state.ItemCount(line.Item.Id);
                 if (missing <= 0) continue;
+                GameAudio.Play("sfx_ui_error");
                 message("Faltan " + missing + " " + line.Item.Name.ToLowerInvariant());
                 return;
             }

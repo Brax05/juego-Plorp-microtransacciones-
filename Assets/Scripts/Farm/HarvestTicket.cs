@@ -167,6 +167,7 @@ public sealed class HarvestTicket : MonoBehaviour
 
     void Show()
     {
+        if (GameAudio.FarmVisible) GameAudio.Play("sfx_harvest_ready", .6f, .06f, 2.5f);
         shown = true;
         shownAt = Time.unscaledTime;
         if (group != null)

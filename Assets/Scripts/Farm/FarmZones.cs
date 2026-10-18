@@ -311,6 +311,7 @@ public sealed class FarmZones : MonoBehaviour
         {
             if (Open(state, z))
             {
+                GameAudio.Play("sfx_tier_up");
                 Popup.Close(root);
                 Refresh();
                 message("¡" + Names[(int)z] + " abierto!");
@@ -326,6 +327,7 @@ public sealed class FarmZones : MonoBehaviour
 
     void OpenProductionWindow(ZoneId z)
     {
+        if (z == ZoneId.Hives) GameAudio.Play("amb_bees_loop", .5f, 0f); // the bees greet you
         RectTransform root = null;
         void Build()
         {
@@ -351,6 +353,7 @@ public sealed class FarmZones : MonoBehaviour
             ui.ActionButton(card, "Collect", ready > 0 ? "RECOGER " + ready : "NADA AÚN", 60, 390, 422, 70, () =>
             {
                 int got = Collect(state, z);
+                if (got > 0) GameAudio.Play(z == ZoneId.Orchard ? "sfx_apple_drop" : "sfx_harvest_pop");
                 if (got > 0)
                 {
                     RewardFx.Collect(signs[(int)z].position, item, Mathf.Min(6, got), ItemValue(state, item.Id) * got);

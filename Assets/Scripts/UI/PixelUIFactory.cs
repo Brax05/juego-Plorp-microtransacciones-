@@ -189,7 +189,11 @@ public sealed class PixelUIFactory
         var panel = Panel(parent, name, x, y, width, height, enabled ? Green : Disabled);
         bool reused = Reused;
         Label(panel, "Caption", title, 4, 2, width - 8, height - 4, 20, Color.white, TextAnchor.MiddleCenter);
-        var hit = Hit(parent, name + " hit", x, y, width, height, action);
+        var hit = Hit(parent, name + " hit", x, y, width, height, () =>
+        {
+            GameAudio.Play("sfx_ui_click", .6f);
+            action?.Invoke();
+        });
         hit.interactable = enabled;
         Reused = reused;
         return hit;

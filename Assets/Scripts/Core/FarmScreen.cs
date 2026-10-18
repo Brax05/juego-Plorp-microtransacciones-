@@ -75,7 +75,7 @@ public sealed class FarmScreen
         {
             int index = i;
             tabButtons[i] = BindHit(parent, tabs[i],
-                () => navigate(index)).GetComponent<RectTransform>();
+                () => { GameAudio.Play("sfx_ui_click", .6f); navigate(index); }).GetComponent<RectTransform>();
         }
 
         activeTab = Require<RectTransform>(parent, "Selected tab");
@@ -119,7 +119,10 @@ public sealed class FarmScreen
             message("Mejora al maximo");
             return;
         }
-        message(UpgradeMessage(state, index, state.BuyUpgrade(index)));
+        bool bought = state.BuyUpgrade(index);
+        bool tierUp = bought && index != FarmEconomy.Workers && state.Levels[index] % FarmEconomy.LevelsPerTier == 1;
+        GameAudio.Play(!bought ? "sfx_ui_error" : tierUp ? "sfx_tier_up" : "sfx_upgrade");
+        message(UpgradeMessage(state, index, bought));
     }
 
     /// <summary>Feedback after a purchase, celebrating every 10th one (new crop / new animal / x2).</summary>

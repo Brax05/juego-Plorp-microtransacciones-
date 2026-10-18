@@ -178,6 +178,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
     void OnDishReady(Recipe recipe)
     {
+        GameAudio.Play("sfx_dish_ready");
         if (farmPepito != null && currentTab == 0 && recipe != null)
             farmPepito.Say("Miau... ¡" + recipe.Name + " lista! Entra a la CASA DE PLORP (el granero amarillo) para sacarla de la olla.", 6f);
     }
@@ -208,6 +209,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (farmEvents != null) farmEvents.Running = farmQuiet;
         AnnounceClock(farmQuiet);
         if (farmQuiet) UpdateFarmTips();
+        UpdateAudio(popupOpen);
 
         // Remember that the player is here (for "Mientras no estabas").
         if (guideReady && !OfflinePanel.Active && Time.unscaledTime >= nextSeenSave)
@@ -223,6 +225,29 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         }
         Kitchen.Tick();
         gameState.Garden?.Tick(Time.unscaledDeltaTime); // the plant lives on in every tab
+    }
+
+    /// <summary>
+    /// Music for the place you are in (title, farm by day / night, garden, Plorp's house, or the window on
+    /// top), and the ambience beds under it (wind, birds or crickets, rain, the pot bubbling).
+    /// </summary>
+    void UpdateAudio(bool popupOpen)
+    {
+        var start = content.Find("Start screens");
+        bool title = start != null && start.gameObject.activeSelf;
+        GameAudio.FarmVisible = !title && currentTab == 0 && !popupOpen;
+        string music = title ? "music_menu_loading"
+            : GameAudio.MusicOverride ?? (currentTab == 3 ? "music_garden"
+                : currentTab >= 5 ? "music_house"
+                : FarmClock.IsNight ? "music_farm_night" : "music_farm_day");
+        GameAudio.SetMusic(music);
+
+        if (title || GameAudio.MusicOverride != null) GameAudio.SetAmbience(null);
+        else if (currentTab == 0)
+            GameAudio.SetAmbience("amb_wind_loop", FarmClock.IsNight ? "amb_night_crickets_loop" : "amb_day_birds_loop",
+                FarmEvents.GrowthMultiplier > 1f ? "amb_rain_loop" : null);
+        else if (currentTab == 6 && Kitchen.CookingCount() > 0) GameAudio.SetAmbience("amb_pot_bubbling_loop");
+        else GameAudio.SetAmbience(null);
     }
 
     void UpdateFarmTips()

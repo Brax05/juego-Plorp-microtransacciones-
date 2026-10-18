@@ -48,6 +48,7 @@ public sealed class WorldActor : MonoBehaviour
         if (!IsReady) return 0;
         long value = Reward;
         SetCooldown();
+        GameAudio.Play("sfx_egg_catch", .9f, .1f);
         return value;
     }
 

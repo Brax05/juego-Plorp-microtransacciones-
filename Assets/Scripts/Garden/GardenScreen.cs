@@ -156,6 +156,7 @@ public sealed class GardenScreen : MonoBehaviour
         ui.Hit(transform, "Toggle curtains", 372, 530, 104, 78, () =>
         {
             garden.ToggleCurtains();
+            GameAudio.Play(garden.CurtainsClosed ? "sfx_curtain_close" : "sfx_curtain_open");
             curtainPress = .18f;
             message(garden.CurtainsClosed ? "Cortinas cerradas: no entra el sol" : "Cortinas abiertas");
         });
@@ -413,6 +414,7 @@ public sealed class GardenScreen : MonoBehaviour
         wiggle[index] = 1f;
         if (garden.CleanLeaf(index))
         {
+            GameAudio.Play("sfx_leaf_clean");
             Burst(leaves[index].rectTransform.TransformPoint(new Vector3(0f, 110f, 0f)), Color.white, 8);
             message("Hoja limpia: ¡más fuerte!");
         }
@@ -425,6 +427,7 @@ public sealed class GardenScreen : MonoBehaviour
         Vector3 at = view.rectTransform.position;
         int coins = garden.SquashBug(bug);
         if (coins <= 0) return;
+        GameAudio.Play("sfx_bug_squash", 1f, .1f);
         Burst(at, PixelUIFactory.Hex("#FF8CC6"), 10);
         for (int i = 0; i < coins; i++)
             Particle(at, "icon_flowercoin", 22f, Vector3.zero, 0f, .7f, flowerCoinText.transform, i * .08f);
@@ -440,6 +443,7 @@ public sealed class GardenScreen : MonoBehaviour
             message("La flor está juntando monedas de flor");
             return;
         }
+        GameAudio.Play("sfx_coin_shower", .7f);
         for (int i = 0; i < Mathf.Min(coins, 6); i++)
             Particle(from, "icon_flowercoin", 22f, Vector3.zero, 0f, .8f, flowerCoinText.transform, i * .07f);
         message("+" + coins + " monedas de flor");
@@ -499,6 +503,7 @@ public sealed class GardenScreen : MonoBehaviour
                 if (over)
                 {
                     garden.PourWater(dt);
+                    GameAudio.Play("sfx_water", .7f, .1f, .9f);
                     if (particleTimer <= 0f)
                     {
                         particleTimer = .035f;
@@ -516,6 +521,7 @@ public sealed class GardenScreen : MonoBehaviour
                     if (!RectTransformUtility.RectangleContainsScreenPoint(leaves[i].rectTransform, dragScreen, dragCam)) continue;
                     DropLeaf(i);
                     garden.CutLeaf(i);
+                    GameAudio.Play("sfx_cut", 1f, .1f);
                     RewardFx.Popup(g.position, "¡Snip!", Color.white);
                     break;
                 }
@@ -536,6 +542,7 @@ public sealed class GardenScreen : MonoBehaviour
                     if (!fertilizedThisDrag && pourTimer >= .6f)
                     {
                         fertilizedThisDrag = true;
+                        GameAudio.Play("sfx_fertilizer");
                         message(garden.ApplyFertilizer());
                     }
                 }
@@ -544,6 +551,7 @@ public sealed class GardenScreen : MonoBehaviour
                 if (over)
                 {
                     garden.PourLight(dt);
+                    GameAudio.Play("sfx_light", .6f, .05f, 1.6f);
                     if (particleTimer <= 0f)
                     {
                         particleTimer = .06f;
@@ -632,6 +640,7 @@ public sealed class GardenScreen : MonoBehaviour
             nextUfo -= dt;
             if (nextUfo > 0f || garden.CurtainsClosed) return;
             ufoTime = 0f;
+            if (gameObject.activeInHierarchy) GameAudio.Play("sfx_ufo_pass", .6f);
             ufoDropped = false;
             ufo.gameObject.SetActive(true);
             return;
@@ -654,6 +663,7 @@ public sealed class GardenScreen : MonoBehaviour
         if (!ufoDropped && t >= .5f)
         {
             ufoDropped = true;
+            GameAudio.Play("sfx_gem_drop");
             int gems = UnityEngine.Random.Range(2, 5);
             Vector3 from = ufo.TransformPoint(new Vector3(56f, -96f, 0f));
             for (int i = 0; i < gems; i++)
@@ -666,6 +676,7 @@ public sealed class GardenScreen : MonoBehaviour
                 pickup.gameObject.GetOrAdd<GardenGemPickup>().Launch(from, new Vector2(floorX, floorY), () =>
                 {
                     state.AddGems(1);
+                    GameAudio.Play("sfx_gem_pickup", 1f, .08f);
                     RewardFx.Popup(pickup.rectTransform.position, "+1 gema", PixelUIFactory.Hex("#7CF2E4"));
                 });
             }

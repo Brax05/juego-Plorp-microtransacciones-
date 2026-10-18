@@ -31,11 +31,11 @@ public static class MenuPage
     {
         var ui = new PixelUIFactory();
         var viewport = ui.Rect(page, "List viewport", 14, top, ListWidth, Height - top - 8);
-        viewport.gameObject.AddComponent<RectMask2D>();
-        var hit = viewport.gameObject.AddComponent<Image>();
+        viewport.gameObject.GetOrAdd<RectMask2D>();
+        var hit = viewport.gameObject.GetOrAdd<Image>();
         hit.color = new Color(0, 0, 0, 0); // receives drags anywhere in the list
         var content = ui.Rect(viewport, "List content", 0, 0, ListWidth, 10);
-        var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+        var scroll = viewport.gameObject.GetOrAdd<ScrollRect>();
         scroll.content = content;
         scroll.viewport = viewport;
         scroll.horizontal = false;
@@ -45,7 +45,7 @@ public static class MenuPage
         scroll.inertia = true;
         scroll.scrollSensitivity = 30f;
         scroll.decelerationRate = .135f;
-        viewport.gameObject.AddComponent<ScrollActivity>();
+        viewport.gameObject.GetOrAdd<ScrollActivity>();
         return content;
     }
 
@@ -80,9 +80,7 @@ public static class MenuPage
     {
         for (int i = content.childCount - 1; i >= 0; i--)
         {
-            var child = content.GetChild(i).gameObject;
-            if (Application.isPlaying) Object.Destroy(child);
-            else Object.DestroyImmediate(child); // editor preview
+            UiUtil.Kill(content.GetChild(i).gameObject);
         }
     }
 

@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
-/// "Jardinería" tab: a plant on the window sill (Resources/UI/Garden/garden_bg.png, 570x840).
+/// "Jardinería" tab: a plant on the window sill (Art/Garden/garden_bg.png, 570x840).
 ///  - Drag the tools from the bottom cards onto the plant: the watering can pours water drops,
 ///    the fertilizer bag pours sand, the lamp shines, and the scissors cut dry/yellow leaves.
 ///  - Tap dusty leaves to clean them, squash bugs for gems, tap the flower to collect monedas de flor.
@@ -59,7 +59,6 @@ public sealed class GardenScreen : MonoBehaviour
     RawImage flower;
     Text coinBubbleText;
     readonly Dictionary<GardenBug, RawImage> bugViews = new Dictionary<GardenBug, RawImage>();
-    readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
     RectTransform shop;
     RectTransform shopPulse;
     Image shopGlow;
@@ -88,7 +87,7 @@ public sealed class GardenScreen : MonoBehaviour
     {
         var ui = new PixelUIFactory();
         var page = ui.Rect(secondary, "Page - Jardineria", 0, 0, PageW, PageH);
-        var screen = page.gameObject.AddComponent<GardenScreen>();
+        var screen = page.gameObject.GetOrAdd<GardenScreen>();
         screen.Build(ui, page, state, message);
         page.gameObject.SetActive(false);
         return screen;
@@ -102,12 +101,12 @@ public sealed class GardenScreen : MonoBehaviour
         garden = farm.Garden;
         message = showMessage;
 
-        var bg = ui.Texture(transform, "Background", "UI/Garden/garden_bg", 0, 0, PageW, PageH);
+        var bg = ui.Texture(transform, "Background", "garden_bg", 0, 0, PageW, PageH);
         bg.raycastTarget = true;
 
         // Weather seen through the window (lower panes).
         sunLayer = ui.Rect(transform, "Sunny window", 92, 204, 389, 264);
-        sunLayer.gameObject.AddComponent<RectMask2D>(); // keep the beams inside the glass
+        sunLayer.gameObject.GetOrAdd<RectMask2D>(); // keep the beams inside the glass
         ui.Block(sunLayer, "Warm light", 0, 0, 389, 283, new Color(1f, .93f, .55f, .16f));
         for (int i = 0; i < 3; i++)
         {
@@ -115,7 +114,7 @@ public sealed class GardenScreen : MonoBehaviour
             beam.rectTransform.localEulerAngles = new Vector3(0f, 0f, -28f);
         }
         cloudLayer = ui.Rect(transform, "Cloudy window", 92, 204, 389, 264);
-        cloudLayer.gameObject.AddComponent<RectMask2D>();
+        cloudLayer.gameObject.GetOrAdd<RectMask2D>();
         ui.Block(cloudLayer, "Grey", 0, 0, 389, 283, new Color(.55f, .6f, .7f, .38f));
         var rng = new System.Random(4);
         for (int i = 0; i < 26; i++)
@@ -123,10 +122,10 @@ public sealed class GardenScreen : MonoBehaviour
 
         // Plorp's UFO flies past the window now and then (hidden by closed curtains).
         ufoLayer = ui.Rect(transform, "UFO window", 92, 107, 389, 363);
-        ufoLayer.gameObject.AddComponent<RectMask2D>();
+        ufoLayer.gameObject.GetOrAdd<RectMask2D>();
         ufo = ui.Rect(ufoLayer, "UFO", -130, 20, 112, 100);
         ufoBeam = ui.Block(ufo, "Beam", 30, 86, 52, 150, new Color(.55f, .95f, 1f, 0f));
-        ui.Texture(ufo, "Ship", "UI/Garden/ufo_plorp", 0, 0, 112, 100);
+        ui.Texture(ufo, "Ship", "ufo_plorp", 0, 0, 112, 100);
         ufo.gameObject.SetActive(false);
 
         // Curtains over the window (closed = no sun gets in).
@@ -140,7 +139,7 @@ public sealed class GardenScreen : MonoBehaviour
         shopGlow = ui.Block(transform, "Seed shop glow", 412, 112, 56, 56, new Color(1f, .95f, .5f, 0f));
         shopGlow.rectTransform.pivot = new Vector2(.5f, .5f);
         shopGlow.rectTransform.anchoredPosition += new Vector2(28f, -28f);
-        var pot = ui.Texture(transform, "Seed shop", "UI/Garden/seed_shop_pot", 416, 114, 48, 48);
+        var pot = ui.Texture(transform, "Seed shop", "seed_shop_pot", 416, 114, 48, 48);
         pot.rectTransform.pivot = new Vector2(.5f, 0f);
         pot.rectTransform.anchoredPosition += new Vector2(24f, -48f);
         shopPulse = pot.rectTransform;
@@ -148,11 +147,11 @@ public sealed class GardenScreen : MonoBehaviour
 
         // Monedas de flor counter (top-left of the window frame).
         var pill = ui.Panel(transform, "Flower coins", 6, 96, 92, 34, PixelUIFactory.Hex("#7A3F5E"));
-        ui.Texture(pill, "Icon", "UI/Garden/icon_flowercoin", 6, 5, 24, 24);
+        ui.Texture(pill, "Icon", "icon_flowercoin", 6, 5, 24, 24);
         flowerCoinText = ui.Label(pill, "Count", "", 32, 2, 56, 30, 16, Color.white);
 
         // Big red push button on the table (between the pot and the small pot) that opens/closes the curtains.
-        curtainButtonArt = ui.Texture(transform, "Curtains button", "UI/Garden/curtain_button_up", 380, 538, 88, 52);
+        curtainButtonArt = ui.Texture(transform, "Curtains button", "curtain_button_up", 380, 538, 88, 52);
         curtainButtonText = ui.Label(transform, "Curtains caption", "", 366, 590, 116, 18, 12, Color.white, TextAnchor.MiddleCenter);
         ui.Hit(transform, "Toggle curtains", 372, 530, 104, 78, () =>
         {
@@ -164,34 +163,34 @@ public sealed class GardenScreen : MonoBehaviour
         // Water / light / care bars.
         ui.Block(transform, "Bars shade", 96, 198, 380, 106, new Color(.04f, .06f, .1f, .55f));
         weatherText = ui.Label(transform, "Weather", "", 100, 282, 372, 18, 12, Color.white, TextAnchor.MiddleCenter);
-        BuildBar(206, "UI/Garden/icon_water", PixelUIFactory.Hex("#5AB0F0"), out waterFill, out waterBand, out waterValue);
-        BuildBar(232, "UI/Garden/icon_sun", PixelUIFactory.Hex("#FFD44F"), out lightFill, out lightBand, out lightValue);
-        BuildBar(258, "UI/Garden/icon_sprout", PixelUIFactory.Hex("#FF8CC6"), out careFill, out _, out careValue);
+        BuildBar(206, "icon_water", PixelUIFactory.Hex("#5AB0F0"), out waterFill, out waterBand, out waterValue);
+        BuildBar(232, "icon_sun", PixelUIFactory.Hex("#FFD44F"), out lightFill, out lightBand, out lightValue);
+        BuildBar(258, "icon_sprout", PixelUIFactory.Hex("#FF8CC6"), out careFill, out _, out careValue);
 
         // Plant: flower on a centre stem (behind), then leaves (centre ones first = behind).
         plantRoot = ui.Rect(transform, "Plant", 0, 0, PageW, PageH);
         plantZone = ui.Rect(transform, "Plant zone", 130, 280, 310, 230);
         flowerStem = ui.Block(plantRoot, "Flower stem", PotTop.x - 2, PotTop.y - 170, 5, 170, PixelUIFactory.Hex("#3E8A3A")).rectTransform;
         flowerRoot = ui.Rect(plantRoot, "Flower", PotTop.x - 26, PotTop.y - 210, 52, 52);
-        flower = ui.Texture(flowerRoot, "Art", "UI/Garden/flower_especial", 0, 0, 52, 52);
+        flower = ui.Texture(flowerRoot, "Art", "flower_especial", 0, 0, 52, 52);
         flower.raycastTarget = true;
-        var flowerButton = flower.gameObject.AddComponent<Button>();
+        var flowerButton = flower.gameObject.GetOrAdd<Button>();
         flowerButton.targetGraphic = flower;
         flowerButton.transition = Selectable.Transition.None;
         flowerButton.onClick.AddListener(CollectFlower);
         coinBubble = ui.Panel(flowerRoot, "Coins", 40, -10, 52, 26, PixelUIFactory.Hex("#7A3F5E"));
-        ui.Texture(coinBubble, "Icon", "UI/Garden/icon_flowercoin", 4, 3, 20, 20);
+        ui.Texture(coinBubble, "Icon", "icon_flowercoin", 4, 3, 20, 20);
         coinBubbleText = ui.Label(coinBubble, "Count", "", 24, 0, 28, 26, 13, Color.white);
 
         for (int i = 0; i < leaves.Length; i++)
         {
             int index = i;
-            var leaf = ui.Texture(plantRoot, "Leaf " + i, "UI/Garden/leaf_especial_healthy", 0, 0, 64, 160);
+            var leaf = ui.Texture(plantRoot, "Leaf " + i, "leaf_especial_healthy", 0, 0, 64, 160);
             var rt = leaf.rectTransform;
             rt.pivot = new Vector2(.5f, 0f);
             rt.anchoredPosition = new Vector2(PotTop.x, -PotTop.y);
             leaf.raycastTarget = true;
-            var button = leaf.gameObject.AddComponent<Button>();
+            var button = leaf.gameObject.GetOrAdd<Button>();
             button.targetGraphic = leaf;
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => TapLeaf(index));
@@ -210,23 +209,23 @@ public sealed class GardenScreen : MonoBehaviour
             ui.Label(transform, "Tool name " + i, ToolLabels[i], x, 770, CardW, 26, 17, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
             if (i == 2)
             {
-                ui.Texture(transform, "Abono cost icon", "UI/Garden/icon_flowercoin", x + 30, 800, 20, 20);
+                ui.Texture(transform, "Abono cost icon", "icon_flowercoin", x + 30, 800, 20, 20);
                 ui.Label(transform, "Abono cost", GardenState.FertilizerCost.ToString(), x + 54, 797, 40, 24, 15, Color.white);
             }
             else ui.Label(transform, "Tool hint " + i, "arrastra", x, 798, CardW, 24, 13, PixelUIFactory.Cream, TextAnchor.MiddleCenter);
             var hit = ui.Hit(transform, "Drag tool " + i, x, CardY, CardW, CardH, () => { });
-            hit.gameObject.AddComponent<GardenToolDrag>().Setup(this, i);
+            hit.gameObject.GetOrAdd<GardenToolDrag>().Setup(this, i);
         }
 
         fxLayer = ui.Rect(transform, "Effects", 0, 0, PageW, PageH);
 
         // Pepito toast at the top (alerts while the player is here).
         toast = ui.Rect(transform, "Pepito toast", 0, 0, PageW, 96);
-        toastGroup = toast.gameObject.AddComponent<CanvasGroup>();
+        toastGroup = toast.gameObject.GetOrAdd<CanvasGroup>();
         toastGroup.alpha = 0f;
         toastGroup.blocksRaycasts = false;
         ui.Panel(toast, "Frame", 6, 6, 82, 82, PixelUIFactory.Hex("#4B5160"));
-        toastFace = SpriteStripAnimator.Create(toast, "Pepito", "UI/Characters/pepito_talk", 12, 12, 70);
+        toastFace = SpriteStripAnimator.Create(toast, "Pepito", "pepito_talk", 12, 12, 70);
         var bubble = ui.Panel(toast, "Bubble", 92, 10, 470, 74, PixelUIFactory.Hex("#F6E7C8"));
         toastText = ui.Paragraph(bubble, "Text", "", 12, 6, 446, 62, 16, PixelUIFactory.Ink);
         var outline = toastText.GetComponent<Outline>();
@@ -243,12 +242,8 @@ public sealed class GardenScreen : MonoBehaviour
     {
         // Ends just above the pot rim (the pot is painted in the background, curtains cannot go behind it).
         var curtain = ui.Rect(transform, name, x, 186, 34, 280);
-        curtain.gameObject.AddComponent<RectMask2D>();
-        ui.Block(curtain, "Fabric", 0, 0, 200, 280, PixelUIFactory.Hex("#B5443F"));
-        for (int i = 0; i < 10; i++)
-            ui.Block(curtain, "Fold", 6 + i * 20, 0, 6, 280, PixelUIFactory.Hex(i % 2 == 0 ? "#8E2F2C" : "#CF5B54"));
-        ui.Block(curtain, "Hem", 0, 270, 200, 10, PixelUIFactory.Hex("#E7C46A"));
-        ui.Block(curtain, "Rod", 0, 0, 200, 6, PixelUIFactory.Hex("#5A3420"));
+        curtain.gameObject.GetOrAdd<RectMask2D>();
+        ui.Texture(curtain, "Fabric", "curtain_fabric", 0, 0, 200, 280); // Art/Garden/curtain_fabric.png
         return curtain;
     }
 
@@ -300,7 +295,7 @@ public sealed class GardenScreen : MonoBehaviour
         bool bloom = garden.Bloomed;
         flowerRoot.gameObject.SetActive(bloom);
         flowerStem.gameObject.SetActive(bloom);
-        if (bloom) flower.texture = Tex("UI/Garden/flower_" + plant.Id);
+        if (bloom) flower.texture = Tex("flower_" + plant.Id);
         coinBubble.gameObject.SetActive(bloom && garden.StoredCoins > 0);
         coinBubbleText.text = "x" + garden.StoredCoins;
 
@@ -320,20 +315,20 @@ public sealed class GardenScreen : MonoBehaviour
         foreach (var pair in bugViews) if (!garden.Bugs.Contains(pair.Key)) gone.Add(pair.Key);
         foreach (var bug in gone)
         {
-            if (bugViews[bug] != null) Destroy(bugViews[bug].gameObject);
+            if (bugViews[bug] != null) UiUtil.Kill(bugViews[bug].gameObject);
             bugViews.Remove(bug);
         }
         foreach (var bug in garden.Bugs)
         {
             if (bugViews.ContainsKey(bug) || bug.Leaf >= leaves.Length) continue;
             var leaf = leaves[bug.Leaf].rectTransform;
-            var view = ui.Texture(leaf, "Bug", "UI/Garden/bug_0", 0, 0, 22, 22);
+            var view = ui.Texture(leaf, "Bug", "bug_0", 0, 0, 22, 22);
             view.rectTransform.anchorMin = view.rectTransform.anchorMax = new Vector2(.5f, 0f);
             view.rectTransform.pivot = new Vector2(.5f, .5f);
             view.rectTransform.anchoredPosition = new Vector2(0f, 68f + bug.Along * 80f);
             view.raycastTarget = true;
             var target = bug;
-            var button = view.gameObject.AddComponent<Button>();
+            var button = view.gameObject.GetOrAdd<Button>();
             button.targetGraphic = view;
             button.transition = Selectable.Transition.None;
             button.onClick.AddListener(() => Squash(target));
@@ -341,22 +336,13 @@ public sealed class GardenScreen : MonoBehaviour
         }
     }
 
-    Texture2D Tex(string path)
-    {
-        if (!textures.TryGetValue(path, out var tex))
-        {
-            tex = Resources.Load<Texture2D>(path);
-            if (tex != null) tex.filterMode = FilterMode.Point;
-            textures[path] = tex;
-        }
-        return tex;
-    }
+    static Texture2D Tex(string picture) => Art.Tex(picture);
 
     Texture2D LeafTexture(string shape, LeafState leafState)
     {
         string suffix = leafState == LeafState.Strong ? "strong" : leafState == LeafState.Dusty ? "dusty"
             : leafState == LeafState.Withered ? "withered" : leafState == LeafState.Burnt ? "burnt" : "healthy";
-        return Tex("UI/Garden/leaf_" + shape + "_" + suffix);
+        return Tex("leaf_" + shape + "_" + suffix);
     }
 
     void Update()
@@ -388,7 +374,7 @@ public sealed class GardenScreen : MonoBehaviour
         foreach (var pair in bugViews)
         {
             if (pair.Value == null) continue;
-            pair.Value.texture = Tex(((int)(t * 6f) & 1) == 0 ? "UI/Garden/bug_0" : "UI/Garden/bug_1");
+            pair.Value.texture = Tex(((int)(t * 6f) & 1) == 0 ? "bug_0" : "bug_1");
             pair.Value.rectTransform.anchoredPosition =
                 new Vector2(Mathf.Sin(t * 3f + pair.Key.Along * 9f) * 4f, 68f + pair.Key.Along * 80f);
         }
@@ -405,7 +391,7 @@ public sealed class GardenScreen : MonoBehaviour
 
         // Red button looks pressed for a moment (and stays a bit lower while closed).
         curtainPress = Mathf.Max(0f, curtainPress - dt);
-        curtainButtonArt.texture = Tex(curtainPress > 0f ? "UI/Garden/curtain_button_down" : "UI/Garden/curtain_button_up");
+        curtainButtonArt.texture = Tex(curtainPress > 0f ? "curtain_button_down" : "curtain_button_up");
 
         // Curtains slide open/closed.
         curtainOpen = Mathf.MoveTowards(curtainOpen, garden.CurtainsClosed ? 0f : 1f, dt / .35f);
@@ -441,7 +427,7 @@ public sealed class GardenScreen : MonoBehaviour
         if (coins <= 0) return;
         Burst(at, PixelUIFactory.Hex("#FF8CC6"), 10);
         for (int i = 0; i < coins; i++)
-            Particle(at, "UI/Garden/icon_flowercoin", 22f, Vector3.zero, 0f, .7f, flowerCoinText.transform, i * .08f);
+            Particle(at, "icon_flowercoin", 22f, Vector3.zero, 0f, .7f, flowerCoinText.transform, i * .08f);
         message("¡Plaf! +" + coins + (coins == 1 ? " moneda de flor" : " monedas de flor"));
     }
 
@@ -455,7 +441,7 @@ public sealed class GardenScreen : MonoBehaviour
             return;
         }
         for (int i = 0; i < Mathf.Min(coins, 6); i++)
-            Particle(from, "UI/Garden/icon_flowercoin", 22f, Vector3.zero, 0f, .8f, flowerCoinText.transform, i * .07f);
+            Particle(from, "icon_flowercoin", 22f, Vector3.zero, 0f, .8f, flowerCoinText.transform, i * .07f);
         message("+" + coins + " monedas de flor");
     }
 
@@ -468,10 +454,10 @@ public sealed class GardenScreen : MonoBehaviour
         dragTool = tool;
         fertilizedThisDrag = false;
         pourTimer = 0f;
-        if (ghost != null) Destroy(ghost.gameObject);
-        var tex = Tex("UI/Garden/" + ToolSprites[tool]);
+        if (ghost != null) UiUtil.Kill(ghost.gameObject);
+        var tex = Tex("" + ToolSprites[tool]);
         float h = 78f, w = tex != null ? h * tex.width / tex.height : h;
-        ghost = ui.Texture(fxLayer, "Held tool", "UI/Garden/" + ToolSprites[tool], 0, 0, w, h);
+        ghost = ui.Texture(fxLayer, "Held tool", "" + ToolSprites[tool], 0, 0, w, h);
         ghost.rectTransform.pivot = new Vector2(.5f, .5f);
         fxLayer.SetAsLastSibling();
         toast.SetAsLastSibling();
@@ -491,7 +477,7 @@ public sealed class GardenScreen : MonoBehaviour
     public void EndTool()
     {
         dragTool = -1;
-        if (ghost != null) Destroy(ghost.gameObject);
+        if (ghost != null) UiUtil.Kill(ghost.gameObject);
         ghost = null;
     }
 
@@ -573,14 +559,14 @@ public sealed class GardenScreen : MonoBehaviour
     void DropLeaf(int index)
     {
         var src = leaves[index];
-        var copy = ui.Texture(fxLayer, "Cut leaf", "UI/Garden/leaf_especial_withered", 0, 0, 64, 160);
+        var copy = ui.Texture(fxLayer, "Cut leaf", "leaf_especial_withered", 0, 0, 64, 160);
         copy.texture = src.texture;
         var rt = copy.rectTransform;
         rt.pivot = new Vector2(.5f, 0f);
         rt.position = src.rectTransform.position;
         rt.rotation = src.rectTransform.rotation;
         rt.localScale = src.rectTransform.localScale;
-        copy.gameObject.AddComponent<GardenParticle>().Launch(rt.position,
+        copy.gameObject.GetOrAdd<GardenParticle>().Launch(rt.position,
             new Vector3(UnityEngine.Random.Range(-60f, 60f), 40f, 0f) * page.lossyScale.x, 500f * page.lossyScale.x, 1.1f,
             null, 0f, UnityEngine.Random.Range(-200f, 200f));
     }
@@ -593,7 +579,7 @@ public sealed class GardenScreen : MonoBehaviour
         else g = ui.Block(fxLayer, "Particle", 0, 0, size, size, color ?? Color.white);
         g.raycastTarget = false;
         g.rectTransform.pivot = new Vector2(.5f, .5f);
-        g.gameObject.AddComponent<GardenParticle>().Launch(at, velocity, gravity, life, target, delay, 0f);
+        g.gameObject.GetOrAdd<GardenParticle>().Launch(at, velocity, gravity, life, target, delay, 0f);
     }
 
     void Burst(Vector3 at, Color color, int count)
@@ -672,12 +658,12 @@ public sealed class GardenScreen : MonoBehaviour
             Vector3 from = ufo.TransformPoint(new Vector3(56f, -96f, 0f));
             for (int i = 0; i < gems; i++)
             {
-                var pickup = ui.Texture(fxLayer, "Gift gem", "UI/Shop/icon_gem", 0, 0, 30, 26);
+                var pickup = ui.Texture(fxLayer, "Gift gem", "icon_gem", 0, 0, 30, 26);
                 pickup.rectTransform.pivot = new Vector2(.5f, .5f);
                 pickup.raycastTarget = true;
                 float floorY = page.TransformPoint(new Vector3(0f, -(520f + UnityEngine.Random.Range(-14f, 18f)), 0f)).y;
                 float floorX = page.TransformPoint(new Vector3(160f + UnityEngine.Random.Range(0f, 250f), 0f, 0f)).x;
-                pickup.gameObject.AddComponent<GardenGemPickup>().Launch(from, new Vector2(floorX, floorY), () =>
+                pickup.gameObject.GetOrAdd<GardenGemPickup>().Launch(from, new Vector2(floorX, floorY), () =>
                 {
                     state.AddGems(1);
                     RewardFx.Popup(pickup.rectTransform.position, "+1 gema", PixelUIFactory.Hex("#7CF2E4"));
@@ -721,12 +707,12 @@ public sealed class GardenScreen : MonoBehaviour
 
     void OpenShop()
     {
-        if (shop != null) Destroy(shop.gameObject);
+        if (shop != null) UiUtil.Kill(shop.gameObject);
         shop = ui.Rect(transform, "Plant shop", 0, 0, PageW, PageH);
         ui.Backdrop(shop, "Backdrop", PageW, PageH, new Color(0f, 0f, .05f, .7f));
         var card = ui.Panel(shop, "Card", 14, 20, 542, 800, PixelUIFactory.Hex("#CE8854"), true);
         ui.Label(card, "Title", "PLANTAS", 20, 14, 300, 40, 28, PixelUIFactory.Gold);
-        ui.Texture(card, "Coins icon", "UI/Garden/icon_flowercoin", 370, 20, 26, 26);
+        ui.Texture(card, "Coins icon", "icon_flowercoin", 370, 20, 26, 26);
         ui.Label(card, "Coins", FarmGameState.Format(garden.FlowerCoins) + " de flor", 400, 16, 130, 34, 16, Color.white);
         for (int i = 0; i < GardenState.Species.Length; i++)
         {
@@ -735,8 +721,8 @@ public sealed class GardenScreen : MonoBehaviour
             float y = 62 + i * 112;
             bool owned = garden.Owned[i], current = garden.Current == i, unlockable = garden.CanUnlock(i);
             var row = ui.Panel(card, "Plant " + i, 12, y, 518, 106, PixelUIFactory.Hex(owned || unlockable ? "#9A5A33" : "#6E4A36"));
-            ui.Texture(row, "Leaf", "UI/Garden/leaf_" + sp.LeafShape + "_healthy", 10, 4, 34, 86);
-            ui.Texture(row, "Flower", "UI/Garden/flower_" + sp.Id, 26, 4, 30, 30);
+            ui.Texture(row, "Leaf", "leaf_" + sp.LeafShape + "_healthy", 10, 4, 34, 86);
+            ui.Texture(row, "Flower", "flower_" + sp.Id, 26, 4, 30, 30);
             ui.Label(row, "Name", sp.Name.ToUpperInvariant() + (garden.EverBloomed[i] ? "  (florecida)" : ""), 64, 8, 280, 24, 17, Color.white);
             ui.Label(row, "Likes", "Agua " + sp.WaterMin + "-" + sp.WaterMax + "%  ·  Sol " + sp.LightMin + "-" + sp.LightMax + "%",
                 64, 34, 280, 20, 12, PixelUIFactory.Cream);
@@ -754,19 +740,13 @@ public sealed class GardenScreen : MonoBehaviour
         }
         ui.ActionButton(card, "Close", "CERRAR", 171, 738, 200, 50, () =>
         {
-            Destroy(shop.gameObject);
+            UiUtil.Kill(shop.gameObject);
             shop = null;
         });
     }
 
     void OnEnable() => Refresh();
 
-    /// <summary>Editor preview: fills bars and lays the leaves out once (Update doesn't run outside Play mode).</summary>
-    public void PreviewRefresh()
-    {
-        Refresh();
-        Update();
-    }
 
     void OnDisable() => EndTool();
 
@@ -833,7 +813,7 @@ public sealed class GardenParticle : MonoBehaviour
             transform.position += velocity * dt;
             if (spin != 0f) transform.Rotate(0f, 0f, spin * dt);
         }
-        if (t >= 1f) Destroy(gameObject);
+        if (t >= 1f) UiUtil.Kill(gameObject);
     }
 }
 
@@ -853,7 +833,7 @@ public sealed class GardenGemPickup : MonoBehaviour
         onCollect = collect;
         float s = transform.lossyScale.x;
         velocity = new Vector3((floor.x - from.x) / .9f, 120f * s, 0f);
-        var button = gameObject.AddComponent<Button>();
+        var button = gameObject.GetOrAdd<Button>();
         button.targetGraphic = GetComponent<Graphic>();
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(Collect);
@@ -864,7 +844,7 @@ public sealed class GardenGemPickup : MonoBehaviour
         if (collected) return;
         collected = true;
         onCollect?.Invoke();
-        Destroy(gameObject);
+        UiUtil.Kill(gameObject);
     }
 
     void Update()

@@ -144,14 +144,14 @@ public static class DailyMissions
     {
         switch (kind)
         {
-            case MissionKind.Crops: return "World/Sprites/carrot_2";
-            case MissionKind.AnimalProducts: return "UI/Items/egg";
-            case MissionKind.Upgrades: return "UI/Icons/mejora";
-            case MissionKind.Orders: return "UI/Icons/granja";
-            case MissionKind.Bugs: return "UI/Garden/bug_0";
-            case MissionKind.Coins: return "UI/Garden/icon_coin";
-            case MissionKind.Golden: return "World/Sprites/pumpkin_2";
-            default: return "UI/Items/milk";
+            case MissionKind.Crops: return "carrot_2";
+            case MissionKind.AnimalProducts: return "egg";
+            case MissionKind.Upgrades: return "mejora";
+            case MissionKind.Orders: return "granja";
+            case MissionKind.Bugs: return "bug_0";
+            case MissionKind.Coins: return "icon_coin";
+            case MissionKind.Golden: return "pumpkin_2";
+            default: return "milk";
         }
     }
 

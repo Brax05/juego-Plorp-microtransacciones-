@@ -30,7 +30,7 @@ public sealed class SpriteStripAnimator : MonoBehaviour
         float x, float y, float size)
     {
         var raw = new PixelUIFactory().Texture(parent, name, resource, x, y, size, size);
-        var anim = raw.gameObject.AddComponent<SpriteStripAnimator>();
+        var anim = raw.gameObject.GetOrAdd<SpriteStripAnimator>();
         anim.image = raw;
         anim.SetFrame(0);
         anim.nextBlink = Time.unscaledTime + Random.Range(2f, 4f);

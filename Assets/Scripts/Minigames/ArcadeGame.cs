@@ -9,31 +9,13 @@ public static class MinigameTickets
     public const int Max = 3;
     const int Seconds = 20 * 60;
     const string Key = "GlorpFarm.games.";
-    static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    static Recharge Stock(string game) => new Recharge(Key + game + ".tickets", Key + game + ".since", Max, Seconds);
 
-    static long Since(string game) =>
-        long.TryParse(PlayerPrefs.GetString(Key + game + ".since", Now.ToString()), out long v) ? v : Now;
-
-    public static int Count(string game)
-    {
-        int stored = PlayerPrefs.GetInt(Key + game + ".tickets", Max);
-        if (stored >= Max) return Max;
-        return Mathf.Min(Max, stored + (int)((Now - Since(game)) / Seconds));
-    }
-
-    public static int SecondsToNext(string game) =>
-        Count(game) >= Max ? 0 : Seconds - (int)((Now - Since(game)) % Seconds);
-
-    public static bool Use(string game)
-    {
-        int n = Count(game);
-        if (n <= 0) return false;
-        long keep = n >= Max ? 0 : (Now - Since(game)) % Seconds;
-        PlayerPrefs.SetInt(Key + game + ".tickets", n - 1);
-        PlayerPrefs.SetString(Key + game + ".since", (Now - keep).ToString());
-        PlayerPrefs.Save();
-        return true;
-    }
+    public static int Count(string game) => Stock(game).Count;
+    public static int SecondsToNext(string game) => Stock(game).SecondsToNext;
+    public static bool Use(string game) => Stock(game).Use();
+    /// <summary>Tickets of every arcade game together.</summary>
+    public static int Total => Count("abduction") + Count("eggs");
 
     public static int Best(string game) => PlayerPrefs.GetInt(Key + game + ".best", 0);
 
@@ -105,7 +87,7 @@ public abstract class ArcadeGame : MonoBehaviour
             return;
         }
         var root = Popup.Open(portrait, "Minigame", "", 70, 880, out var card);
-        var game = root.gameObject.AddComponent<T>();
+        var game = root.gameObject.GetOrAdd<T>();
         game.root = root;
         game.card = card;
         game.state = state;
@@ -119,13 +101,13 @@ public abstract class ArcadeGame : MonoBehaviour
         var title = card.Find("Title")?.GetComponent<Text>();
         if (title != null) title.text = Title;
         area = ui.Rect(card, "Play area", AreaX, AreaY, AreaW, AreaH);
-        area.gameObject.AddComponent<RectMask2D>();
+        area.gameObject.GetOrAdd<RectMask2D>();
         BuildArea();
         // Touch layer on top of everything in the area.
         var touch = ui.Rect(area, "Touch", 0, 0, AreaW, AreaH);
-        var img = touch.gameObject.AddComponent<Image>();
+        var img = touch.gameObject.GetOrAdd<Image>();
         img.color = new Color(0, 0, 0, 0);
-        pointer = touch.gameObject.AddComponent<PointerArea>();
+        pointer = touch.gameObject.GetOrAdd<PointerArea>();
 
         timeText = ui.Label(card, "Time", "", 24, AreaY + AreaH + 10, 240, 34, 22, Color.white);
         scoreText = ui.Label(card, "Score", "", 278, AreaY + AreaH + 10, 240, 34, 22, PixelUIFactory.Gold, TextAnchor.MiddleRight);
@@ -137,7 +119,7 @@ public abstract class ArcadeGame : MonoBehaviour
 
     void StartRound()
     {
-        if (results != null) Destroy(results.gameObject);
+        if (results != null) UiUtil.Kill(results.gameObject);
         results = null;
         score = 0;
         timeLeft = RoundSeconds;
@@ -173,7 +155,7 @@ public abstract class ArcadeGame : MonoBehaviour
         string rewards = GiveRewards(final);
 
         results = ui.Rect(card, "Results", AreaX, AreaY, AreaW, AreaH);
-        var back = results.gameObject.AddComponent<Image>();
+        var back = results.gameObject.GetOrAdd<Image>();
         back.color = new Color(.05f, .03f, .08f, .82f);
         ui.Label(results, "Title", "¡TIEMPO!", 0, 40, AreaW, 60, 44, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
         ui.Label(results, "Score", final + " puntos" + (record ? "  · ¡RÉCORD!" : ""), 0, 110, AreaW, 40, 26, Color.white,
@@ -189,9 +171,9 @@ public abstract class ArcadeGame : MonoBehaviour
                 if (!MinigameTickets.Use(GameId)) { message("Sin boletos: llega 1 cada 20 minutos"); return; }
                 StartRound();
             }, tickets > 0);
-        Popup.CaptionSize(results, "Again", 17);
+        UiUtil.CaptionSize(results, "Again", 17);
         ui.ActionButton(results, "Exit", "SALIR", 60, 430, AreaW - 120, 58, () => Popup.Close(root));
-        Popup.ButtonColor(results, "Exit", PixelUIFactory.Hex("#8A6A55"));
+        UiUtil.ButtonColor(results, "Exit", PixelUIFactory.Hex("#8A6A55"));
     }
 
     // ---------- Helpers for subclasses ----------
@@ -211,22 +193,9 @@ public abstract class ArcadeGame : MonoBehaviour
         var label = ui.Label(area, "Points", text, 0, 0, 120, 30, 20, color, TextAnchor.MiddleCenter);
         label.rectTransform.pivot = new Vector2(.5f, .5f);
         Place(label.rectTransform, at.x, at.y);
-        label.gameObject.AddComponent<FloatAway>();
+        RisingText.Attach(label);
     }
 
-    sealed class FloatAway : MonoBehaviour
-    {
-        float age;
-        Text text;
-        void Awake() => text = GetComponent<Text>();
-        void Update()
-        {
-            age += Time.unscaledDeltaTime;
-            transform.localPosition += new Vector3(0f, 40f * Time.unscaledDeltaTime, 0f);
-            if (text != null) { var c = text.color; c.a = 1f - age; text.color = c; }
-            if (age >= 1f) Destroy(gameObject);
-        }
-    }
 
     /// <summary>Coins for minigames scale with what the farm makes.</summary>
     protected long CoinsPerPoint(double seconds) =>

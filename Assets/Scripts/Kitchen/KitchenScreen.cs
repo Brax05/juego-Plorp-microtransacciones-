@@ -24,6 +24,7 @@ public sealed class KitchenScreen : MonoBehaviour
     // Stove
     readonly Text[] slotName = new Text[Kitchen.MaxSlots];
     readonly RawImage[] slotDish = new RawImage[Kitchen.MaxSlots];
+    readonly Vector2[] slotDishBase = new Vector2[Kitchen.MaxSlots];
     readonly RawImage[] slotPot = new RawImage[Kitchen.MaxSlots];
     readonly Image[] slotGlow = new Image[Kitchen.MaxSlots];
     readonly RectTransform[] slotFill = new RectTransform[Kitchen.MaxSlots];
@@ -36,7 +37,7 @@ public sealed class KitchenScreen : MonoBehaviour
     {
         var page = MenuPage.Create(secondary, "Page - Cocina", "COCINA DE PLORP",
             "Cocina con lo del granero. Los platos valen más.", out var subtitle);
-        var screen = page.gameObject.AddComponent<KitchenScreen>();
+        var screen = page.gameObject.GetOrAdd<KitchenScreen>();
         screen.state = state;
         screen.message = message;
         screen.subtitle = subtitle;
@@ -58,18 +59,7 @@ public sealed class KitchenScreen : MonoBehaviour
         }
 
         // Wall of tiles, counter and the pots.
-        ui.Block(transform, "Wall", 16, StoveTop, 538, StoveH, PixelUIFactory.Hex("#2A1A14"));
-        for (int row = 0; row < 7; row++)
-            for (int col = 0; col < 13; col++)
-            {
-                float x = 16 + col * 44 + (row % 2 == 1 ? -22 : 0);
-                float w = 42;
-                if (x < 16) { w -= 16 - x; x = 16; }
-                if (x + w > 554) w = 554 - x;
-                if (w > 2) ui.Block(transform, "Tile", x, StoveTop + row * 22, w, 20, PixelUIFactory.Hex("#E9DCC6"));
-            }
-        ui.Block(transform, "Counter", 16, StoveTop + 150, 538, 64, PixelUIFactory.Hex("#5A5F6E"));
-        ui.Block(transform, "Counter edge", 16, StoveTop + 150, 538, 6, PixelUIFactory.Hex("#7D8494"));
+        ui.Texture(transform, "Wall", "kitchen_wall", 16, StoveTop, 538, StoveH); // Art/Kitchen/kitchen_wall.png
 
         for (int i = 0; i < Kitchen.MaxSlots; i++)
         {
@@ -78,8 +68,9 @@ public sealed class KitchenScreen : MonoBehaviour
             slotGlow[i] = ui.Block(transform, "Glow " + i, x - 6, StoveTop + 30, SlotW + 12, 150, Glow);
             slotName[i] = ui.Label(transform, "Pot name " + i, "", x - 10, StoveTop + 4, SlotW + 20, 22, 15, Color.white,
                 TextAnchor.MiddleCenter);
-            slotDish[i] = ui.Texture(transform, "Pot dish " + i, "World/Sprites/dish_tortilla", x + 46, StoveTop + 28, 48, 48);
-            slotPot[i] = ui.Texture(transform, "Pot " + i, "World/Sprites/pot_cooking", x + 14, StoveTop + 80, 112, 96);
+            slotDish[i] = ui.Texture(transform, "Pot dish " + i, "dish_tortilla", x + 46, StoveTop + 28, 48, 48);
+            slotDishBase[i] = slotDish[i].rectTransform.anchoredPosition;
+            slotPot[i] = ui.Texture(transform, "Pot " + i, "pot_cooking", x + 14, StoveTop + 80, 112, 96);
 
             var bar = ui.Rect(transform, "Pot bar " + i, x + 10, StoveTop + 184, 120, 16);
             slotBar[i] = bar.gameObject;
@@ -91,9 +82,9 @@ public sealed class KitchenScreen : MonoBehaviour
 
             var locked = ui.Rect(transform, "Pot locked " + i, x, StoveTop + 40, SlotW, 140);
             ui.Block(locked, "Back", 0, 0, SlotW, 140, PixelUIFactory.Hex("#3A2A24"));
-            ui.Texture(locked, "Padlock", "UI/Icons/candado", 50, 18, 40, 40);
+            ui.Texture(locked, "Padlock", "candado", 50, 18, 40, 40);
             ui.Label(locked, "Text", "+1 OLLA", 0, 64, SlotW, 26, 16, Color.white, TextAnchor.MiddleCenter);
-            ui.Texture(locked, "Gem", "UI/Shop/icon_gem", 36, 98, 26, 22);
+            ui.Texture(locked, "Gem", "icon_gem", 36, 98, 26, 22);
             ui.Label(locked, "Cost", Kitchen.ExtraSlotGems.ToString(), 66, 94, 60, 30, 17, Color.white);
             slotLock[i] = locked.gameObject;
 
@@ -109,8 +100,6 @@ public sealed class KitchenScreen : MonoBehaviour
         Kitchen.Changed += OnChanged;
     }
 
-    /// <summary>Editor preview (OnEnable doesn't run outside Play mode).</summary>
-    public void PreviewRefresh() { if (content != null) { Rebuild(); UpdateStove(); } }
 
     void OnEnable()
     {
@@ -178,20 +167,20 @@ public sealed class KitchenScreen : MonoBehaviour
             {
                 slotName[i].text = "VACÍA";
                 slotPot[i].color = new Color(1f, 1f, 1f, .45f);
-                SetTexture(slotPot[i], "World/Sprites/pot_cooking");
+                UiUtil.SetTexture(slotPot[i], "pot_cooking");
                 continue;
             }
             slotPot[i].color = Color.white;
             slotName[i].text = r.Name.ToUpperInvariant();
-            SetTexture(slotDish[i], r.Dish != null ? r.Dish.Icon : "World/Sprites/dish_tortilla");
-            SetTexture(slotPot[i], ready ? "World/Sprites/pot_done" : "World/Sprites/pot_cooking");
+            UiUtil.SetTexture(slotDish[i], r.Dish != null ? r.Dish.Icon : "dish_tortilla");
+            UiUtil.SetTexture(slotPot[i], ready ? "pot_done" : "pot_cooking");
             float p = ready ? 1f : Kitchen.Progress(i);
             slotFill[i].sizeDelta = new Vector2(120f * p, 16f);
             slotFillImage[i].color = ready ? PixelUIFactory.Gold : PixelUIFactory.Hex("#7ED957");
-            slotTime[i].text = ready ? "¡LISTO! TÓCALA" : Kitchen.Time((int)Kitchen.SecondsLeft(i));
+            slotTime[i].text = ready ? "¡LISTO! TÓCALA" : UiUtil.Duration((int)Kitchen.SecondsLeft(i));
             slotTime[i].color = ready ? PixelUIFactory.Ink : Color.white;
             // Dish bobs above a ready pot.
-            slotDish[i].rectTransform.anchoredPosition = new Vector2(40 + i * 172 + 46, -(StoveTop + 28 - (ready ? pulse * 6f : 0f)));
+            slotDish[i].rectTransform.anchoredPosition = slotDishBase[i] + new Vector2(0f, ready ? pulse * 6f : 0f);
         }
         if (subtitle != null)
         {
@@ -201,13 +190,6 @@ public sealed class KitchenScreen : MonoBehaviour
         }
     }
 
-    static void SetTexture(RawImage image, string path)
-    {
-        var tex = Resources.Load<Texture2D>(path);
-        if (tex == null || image.texture == tex) return;
-        tex.filterMode = FilterMode.Point;
-        image.texture = tex;
-    }
 
     void TapSlot(int slot)
     {
@@ -222,7 +204,7 @@ public sealed class KitchenScreen : MonoBehaviour
         if (Kitchen.SlotEmpty(slot)) { message("Olla vacía: elige una receta abajo"); return; }
         if (!Kitchen.SlotReady(slot))
         {
-            message(Kitchen.SlotRecipe(slot).Name + ": faltan " + Kitchen.Time((int)Kitchen.SecondsLeft(slot)));
+            message(Kitchen.SlotRecipe(slot).Name + ": faltan " + UiUtil.Duration((int)Kitchen.SecondsLeft(slot)));
             return;
         }
         var r = Kitchen.Collect(state, slot);
@@ -258,7 +240,7 @@ public sealed class KitchenScreen : MonoBehaviour
 
         if (!unlocked)
         {
-            ui.Texture(card, "Padlock", "UI/Icons/candado", 86, 40, 24, 24);
+            ui.Texture(card, "Padlock", "candado", 86, 40, 24, 24);
             ui.Paragraph(card, "Missing", "Primero produce: " + Kitchen.MissingProduction(state, r), 116, 36, 290, 32, 13,
                 PixelUIFactory.Cream);
         }
@@ -275,7 +257,7 @@ public sealed class KitchenScreen : MonoBehaviour
                 x += 92;
             }
         }
-        ui.Label(card, "Info", "Tarda " + Kitchen.Time(r.Seconds) + "  ·  vale " +
+        ui.Label(card, "Info", "Tarda " + UiUtil.Duration(r.Seconds) + "  ·  vale " +
             FarmGameState.Format(Kitchen.DishValue(state, r.DishId)) + " monedas", 86, 72, 320, 22, 12, PixelUIFactory.Cream);
 
         string caption = !unlocked ? "BLOQUEADA" : !has ? "FALTAN" : !free ? "OLLAS LLENAS" : "COCINAR";
@@ -283,7 +265,7 @@ public sealed class KitchenScreen : MonoBehaviour
         ui.ActionButton(card, "Cook", caption, 410, stock > 0 ? 8 : 24, 110, stock > 0 ? 46 : 56, () =>
         {
             if (Kitchen.Cook(state, recipe))
-                message("¡A cocinar " + recipe.Name + "! Lista en " + Kitchen.Time(recipe.Seconds));
+                message("¡A cocinar " + recipe.Name + "! Lista en " + UiUtil.Duration(recipe.Seconds));
         }, unlocked && has && free);
         var cookCaption = card.Find("Cook")?.Find("Caption")?.GetComponent<Text>();
         if (cookCaption != null) cookCaption.fontSize = caption.Length > 9 ? 13 : 17;

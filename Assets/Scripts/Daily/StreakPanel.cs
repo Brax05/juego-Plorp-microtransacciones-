@@ -12,8 +12,6 @@ public sealed class StreakPanel : MonoBehaviour
     const float CardX = 20f, CardY = 230f, CardW = 530f, CardH = 470f;
     const string ShownKey = "GlorpFarm.daily.popupShown";
 
-    static readonly Color Bubble = PixelUIFactory.Hex("#F6E7C8");
-    static readonly Color Slate = PixelUIFactory.Hex("#4B5160");
 
     public static bool Active { get; private set; }
 
@@ -34,9 +32,8 @@ public sealed class StreakPanel : MonoBehaviour
         }
         PlayerPrefs.SetString(ShownKey, today);
         var ui = new PixelUIFactory();
-        var root = ui.Rect(portrait, "Daily streak", 0, 0, W, H);
-        root.SetAsLastSibling();
-        var panel = root.gameObject.AddComponent<StreakPanel>();
+        var root = Popup.OpenBlank(portrait, "Daily streak");
+        var panel = root.gameObject.GetOrAdd<StreakPanel>();
         panel.state = state;
         panel.message = message;
         panel.onClosed = closed;
@@ -55,21 +52,10 @@ public sealed class StreakPanel : MonoBehaviour
         ui.Label(card, "Title", "RACHA DIARIA", 0, 16, CardW, 40, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
 
         // Pepito and his bubble.
-        ui.Panel(card, "Portrait frame", 18, 64, 92, 90, Slate);
-        var face = SpriteStripAnimator.Create(card, "Pepito face", "UI/Characters/pepito_talk", 26, 71, 76);
-        var plate = ui.Panel(card, "Name plate", 16, 154, 96, 28, PixelUIFactory.Hex("#8A8F9C"));
-        ui.Label(plate, "Name", "PEPITO", 0, 0, 96, 28, 15, Color.white, TextAnchor.MiddleCenter);
-        ui.Block(card, "Bubble tail", 110, 98, 10, 16, PixelUIFactory.Ink);
-        var bubble = ui.Rect(card, "Bubble", 116, 60, 396, 118);
-        bubble.gameObject.AddComponent<Image>().color = PixelUIFactory.Ink;
-        ui.Block(bubble, "Fill", 3, 3, 390, 112, Bubble);
-        ui.Block(card, "Bubble tail fill", 113, 101, 10, 10, Bubble);
         string line = streak <= 1
             ? "¡Miau! Si vuelves mañana, Plorp te guarda un regalo más grande. Así cada día hasta el 7."
             : "¡Miau! Llevas " + streak + " días seguidos. Plorp está orgulloso. Dijo \"plorp\" dos veces.";
-        var text = ui.Paragraph(bubble, "Text", line, 12, 8, 372, 102, 17, PixelUIFactory.Ink);
-        var outline = text.GetComponent<Outline>();
-        if (outline != null) outline.enabled = false;
+        Popup.Pepito(ui, card, 18, 64, 396, line);
 
         // The seven days.
         for (int d = 0; d < 7; d++)
@@ -81,7 +67,7 @@ public sealed class StreakPanel : MonoBehaviour
                 PixelUIFactory.Hex(current ? "#FFD44F" : past ? "#5E4A3E" : d == 6 ? "#2F5E7A" : "#9A5A33"));
             Color ink = current ? PixelUIFactory.Ink : Color.white;
             ui.Label(box, "Name", "DÍA " + (d + 1), 0, 8, 66, 18, 12, ink, TextAnchor.MiddleCenter);
-            ui.Texture(box, "Gem", "UI/Shop/icon_gem", 18, 32, 30, 26);
+            ui.Texture(box, "Gem", "icon_gem", 18, 32, 30, 26);
             ui.Label(box, "Reward", past ? "OK" : "+" + DailyMissions.StreakGems[d], 0, 62, 66, 24, 15,
                 past ? PixelUIFactory.Hex("#8FE86A") : ink, TextAnchor.MiddleCenter);
         }
@@ -98,7 +84,6 @@ public sealed class StreakPanel : MonoBehaviour
         ui.ActionButton(card, "Claim", "¡COBRAR!", 206, 380, 300, 66, Claim);
 
         shownAt = Time.unscaledTime;
-        face.Talk(3);
         Update();
     }
 
@@ -120,7 +105,7 @@ public sealed class StreakPanel : MonoBehaviour
         Active = false;
         var done = onClosed;
         onClosed = null;
-        Destroy(gameObject);
+        Popup.Close((RectTransform)transform);
         done?.Invoke();
     }
 
@@ -128,15 +113,8 @@ public sealed class StreakPanel : MonoBehaviour
     {
         if (card == null) return;
         float age = Time.unscaledTime - shownAt;
-        float s = age < .35f ? EaseOutBack(age / .35f) : 1f;
+        float s = age < .35f ? UiUtil.EaseOutBack(age / .35f) : 1f;
         card.localScale = new Vector3(s, s, 1f);
-    }
-
-    static float EaseOutBack(float x)
-    {
-        const float c1 = 1.70158f, c3 = c1 + 1f;
-        x = Mathf.Clamp01(x);
-        return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
     }
 
     void OnDestroy()

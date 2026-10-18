@@ -19,7 +19,7 @@ public sealed class CurvedPopup : MonoBehaviour
     {
         if (parent == null) return;
         var existing = parent.Find("Tip popup");
-        if (existing != null) Destroy(existing.gameObject);
+        if (existing != null) UiUtil.Kill(existing.gameObject);
     }
 
     /// <summary>Shows <paramref name="text"/> arched above <paramref name="center"/> (local position in <paramref name="parent"/>).</summary>
@@ -30,7 +30,7 @@ public sealed class CurvedPopup : MonoBehaviour
         var root = ui.Rect(parent, "Tip popup", 0, 0, 10, 10);
         root.anchoredPosition = new Vector2(center.x, -center.y);
         root.SetAsLastSibling();
-        var popup = root.gameObject.AddComponent<CurvedPopup>();
+        var popup = root.gameObject.GetOrAdd<CurvedPopup>();
         popup.Build(ui, text, color, size);
         return popup;
     }
@@ -61,7 +61,7 @@ public sealed class CurvedPopup : MonoBehaviour
         if (letters == null || texts == null) return;
         age += Time.unscaledDeltaTime;
         float t = age / Life;
-        float pop = age < .35f ? EaseOutBack(age / .35f) : 1f;
+        float pop = age < .35f ? UiUtil.EaseOutBack(age / .35f) : 1f;
         float rise = t > .75f ? (t - .75f) / .25f : 0f;
         float alpha = 1f - rise;
         for (int i = 0; i < letters.Length; i++)
@@ -75,19 +75,12 @@ public sealed class CurvedPopup : MonoBehaviour
             letters[i].localEulerAngles = new Vector3(0f, 0f, -a * Mathf.Rad2Deg);
             // Letters pop one after another.
             float delay = i * .02f;
-            float s = age < delay ? 0f : Mathf.Min(pop, EaseOutBack(Mathf.Clamp01((age - delay) / .3f)));
+            float s = age < delay ? 0f : Mathf.Min(pop, UiUtil.EaseOutBack(Mathf.Clamp01((age - delay) / .3f)));
             letters[i].localScale = Vector3.one * s;
             var c = texts[i].color;
             c.a = alpha;
             texts[i].color = c;
         }
-        if (age >= Life) Destroy(gameObject);
-    }
-
-    static float EaseOutBack(float x)
-    {
-        const float c1 = 1.70158f, c3 = c1 + 1f;
-        x = Mathf.Clamp01(x);
-        return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
+        if (age >= Life) UiUtil.Kill(gameObject);
     }
 }

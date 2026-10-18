@@ -111,6 +111,13 @@ public static class Kitchen
         return n;
     }
 
+    public static int CookingCount()
+    {
+        int n = 0;
+        for (int i = 0; i < Slots; i++) if (!SlotEmpty(i) && !SlotReady(i)) n++;
+        return n;
+    }
+
     /// <summary>Call every frame: announces dishes that just finished.</summary>
     public static void Tick()
     {

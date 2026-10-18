@@ -11,9 +11,6 @@ public sealed class PlorpComputer : MonoBehaviour
 {
     const float CardX = 20f, CardY = 120f, CardW = 530f, CardH = 760f;
     const float ZoomSeconds = .35f;
-    static readonly Color Bezel = PixelUIFactory.Hex("#3F9A3A");
-    static readonly Color BezelLight = PixelUIFactory.Hex("#7ED957");
-    static readonly Color ScreenDark = PixelUIFactory.Hex("#0E2A1A");
     static readonly Color Phosphor = PixelUIFactory.Hex("#8FF57A");
 
     FarmGameState state;
@@ -30,7 +27,7 @@ public sealed class PlorpComputer : MonoBehaviour
     public static void Open(Transform portrait, FarmGameState state, Action<string> message, RectTransform computerScreen)
     {
         var root = Popup.OpenBlank(portrait, "Plorp computer");
-        var pc = root.gameObject.AddComponent<PlorpComputer>();
+        var pc = root.gameObject.GetOrAdd<PlorpComputer>();
         pc.root = root;
         pc.state = state;
         pc.message = message;
@@ -47,15 +44,8 @@ public sealed class PlorpComputer : MonoBehaviour
         card = ui.Rect(root, "Monitor", CardX, CardY, CardW, CardH);
         card.pivot = new Vector2(.5f, .5f);
         toPos = new Vector2(CardX + CardW / 2f, -(CardY + CardH / 2f));
-        var frame = card.gameObject.AddComponent<Image>();
-        frame.color = PixelUIFactory.Ink;
+        var frame = ui.Texture(card, "Frame", "computer_monitor", 0, 0, CardW, CardH); // Art/Minigames/computer_monitor.png
         frame.raycastTarget = true;
-        ui.Block(card, "Bezel", 4, 4, CardW - 8, CardH - 8, Bezel);
-        ui.Block(card, "Bezel light", 10, 10, CardW - 20, 6, BezelLight);
-        ui.Block(card, "Screen edge", 24, 24, CardW - 48, CardH - 120, PixelUIFactory.Ink);
-        ui.Block(card, "Screen", 28, 28, CardW - 56, CardH - 128, ScreenDark);
-        for (float y = 32; y < CardH - 100; y += 6)
-            ui.Block(card, "Scanline", 28, y, CardW - 56, 2, new Color(.2f, .5f, .3f, .18f));
 
         ui.Label(card, "OS", "PLORP-OS v1.0", 48, 40, 300, 30, 20, Phosphor);
         ui.Label(card, "Clock", FarmClock.IsNight ? "noche" : "día", CardW - 200, 40, 152, 30, 14, Phosphor, TextAnchor.MiddleRight);
@@ -64,27 +54,24 @@ public sealed class PlorpComputer : MonoBehaviour
 
         // Apps.
         float y0 = 136f;
-        infos[0] = App(0, y0, "World/Sprites/fish_gold", "PESCA", "Pesca en el estanque.", () =>
+        infos[0] = App(0, y0, "fish_gold", "PESCA", "Pesca en el estanque.", () =>
         {
             if (!FarmZones.IsOpen(ZoneId.Pond)) { message("Primero abre el ESTANQUE (nubes del oeste de la granja)"); return; }
             FishingGame.Open(portrait, state, message);
         });
-        infos[1] = App(1, y0 + 178f, "UI/Garden/ufo_plorp", "ABDUCCIÓN", "Sube vacas y ovejas con el rayo de la nave.", () =>
+        infos[1] = App(1, y0 + 178f, "ufo_plorp", "ABDUCCIÓN", "Sube vacas y ovejas con el rayo de la nave.", () =>
         {
             if (MinigameTickets.Count("abduction") <= 0) { message("Sin boletos: llega 1 cada 20 minutos"); return; }
             ArcadeGame.Open<AbductionGame>(portrait, state, message);
         });
-        infos[2] = App(2, y0 + 356f, "World/Sprites/egg_gold", "ATRAPA HUEVOS", "Atrapa los huevos con la canasta.", () =>
+        infos[2] = App(2, y0 + 356f, "egg_gold", "ATRAPA HUEVOS", "Atrapa los huevos con la canasta.", () =>
         {
             if (MinigameTickets.Count("eggs") <= 0) { message("Sin boletos: llega 1 cada 20 minutos"); return; }
             ArcadeGame.Open<EggCatchGame>(portrait, state, message);
         });
 
         // Power button: shrinks back into the computer.
-        ui.Block(card, "Power ring", CardW / 2f - 34, CardH - 84, 68, 68, PixelUIFactory.Ink);
-        ui.Block(card, "Power", CardW / 2f - 30, CardH - 80, 60, 60, PixelUIFactory.Hex("#D23C3C"));
         ui.Label(card, "Power text", "APAGAR", CardW / 2f - 80, CardH - 22, 160, 18, 12, Color.white, TextAnchor.MiddleCenter);
-        ui.Block(card, "Power mark", CardW / 2f - 3, CardH - 72, 6, 22, Color.white);
         ui.Hit(card, "Power hit", CardW / 2f - 40, CardH - 90, 80, 90, Close);
 
         // Zoom from the little screen on the desk.
@@ -108,7 +95,7 @@ public sealed class PlorpComputer : MonoBehaviour
     Text App(int index, float y, string icon, string name, string desc, Action open)
     {
         var tile = ui.Rect(card, "App " + index, 44, y, CardW - 88, 164);
-        var back = tile.gameObject.AddComponent<Image>();
+        var back = tile.gameObject.GetOrAdd<Image>();
         back.color = new Color(.25f, .6f, .3f, .22f);
         ui.Block(tile, "Border top", 0, 0, CardW - 88, 2, Phosphor);
         ui.Block(tile, "Border bottom", 0, 162, CardW - 88, 2, Phosphor);
@@ -135,7 +122,7 @@ public sealed class PlorpComputer : MonoBehaviour
     static string Tickets(string game)
     {
         int n = MinigameTickets.Count(game);
-        string next = n < MinigameTickets.Max ? "\n+1 en " + Kitchen.Time(MinigameTickets.SecondsToNext(game)) : "";
+        string next = n < MinigameTickets.Max ? "\n+1 en " + UiUtil.Duration(MinigameTickets.SecondsToNext(game)) : "";
         return "Boletos " + n + "/" + MinigameTickets.Max + " · récord " + MinigameTickets.Best(game) + next;
     }
 

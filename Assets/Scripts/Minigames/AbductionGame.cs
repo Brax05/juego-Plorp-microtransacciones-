@@ -34,30 +34,19 @@ public sealed class AbductionGame : ArcadeGame
 
     protected override void BuildArea()
     {
-        ui.Block(area, "Sky", 0, 0, AreaW, AreaH, PixelUIFactory.Hex("#14183A"));
-        ui.Block(area, "Sky low", 0, 300, AreaW, 200, PixelUIFactory.Hex("#232A5A"));
-        for (int i = 0; i < 28; i++)
-            ui.Block(area, "Star", (i * 89) % AreaW, (i * 47) % 280, i % 3 == 0 ? 3 : 2, i % 3 == 0 ? 3 : 2,
-                new Color(1f, 1f, .85f, .5f + (i % 4) * .12f));
-        ui.Block(area, "Moon", 400, 40, 40, 40, PixelUIFactory.Hex("#F6E8AA"));
-        ui.Block(area, "Moon cut", 414, 34, 34, 34, PixelUIFactory.Hex("#14183A"));
-        ui.Block(area, "Hill", 0, GroundY - 20, AreaW, 30, PixelUIFactory.Hex("#2E6B34"));
-        ui.Block(area, "Ground", 0, GroundY, AreaW, AreaH - GroundY, PixelUIFactory.Hex("#3F8A3A"));
-        for (int i = 0; i < 12; i++)
-            ui.Block(area, "Fence post", 10 + i * 44, GroundY - 34, 6, 30, PixelUIFactory.Hex("#7A4A24"));
-        ui.Block(area, "Fence rail", 0, GroundY - 28, AreaW, 4, PixelUIFactory.Hex("#A0602E"));
+        ui.Texture(area, "Background", "abduction_bg", 0, 0, AreaW, AreaH); // Art/Minigames/abduction_bg.png
 
         beam = ui.Rect(area, "Beam", 0, 0, BeamHalf * 2f, GroundY);
-        beamImage = beam.gameObject.AddComponent<Image>();
+        beamImage = beam.gameObject.GetOrAdd<Image>();
         beamImage.color = new Color(.6f, 1f, .6f, 0f);
         beamImage.raycastTarget = false;
 
-        ship = Sprite(area, "UI/Garden/ufo_plorp", 104, 92).rectTransform;
+        ship = Sprite(area, "ufo_plorp", 104, 92).rectTransform;
     }
 
     protected override void ResetRound()
     {
-        foreach (var w in walkers) if (w.rect != null) Destroy(w.rect.gameObject);
+        foreach (var w in walkers) if (w.rect != null) UiUtil.Kill(w.rect.gameObject);
         walkers.Clear();
         shipX = AreaW / 2f;
         spawnIn = .5f;
@@ -130,10 +119,10 @@ public sealed class AbductionGame : ArcadeGame
         RawImage art;
         if (pepito)
         {
-            art = ui.Texture(holder, "Art", "UI/Characters/pepito_talk", -24, 24, 48, 48);
+            art = ui.Texture(holder, "Art", "pepito_talk", -24, 24, 48, 48);
             art.uvRect = new Rect(0f, 0f, 1f / SpriteStripAnimator.FrameCount, 1f);
         }
-        else art = ui.Texture(holder, "Art", cow ? "World/Sprites/cow" : "World/Sprites/sheep_white", -28, 26, 56, 52);
+        else art = ui.Texture(holder, "Art", cow ? "cow" : "sheep_white", -28, 26, 56, 52);
         // Face the way they run.
         if (!pepito && !fromLeft) art.uvRect = new Rect(1f, 0f, -1f, 1f);
         var w = new Walker
@@ -152,7 +141,7 @@ public sealed class AbductionGame : ArcadeGame
 
     void Remove(int i)
     {
-        if (walkers[i].rect != null) Destroy(walkers[i].rect.gameObject);
+        if (walkers[i].rect != null) UiUtil.Kill(walkers[i].rect.gameObject);
         walkers.RemoveAt(i);
     }
 

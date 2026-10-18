@@ -24,7 +24,7 @@ public sealed class StoreScreen : MonoBehaviour
     public static StoreScreen Create(Transform secondary, FarmGameState state, Action<string> message)
     {
         var page = MenuPage.Create(secondary, "Page - Tienda (nueva)", "TIENDA", "", out var subtitle);
-        var screen = page.gameObject.AddComponent<StoreScreen>();
+        var screen = page.gameObject.GetOrAdd<StoreScreen>();
         screen.state = state;
         screen.message = message;
         screen.subtitle = subtitle;
@@ -49,8 +49,6 @@ public sealed class StoreScreen : MonoBehaviour
         PurchaseService.Changed += Rebuild;
     }
 
-    /// <summary>Editor preview (OnEnable doesn't run outside Play mode).</summary>
-    public void PreviewRefresh() { if (ui != null) Rebuild(); }
 
     void OnEnable()
     {
@@ -163,7 +161,7 @@ public sealed class StoreScreen : MonoBehaviour
         ui.Paragraph(card, "Desc", description, 90, 38, 290, 48, 13, PixelUIFactory.Cream);
         bool affordable = state.Gems >= gems;
         ui.ActionButton(card, "Buy", "", 392, 22, 126, 52, buy, affordable);
-        ui.Texture(card, "Gem", "UI/Shop/icon_gem", 404, 34, 30, 26);
+        ui.Texture(card, "Gem", "icon_gem", 404, 34, 30, 26);
         ui.Label(card, "Price", gems.ToString(), 438, 26, 76, 44, 20, Color.white);
         return y + 104;
     }
@@ -172,7 +170,7 @@ public sealed class StoreScreen : MonoBehaviour
     {
         bool sold = pack.OncePerPlayer && state.StarterPackBought;
         var card = ui.Panel(content, "Pack", x, y, 258, 212, PixelUIFactory.Hex(pack.OncePerPlayer ? "#7A3F5E" : "#2F5E7A"));
-        ui.Texture(card, "Art", pack.OncePerPlayer ? "UI/Shop/starter_chest" : "UI/Shop/gems_" + Mathf.Min(index, 5),
+        ui.Texture(card, "Art", pack.OncePerPlayer ? "starter_chest" : "gems_" + Mathf.Min(index, 5),
             pack.OncePerPlayer ? 97 : 93, 30, pack.OncePerPlayer ? 64 : 72, pack.OncePerPlayer ? 48 : 72);
         ui.Label(card, "Name", pack.Name.ToUpperInvariant(), 0, 6, 258, 24, 15, Color.white, TextAnchor.MiddleCenter);
         string amount = pack.Gems + " gemas";

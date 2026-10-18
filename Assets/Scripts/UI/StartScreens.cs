@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Title screen (JUGAR / AJUSTES) and the loading screen shown before the farm.
-/// Both use full-screen art from Resources/UI/Screens; buttons are invisible hit areas over the art.
+/// Both use full-screen art from Art/Screens (title.png, loading.png); buttons are invisible hit areas over the art.
 /// </summary>
 public sealed class StartScreens : MonoBehaviour
 {
@@ -43,8 +43,9 @@ public sealed class StartScreens : MonoBehaviour
     public static StartScreens Create(Transform portrait, FarmGameState state, Action onFinished)
     {
         var root = new PixelUIFactory().Rect(portrait, "Start screens", 0, 0, Width, Height);
+        root.gameObject.SetActive(true); // saved hidden in the canvas
         root.SetAsLastSibling();
-        var screens = root.gameObject.AddComponent<StartScreens>();
+        var screens = root.gameObject.GetOrAdd<StartScreens>();
         screens.Build(state, onFinished);
         return screens;
     }
@@ -61,7 +62,7 @@ public sealed class StartScreens : MonoBehaviour
 
         // ---------- Title ----------
         title = ui.Rect(transform, "Title screen", 0, 0, Width, Height);
-        var titleArt = ui.Texture(title, "Art", "UI/Screens/title", 0, 0, Width, Height);
+        var titleArt = ui.Texture(title, "Art", "title", 0, 0, Width, Height);
         titleArt.raycastTarget = true; // blocks the farm underneath
         ui.Label(title, "Version", "v0.4", 10, Height - 26, 120, 20, 12,
             new Color(1, 1, 1, .45f), TextAnchor.MiddleLeft);
@@ -82,7 +83,7 @@ public sealed class StartScreens : MonoBehaviour
 
         // ---------- Loading ----------
         loading = ui.Rect(transform, "Loading screen", 0, 0, Width, Height);
-        var loadingArt = ui.Texture(loading, "Art", "UI/Screens/loading", 0, 0, Width, Height);
+        var loadingArt = ui.Texture(loading, "Art", "loading", 0, 0, Width, Height);
         loadingArt.raycastTarget = true;
 
         dots = new Image[3][];
@@ -95,7 +96,7 @@ public sealed class StartScreens : MonoBehaviour
 
         barWidth = X(464);
         barFill = ui.Rect(loading, "Bar fill", X(52), Y(869), 0, Y(36));
-        var fill = barFill.gameObject.AddComponent<Image>();
+        var fill = barFill.gameObject.GetOrAdd<Image>();
         fill.color = PixelUIFactory.Hex("#4FC63F");
         fill.raycastTarget = false;
         var shine = ui.Block(barFill, "Shine", 0, 4, 0, 8, PixelUIFactory.Hex("#8FE86A"));
@@ -108,9 +109,9 @@ public sealed class StartScreens : MonoBehaviour
 
     void PressArea(Transform parent, string name, float x, float y, float w, float h, UnityEngine.Events.UnityAction action)
     {
-        var image = ui.Rect(parent, name, x, y, w, h).gameObject.AddComponent<Image>();
+        var image = ui.Rect(parent, name, x, y, w, h).gameObject.GetOrAdd<Image>();
         image.color = Color.white;
-        var button = image.gameObject.AddComponent<Button>();
+        var button = image.gameObject.GetOrAdd<Button>();
         button.targetGraphic = image;
         var colors = button.colors;
         colors.normalColor = new Color(1, 1, 1, 0f);

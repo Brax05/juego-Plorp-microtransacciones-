@@ -29,7 +29,7 @@ public sealed class AchievementsScreen : MonoBehaviour
     public static AchievementsScreen Create(Transform secondary, FarmGameState state, Action<string> message)
     {
         var page = MenuPage.Create(secondary, "Page - Logros (nueva)", "LOGROS", "", out var subtitle);
-        var screen = page.gameObject.AddComponent<AchievementsScreen>();
+        var screen = page.gameObject.GetOrAdd<AchievementsScreen>();
         screen.state = state;
         screen.message = message;
         screen.subtitle = subtitle;
@@ -51,8 +51,6 @@ public sealed class AchievementsScreen : MonoBehaviour
         return screen;
     }
 
-    /// <summary>Editor preview (OnEnable doesn't run outside Play mode).</summary>
-    public void PreviewRefresh() { if (content != null) Rebuild(); }
 
     void OnEnable()
     {
@@ -133,7 +131,7 @@ public sealed class AchievementsScreen : MonoBehaviour
             86, 64, 232, 20, 12, Color.white, TextAnchor.MiddleCenter);
 
         // Reward + button
-        ui.Texture(card, "Gem", "UI/Shop/icon_gem", 328, 62, 26, 22);
+        ui.Texture(card, "Gem", "icon_gem", 328, 62, 26, 22);
         ui.Label(card, "Reward", "+" + a.Gems, 356, 60, 50, 26, 15, PixelUIFactory.Gold);
         var def = a;
         ui.ActionButton(card, "Claim", claimed ? "LISTO" : ready ? "COBRAR" : "EN CURSO", 410, 26, 110, 52, () =>
@@ -181,7 +179,7 @@ public sealed class AchievementsScreen : MonoBehaviour
                 PixelUIFactory.Hex(current ? "#FFD44F" : past ? "#5E4A3E" : d == 6 ? "#2F5E7A" : "#9A5A33"));
             Color ink = current ? PixelUIFactory.Ink : Color.white;
             ui.Label(box, "Name", "DÍA " + (d + 1), 0, 6, 66, 18, 12, ink, TextAnchor.MiddleCenter);
-            ui.Texture(box, "Gem", "UI/Shop/icon_gem", 20, 28, 26, 22);
+            ui.Texture(box, "Gem", "icon_gem", 20, 28, 26, 22);
             ui.Label(box, "Reward", past ? "OK" : "+" + DailyMissions.StreakGems[d], 0, 52, 66, 22, 14,
                 past ? PixelUIFactory.Hex("#8FE86A") : ink, TextAnchor.MiddleCenter);
         }
@@ -224,9 +222,9 @@ public sealed class AchievementsScreen : MonoBehaviour
         ui.Label(card, "Progress", FarmGameState.Format(m.Progress) + "/" + FarmGameState.Format(m.Target),
             86, 64, 232, 20, 12, Color.white, TextAnchor.MiddleCenter);
 
-        ui.Texture(card, "Gem", "UI/Shop/icon_gem", 330, 40, 22, 19);
+        ui.Texture(card, "Gem", "icon_gem", 330, 40, 22, 19);
         ui.Label(card, "Reward gems", "+" + m.Gems, 354, 36, 50, 24, 14, PixelUIFactory.Gold);
-        ui.Texture(card, "Coin", "UI/Garden/icon_coin", 330, 64, 20, 20);
+        ui.Texture(card, "Coin", "icon_coin", 330, 64, 20, 20);
         ui.Label(card, "Reward coins", FarmGameState.Format(DailyMissions.MissionCoins(state, m)), 352, 61, 56, 24, 12, Color.white);
         var mission = m;
         ui.ActionButton(card, "Claim", m.Claimed ? "LISTO" : ready ? "COBRAR" : "EN CURSO", 410, 26, 110, 52, () =>
@@ -244,10 +242,10 @@ public sealed class AchievementsScreen : MonoBehaviour
         bool claimed = DailyMissions.BonusClaimed;
         var card = ui.Panel(content, "Bonus", 6, y, 530, 84,
             PixelUIFactory.Hex(ready ? "#B07A2E" : claimed ? "#6E5040" : "#2F5E7A"));
-        ui.Texture(card, "Chest", "UI/Shop/starter_chest", 14, 10, 64, 64);
+        ui.Texture(card, "Chest", "starter_chest", 14, 10, 64, 64);
         ui.Label(card, "Name", "COFRE DEL DÍA", 88, 10, 300, 26, 17, Color.white);
         ui.Paragraph(card, "Desc", "Cobra las 3 misiones de hoy y ábrelo.", 88, 38, 240, 36, 13, PixelUIFactory.Cream);
-        ui.Texture(card, "Gem", "UI/Shop/icon_gem", 330, 30, 26, 22);
+        ui.Texture(card, "Gem", "icon_gem", 330, 30, 26, 22);
         ui.Label(card, "Reward", "+" + DailyMissions.BonusGems, 358, 28, 50, 26, 15, PixelUIFactory.Gold);
         ui.ActionButton(card, "Claim", claimed ? "LISTO" : ready ? "ABRIR" : "CERRADO", 410, 16, 110, 52, () =>
         {

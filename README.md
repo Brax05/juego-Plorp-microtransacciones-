@@ -33,10 +33,45 @@ Juego idle de granja en Unity (6000.5, uGUI, vertical 570×1018). Plorp es un ex
 ## Cómo está armado el proyecto
 
 - **Una sola escena:** `Assets/Scenes/Granja.unity`, con el prefab `Assets/Prefabs/PixelFarmCanvas.prefab`.
-- **El código arma la UI al dar Play.** `FarmUIBootstrap` se crea solo (`RuntimeInitializeOnLoadMethod`) y compone todo sobre el `Portrait screen` del canvas: granja pintada, nubes, Plorp, Pepito, páginas de menú, ventanas y minijuegos. Las coordenadas son píxeles del retrato de 570×1018 medidos desde la esquina superior izquierda. La granja usa píxeles del diseño `World/farm_design.png` (1024×765).
-- **Vista previa en el editor:** `Tools ▸ Plorp ▸ Vista previa de la escena` (Ctrl/Cmd+Shift+P) construye en modo edición una copia que no se guarda, para ver la UI como en Play. Cada pestaña tiene su botón.
-- **Arte:** todo está en `Assets/Resources` y se carga por ruta (`Resources.Load`). Los sprites nuevos (cuervo, zorro, camión, platos, ollas, peces, colmenas, huerto, etc.) son pixel art con borde oscuro, igual que los animales.
-- **Guardado:** `PlayerPrefs`, con claves `GlorpFarm.*`. El prefijo viejo se mantiene para no perder partidas.
+- **El canvas manda.** Al dar Play, `FarmUIBootstrap` arma cada pantalla con `PixelUIFactory`. Esa fábrica **primero busca en el canvas** un objeto con ese nombre y, si existe, lo usa **tal como está**: respeta su posición, tamaño, color, texto e imagen. Solo crea lo que falta. Lo que el código decide siempre son las acciones de los botones y los valores que cambian mientras juegas (monedas, barras, tiempos).
+- **Medidas:** el retrato es de 570×1018 píxeles (0,0 arriba a la izquierda). La granja usa píxeles del diseño `farm_design.png` (1024×765).
+- **Guardado:** `PlayerPrefs`, con claves `GlorpFarm.*`.
+
+### Editar el layout en Unity
+
+1. Abre la escena `Granja` y usa el menú **Plorp ▸ Hornear UI en el canvas**.
+   - Este comando arma toda la UI del juego dentro de `PixelFarmCanvas.prefab` y la guarda: HUD, pedido de Plorp, Pepito, páginas, casa, cocina, zonas de las nubes, insignia de estación, guía y portada.
+   - Los scripts no quedan guardados en el prefab; el juego los agrega solo al dar Play.
+   - También borra piezas viejas que ya no se usan (páginas antiguas y terreno modular).
+2. Mueve, cambia el tamaño, el color, el texto o la imagen de lo que quieras en la jerarquía, y guarda el prefab o la escena.
+3. Al dar Play, el juego usa lo que dejaste.
+4. Si después se agregan pantallas nuevas por código, vuelve a hornear. Lo que ya editaste **no se pisa**: solo se agregan las piezas que faltan.
+
+**Granja:** la primera vez se ubica todo desde `FarmArtLayout`, y se guarda el objeto vacío `Layout from canvas` dentro de `Modular farm world`. Desde entonces, campos, cultivos, animales, trabajadores, zoom y vista inicial salen de lo que haya en el canvas. Si borras ese objeto, el código los vuelve a ubicar.
+
+**Cosas que el código sigue moviendo:** solo lo que está animado, como Pepito entrando de lado, las cortinas, la nave, los gatos o lo que rebota. Esas piezas animan **desde la posición que les pongas**.
+
+### Arte: cambiar imágenes
+
+Todas las imágenes están en `Assets/Resources/Art/`, separadas por sección:
+
+| Carpeta | Qué hay |
+|---|---|
+| `Farm/Map` | `farm_design` (la granja pintada), `clouds_frame` (nubes del borde) |
+| `Farm/Crops`, `Farm/Animals`, `Farm/Workers`, `Farm/Buildings` | Cultivos por etapa (`carrot_0..2`…), animales, trabajadores y edificios |
+| `Farm/Events`, `Farm/Zones` | Cuervo, zorro y camión; estanque, colmenas, huerto y plataforma |
+| `Characters` | Pepito (`pepito_talk`, tira de 34 cuadros), Plorp y su nave |
+| `Items` | Huevo, queso, leche, pescados, miel y manzana |
+| `Kitchen` | Platos, ollas y pared de la cocina |
+| `House` | Interior de la casa, estufa, computador y gatos (`cat_<color>_0/1`) |
+| `Minigames` | Fondos de pesca, Abducción y Atrapa huevos, monitor de PLORP-OS, canasta, huevos, piedra y corcho |
+| `Garden` | Jardinería: fondo, hojas por estado, flores, herramientas, bichos, cortina y macetero |
+| `Icons`, `Shop`, `Screens`, `UI` | Íconos (moneda, gema, sol, luna…), packs de gemas, portada y carga, flecha de la guía y piezas del canvas |
+| `Effects` | Partículas: lluvia, pétalos, hojas, nieve, polen y luciérnagas |
+
+- **Para cambiar una imagen,** reemplaza el PNG **manteniendo su nombre**. El código las pide solo por nombre (`Art.Tex("carrot_2")`), así que también puedes moverlas entre carpetas de `Art`; lo único que no puede haber son dos con el mismo nombre.
+- **En el canvas,** también puedes poner otra imagen directo en el `RawImage` de un objeto. Esa elección gana sobre la del código.
+- **Ya no hay dibujos hechos por código:** fondos, pared de la cocina, monitor, cortinas, flecha y partículas ahora son PNG editables.
 
 ## La granja (núcleo idle)
 
@@ -287,28 +322,23 @@ plato = 1,6 × suma de sus ingredientes
 ## Guardado y pruebas
 
 - **Todo se guarda solo** en `PlayerPrefs`. Si cambia el balance base, `ProgressionVersion` en `FarmGameState` reinicia la partida (hoy está en la versión 7).
+- **El progreso ya no se borra al compilar ni al dar Play.** Se quitó la herramienta que lo hacía, porque chocaba con "Mientras no estabas", las misiones y la racha.
 - **Probar estaciones o la racha:** cambia la fecha del computador. La noche llega sola cada 16 min.
 - **Probar "Mientras no estabas":** cierra el juego más de 1 minuto y vuelve a abrir.
-- **Reiniciar todo:** borra los PlayerPrefs (Edit ▸ Clear All PlayerPrefs).
+- **Reiniciar todo:** Edit ▸ Clear All PlayerPrefs.
 
 ## Mapa de archivos
 
-| Carpeta / archivo | Qué hay |
+| Carpeta | Qué hay |
 |---|---|
-| `Scripts/FarmUIBootstrap.cs` | Arma la UI, navegación de pestañas, anuncios de Pepito, guardado al pausar |
-| `Scripts/FarmGameState.cs` | Monedas, gemas, niveles, granero, pedidos, guardado |
-| `Scripts/World/FarmEconomy.cs` | Todos los números del idle (valores, tiempos, precios, offline) |
-| `Scripts/World/FarmWorldController.cs`, `FarmArtLayout.cs`, `CropCell.cs`, `CropPlot.cs`, `HarvestTicket.cs` | Granja pintada, campos, animales, trabajadores, palabras doradas |
-| `Scripts/World/FarmEvents.cs` | Módulo 3 (cuervo, lluvia, zorro, camión) |
-| `Scripts/World/FarmClock.cs`, `FarmAmbience.cs` | Módulo 5 (día/noche, estaciones, insignia) |
-| `Scripts/World/FarmZones.cs` | Módulos 6, 9 y 10 (zonas en las nubes, colmenas, huerto) |
-| `Scripts/World/StarTrip.cs` | Módulo 10 (viaje estelar) |
-| `Scripts/House/` | Casa de Plorp (interior, gatos) y la entrada en el granero amarillo |
-| `Scripts/Minigames/` | Computador de Plorp (PLORP-OS), pesca, Abducción, Atrapa huevos, boletos |
-| `Scripts/Kitchen/` | Módulo 4 (recetas, ollas y página de la cocina) |
-| `Scripts/Daily/` | Módulo 2 (misiones y racha) |
-| `Scripts/Plorp/` | Plorp, pedidos, Pepito, guía, Mientras no estabas, comida (`FarmItems`) |
-| `Scripts/Garden/` | Jardinería |
+| `Scripts/Core/` | `FarmUIBootstrap` (arranque, pestañas, anuncios, pausa), `FarmGameState` (monedas, gemas, niveles, granero, pedidos), `FarmScreen` (HUD y mejoras), `FarmMenuScreen` (páginas), `FarmItems` (toda la comida), `Recharge` (cebos y boletos que se recargan) |
+| `Scripts/Farm/` | Economía (`FarmEconomy`), granja pintada y campos (`FarmArtLayout`, `FarmWorldController`, `CropCell`, `CropPlot`, `WorldActor`, `HarvestTicket`), eventos (`FarmEvents`), día/noche y estaciones (`FarmClock`, `FarmAmbience`), zonas (`FarmZones`), viaje estelar (`StarTrip`) |
+| `Scripts/Characters/` | Pepito (visitas, consejos, guía de bienvenida), Plorp (cara, pedidos y su panel) |
+| `Scripts/Daily/` | Mientras no estabas, misiones diarias y racha |
+| `Scripts/Garden/` | Jardinería (planta y pantalla) |
+| `Scripts/House/` | Casa de Plorp (interior, gatos) y entrada en el granero amarillo |
+| `Scripts/Kitchen/` | Recetas, ollas y página de la cocina |
+| `Scripts/Minigames/` | Computador PLORP-OS, pesca, Abducción, Atrapa huevos, boletos |
 | `Scripts/Shop/`, `Scripts/Achievements/` | Tienda, compras reales y logros |
-| `Scripts/UI/` | Fábrica de UI pixel, ventanas (`Popup`), textos curvos, pantallas de inicio |
-| `Editor/PlorpScenePreview.cs` | Vista previa de la escena en el editor |
+| `Scripts/UI/` | `PixelUIFactory` (usa el canvas primero), `Art` (imágenes por nombre), `UiUtil` (ayudas comunes), `Popup` (ventanas), textos curvos, recompensas, portada |
+| `Editor/PlorpCanvasBaker.cs` | Menú **Plorp ▸ Hornear UI en el canvas** |

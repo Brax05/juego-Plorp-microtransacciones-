@@ -41,7 +41,7 @@ public static class Popup
         var ui = new PixelUIFactory();
         var root = ui.Rect(portrait, name, 0, 0, W, H);
         root.SetAsLastSibling();
-        var marker = root.gameObject.AddComponent<Marker>();
+        var marker = root.gameObject.GetOrAdd<Marker>();
         marker.OnClosed = onClosed;
         open++;
         ui.Backdrop(root, "Backdrop", W, H, new Color(0f, 0f, .05f, .7f));
@@ -62,7 +62,7 @@ public static class Popup
     {
         var root = new PixelUIFactory().Rect(portrait, name, 0, 0, W, H);
         root.SetAsLastSibling();
-        root.gameObject.AddComponent<Marker>().OnClosed = onClosed;
+        root.gameObject.GetOrAdd<Marker>().OnClosed = onClosed;
         open++;
         return root;
     }
@@ -72,39 +72,25 @@ public static class Popup
         if (root == null) return;
         var marker = root.GetComponent<Marker>();
         if (marker != null) marker.Release();
-        UnityEngine.Object.Destroy(root.gameObject);
+        UiUtil.Kill(root.gameObject);
     }
 
     /// <summary>Pepito's portrait with name plate and a speech bubble (shared look of every window).</summary>
     public static Text Pepito(PixelUIFactory ui, Transform card, float x, float y, float bubbleWidth, string text)
     {
         ui.Panel(card, "Portrait frame", x, y, 92, 90, PixelUIFactory.Hex("#4B5160"));
-        var face = SpriteStripAnimator.Create(card, "Pepito face", "UI/Characters/pepito_talk", x + 8, y + 7, 76);
+        var face = SpriteStripAnimator.Create(card, "Pepito face", "pepito_talk", x + 8, y + 7, 76);
         face.Talk(2);
         var plate = ui.Panel(card, "Name plate", x - 2, y + 90, 96, 28, PixelUIFactory.Hex("#8A8F9C"));
         ui.Label(plate, "Name", "PEPITO", 0, 0, 96, 28, 15, Color.white, TextAnchor.MiddleCenter);
         ui.Block(card, "Bubble tail", x + 92, y + 34, 10, 16, PixelUIFactory.Ink);
         var bubble = ui.Rect(card, "Bubble", x + 98, y - 4, bubbleWidth, 110);
-        bubble.gameObject.AddComponent<Image>().color = PixelUIFactory.Ink;
+        bubble.gameObject.GetOrAdd<Image>().color = PixelUIFactory.Ink;
         ui.Block(bubble, "Fill", 3, 3, bubbleWidth - 6, 104, PixelUIFactory.Hex("#F6E7C8"));
         ui.Block(card, "Bubble tail fill", x + 95, y + 37, 10, 10, PixelUIFactory.Hex("#F6E7C8"));
         var label = ui.Paragraph(bubble, "Text", text, 12, 8, bubbleWidth - 24, 94, 16, PixelUIFactory.Ink);
         var outline = label.GetComponent<Outline>();
         if (outline != null) outline.enabled = false;
         return label;
-    }
-
-    /// <summary>Changes the text size of an ActionButton's caption.</summary>
-    public static void CaptionSize(Transform parent, string buttonName, int size)
-    {
-        var caption = parent.Find(buttonName)?.Find("Caption")?.GetComponent<Text>();
-        if (caption != null) caption.fontSize = size;
-    }
-
-    /// <summary>Recolors an ActionButton.</summary>
-    public static void ButtonColor(Transform parent, string buttonName, Color color)
-    {
-        var face = parent.Find(buttonName)?.Find("Face")?.GetComponent<Image>();
-        if (face != null) face.color = color;
     }
 }

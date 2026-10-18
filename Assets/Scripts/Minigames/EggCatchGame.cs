@@ -33,24 +33,19 @@ public sealed class EggCatchGame : ArcadeGame
 
     protected override void BuildArea()
     {
-        ui.Block(area, "Sky", 0, 0, AreaW, AreaH, PixelUIFactory.Hex("#9FD3F0"));
-        ui.Block(area, "Barn wall", 0, 0, AreaW, 150, PixelUIFactory.Hex("#B04A3A"));
-        for (int i = 0; i < 12; i++) ui.Block(area, "Board", i * 44, 0, 3, 150, PixelUIFactory.Hex("#8A3428"));
-        ui.Block(area, "Perch", 0, PerchY + 22, AreaW, 10, PixelUIFactory.Hex("#7A4A24"));
-        ui.Block(area, "Grass", 0, BasketY + 20, AreaW, AreaH - BasketY - 20, PixelUIFactory.Hex("#6BBF4A"));
-        ui.Block(area, "Hay", 0, BasketY + 20, AreaW, 8, PixelUIFactory.Hex("#E8C46A"));
+        ui.Texture(area, "Background", "eggs_bg", 0, 0, AreaW, AreaH); // Art/Minigames/eggs_bg.png
         for (int i = 0; i < hens.Length; i++)
         {
-            hens[i] = Sprite(area, i % 2 == 0 ? "World/Sprites/chicken_white" : "World/Sprites/chicken_brown", 60, 60).rectTransform;
+            hens[i] = Sprite(area, i % 2 == 0 ? "chicken_white" : "chicken_brown", 60, 60).rectTransform;
             Place(hens[i], HenX[i], PerchY);
         }
-        basketArt = Sprite(area, "World/Sprites/basket", BasketW, 54);
+        basketArt = Sprite(area, "basket", BasketW, 54);
         basket = basketArt.rectTransform;
     }
 
     protected override void ResetRound()
     {
-        foreach (var d in drops) if (d.rect != null) Destroy(d.rect.gameObject);
+        foreach (var d in drops) if (d.rect != null) UiUtil.Kill(d.rect.gameObject);
         drops.Clear();
         basketX = AreaW / 2f;
         dropIn = .6f;
@@ -107,7 +102,7 @@ public sealed class EggCatchGame : ArcadeGame
         int hen = Random.Range(0, hens.Length);
         float roll = Random.value;
         int kind = roll < .08f ? 1 : roll < .30f ? 2 : 0;
-        string path = kind == 0 ? "World/Sprites/egg_white" : kind == 1 ? "World/Sprites/egg_gold" : "World/Sprites/stone";
+        string path = kind == 0 ? "egg_white" : kind == 1 ? "egg_gold" : "stone";
         var img = Sprite(area, path, kind == 2 ? 30 : 26, kind == 2 ? 26 : 32);
         var d = new Drop { rect = img.rectTransform, x = HenX[hen], y = PerchY + 20f, speed = Random.Range(170f, 230f) * pace, kind = kind };
         Place(d.rect, d.x, d.y);
@@ -118,7 +113,7 @@ public sealed class EggCatchGame : ArcadeGame
 
     void Remove(int i)
     {
-        if (drops[i].rect != null) Destroy(drops[i].rect.gameObject);
+        if (drops[i].rect != null) UiUtil.Kill(drops[i].rect.gameObject);
         drops.RemoveAt(i);
     }
 

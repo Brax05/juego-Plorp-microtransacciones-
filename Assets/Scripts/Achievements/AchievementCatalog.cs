@@ -22,12 +22,12 @@ public sealed class AchievementDef
 /// </summary>
 public static class AchievementCatalog
 {
-    const string Coin = "UI/Garden/icon_coin";
-    const string Sprout = "UI/Garden/icon_sprout";
-    const string Egg = "UI/Items/egg";
-    const string Flower = "UI/Garden/icon_flowercoin";
-    const string Bug = "UI/Garden/bug_0";
-    const string Plorp = "UI/Characters/plorp_face";
+    const string Coin = "icon_coin";
+    const string Sprout = "icon_sprout";
+    const string Egg = "egg";
+    const string Flower = "icon_flowercoin";
+    const string Bug = "bug_0";
+    const string Plorp = "plorp_face";
 
     public static readonly AchievementDef[] All =
     {

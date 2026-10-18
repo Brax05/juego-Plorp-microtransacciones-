@@ -30,9 +30,9 @@ public sealed class FishingGame : MonoBehaviour
 
     static readonly FishKind[] Kinds =
     {
-        new FishKind { Name = "PEZ",        Sprite = "World/Sprites/fish_common", Items = 1, Gems = 0, Zone = .30f, Speed = .8f },
-        new FishKind { Name = "TRUCHA",     Sprite = "World/Sprites/fish_trout",  Items = 2, Gems = 0, Zone = .20f, Speed = 1.15f },
-        new FishKind { Name = "PEZ DORADO", Sprite = "World/Sprites/fish_gold",   Items = 3, Gems = 2, Zone = .12f, Speed = 1.6f },
+        new FishKind { Name = "PEZ",        Sprite = "fish_common", Items = 1, Gems = 0, Zone = .30f, Speed = .8f },
+        new FishKind { Name = "TRUCHA",     Sprite = "fish_trout",  Items = 2, Gems = 0, Zone = .20f, Speed = 1.15f },
+        new FishKind { Name = "PEZ DORADO", Sprite = "fish_gold",   Items = 3, Gems = 2, Zone = .12f, Speed = 1.6f },
     };
 
     FarmGameState state;
@@ -50,35 +50,11 @@ public sealed class FishingGame : MonoBehaviour
 
     // ---------- Bait ----------
 
-    static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    static readonly Recharge BaitStock = new Recharge(Key + "bait", Key + "baitSince", MaxBait, BaitSeconds);
 
-    public static int Bait()
-    {
-        int stored = PlayerPrefs.GetInt(Key + "bait", MaxBait);
-        if (stored >= MaxBait) return MaxBait;
-        long since = long.TryParse(PlayerPrefs.GetString(Key + "baitSince", Now.ToString()), out long v) ? v : Now;
-        return Mathf.Min(MaxBait, stored + (int)((Now - since) / BaitSeconds));
-    }
-
-    static int SecondsToNextBait()
-    {
-        if (Bait() >= MaxBait) return 0;
-        long since = long.TryParse(PlayerPrefs.GetString(Key + "baitSince", Now.ToString()), out long v) ? v : Now;
-        return BaitSeconds - (int)((Now - since) % BaitSeconds);
-    }
-
-    static bool UseBait()
-    {
-        int bait = Bait();
-        if (bait <= 0) return false;
-        long since = long.TryParse(PlayerPrefs.GetString(Key + "baitSince", Now.ToString()), out long v) ? v : Now;
-        // Keep the time already spent towards the next bait.
-        long keep = bait >= MaxBait ? 0 : (Now - since) % BaitSeconds;
-        PlayerPrefs.SetInt(Key + "bait", bait - 1);
-        PlayerPrefs.SetString(Key + "baitSince", (Now - keep).ToString());
-        PlayerPrefs.Save();
-        return true;
-    }
+    public static int Bait() => BaitStock.Count;
+    static int SecondsToNextBait() => BaitStock.SecondsToNext;
+    static bool UseBait() => BaitStock.Use();
 
     public static int TotalCaught => PlayerPrefs.GetInt(Key + "total", 0);
 
@@ -87,7 +63,7 @@ public sealed class FishingGame : MonoBehaviour
     public static void Open(Transform portrait, FarmGameState state, Action<string> message)
     {
         var root = Popup.Open(portrait, "Fishing", "ESTANQUE", 120, 790, out var card);
-        var game = root.gameObject.AddComponent<FishingGame>();
+        var game = root.gameObject.GetOrAdd<FishingGame>();
         game.root = root;
         game.card = card;
         game.state = state;
@@ -99,25 +75,14 @@ public sealed class FishingGame : MonoBehaviour
     void Build()
     {
         // Water with reeds and a little dock.
-        ui.Block(card, "Grass", WaterX - 12, WaterY - 12, WaterW + 24, WaterH + 24, PixelUIFactory.Hex("#6BBF4A"));
-        ui.Block(card, "Water", WaterX, WaterY, WaterW, WaterH, PixelUIFactory.Hex("#3F8FD0"));
-        ui.Block(card, "Water light", WaterX + 20, WaterY + 20, WaterW - 40, WaterH - 60, PixelUIFactory.Hex("#5AAEE6"));
-        for (int i = 0; i < 9; i++)
-            ui.Block(card, "Wave", WaterX + 40 + (i * 53) % (WaterW - 80), WaterY + 40 + (i * 71) % (WaterH - 100), 18, 3,
-                PixelUIFactory.Hex("#CFE9FB"));
-        ui.Block(card, "Dock", WaterX + WaterW / 2f - 50, WaterY + WaterH - 30, 100, 42, PixelUIFactory.Hex("#A0602E"));
-        for (int i = 0; i < 4; i++)
-            ui.Block(card, "Plank", WaterX + WaterW / 2f - 50, WaterY + WaterH - 26 + i * 10, 100, 2, PixelUIFactory.Hex("#7A4A24"));
+        ui.Texture(card, "Pond", "fishing_pond", WaterX - 12, WaterY - 12, WaterW + 24, WaterH + 24); // Art/Minigames/fishing_pond.png
 
         ripple = ui.Rect(card, "Ripple", 0, 0, 40, 14);
-        rippleImage = ripple.gameObject.AddComponent<Image>();
+        rippleImage = ripple.gameObject.GetOrAdd<Image>();
         rippleImage.color = new Color(1, 1, 1, 0);
         rippleImage.raycastTarget = false;
 
-        floatRect = ui.Rect(card, "Float", 0, 0, 14, 20);
-        ui.Block(floatRect, "Top", 0, 0, 14, 10, PixelUIFactory.Hex("#E8443C"));
-        ui.Block(floatRect, "Bottom", 0, 10, 14, 10, Color.white);
-        ui.Block(floatRect, "Stick", 6, -8, 2, 8, PixelUIFactory.Ink);
+        floatRect = ui.Texture(card, "Float", "fishing_float", 0, 0, 14, 28).rectTransform;
         floatRect.gameObject.SetActive(false);
 
         status = ui.Paragraph(card, "Status", "", 20, WaterY + WaterH + 18, 502, 40, 20, Color.white, TextAnchor.MiddleCenter);
@@ -137,7 +102,7 @@ public sealed class FishingGame : MonoBehaviour
         castButton = cast.gameObject;
 
         ui.Block(card, "Result shade", 20, 688, 502, 84, new Color(.15f, .07f, .03f, .45f));
-        resultIcon = ui.Texture(card, "Result icon", "World/Sprites/fish_common", 36, 700, 96, 54);
+        resultIcon = ui.Texture(card, "Result icon", "fish_common", 36, 700, 96, 54);
         resultText = ui.Paragraph(card, "Result", "Pescados en total: " + TotalCaught, 142, 694, 370, 72, 16, Color.white);
         resultIcon.gameObject.SetActive(false);
 
@@ -226,7 +191,7 @@ public sealed class FishingGame : MonoBehaviour
         PlayerPrefs.SetInt(Key + "total", TotalCaught + k.Items);
         RewardFx.Collect(floatRect.position, FarmItems.Fish, k.Items, coins, kind == 2);
         resultIcon.gameObject.SetActive(true);
-        var tex = Resources.Load<Texture2D>(k.Sprite);
+        var tex = Art.Tex(k.Sprite);
         if (tex != null) { tex.filterMode = FilterMode.Point; resultIcon.texture = tex; }
         resultText.text = "¡" + k.Name + "! +" + k.Items + (k.Items == 1 ? " pescado" : " pescados") + " y +" +
                           FarmGameState.Format(coins) + " monedas" + (k.Gems > 0 ? " y +" + k.Gems + " gemas" : "") +
@@ -258,7 +223,7 @@ public sealed class FishingGame : MonoBehaviour
         phaseTime += dt;
         int bait = Bait();
         int next = SecondsToNextBait();
-        baitText.text = "Cebos: " + bait + "/" + MaxBait + (bait < MaxBait ? "  ·  +1 en " + Kitchen.Time(next) : "");
+        baitText.text = "Cebos: " + bait + "/" + MaxBait + (bait < MaxBait ? "  ·  +1 en " + UiUtil.Duration(next) : "");
 
         switch (phase)
         {

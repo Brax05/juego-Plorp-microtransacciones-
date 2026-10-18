@@ -36,6 +36,7 @@ public sealed class HouseScreen : MonoBehaviour
     RawImage pot;
     Image potGlow, screenGlow;
     Text potReady, stoveInfo, computerInfo;
+    Vector2 potReadyBase;
     RectTransform screen, catLayer;
     float nextInfo;
 
@@ -54,7 +55,7 @@ public sealed class HouseScreen : MonoBehaviour
     {
         var ui = new PixelUIFactory();
         var page = ui.Rect(secondary, "Page - Casa", 0, 0, PageW, PageH);
-        var house = page.gameObject.AddComponent<HouseScreen>();
+        var house = page.gameObject.GetOrAdd<HouseScreen>();
         house.state = state;
         house.message = message;
         house.navigate = navigate;
@@ -67,21 +68,22 @@ public sealed class HouseScreen : MonoBehaviour
 
     void Build()
     {
-        var bg = ui.Texture(transform, "Room", "World/Sprites/house_interior", 0, 0, PageW, PageH);
+        var bg = ui.Texture(transform, "Room", "house_interior", 0, 0, PageW, PageH);
         bg.raycastTarget = true;
 
         // Name on top and the way out.
         var title = ui.Panel(transform, "Title", 150, 6, 270, 44, PixelUIFactory.Hex("#B86F3F"));
         ui.Label(title, "Text", "CASA DE PLORP", 0, 0, 270, 44, 20, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
         ui.ActionButton(transform, "Back", "VOLVER", 12, 8, 104, 40, () => navigate?.Invoke(0));
-        Popup.CaptionSize(transform, "Back", 15);
+        UiUtil.CaptionSize(transform, "Back", 15);
 
         // ---- Stove (kitchen) ----
         potGlow = ui.Block(transform, "Pot glow", Stove.x + 10, Stove.y - 80, Stove.width - 20, 110, new Color(1f, .85f, .3f, 0f));
-        ui.Texture(transform, "Stove", "World/Sprites/house_stove", Stove.x, Stove.y, Stove.width, Stove.height);
-        pot = ui.Texture(transform, "Pot", "World/Sprites/pot_cooking", Stove.x + 26, Stove.y - 66, 100, 86);
+        ui.Texture(transform, "Stove", "house_stove", Stove.x, Stove.y, Stove.width, Stove.height);
+        pot = ui.Texture(transform, "Pot", "pot_cooking", Stove.x + 26, Stove.y - 66, 100, 86);
         potReady = ui.Label(transform, "Pot ready", "¡LISTO!", Stove.x, Stove.y - 104, Stove.width, 30, 20, PixelUIFactory.Gold,
             TextAnchor.MiddleCenter);
+        potReadyBase = potReady.rectTransform.anchoredPosition;
         var stovePlate = ui.Panel(transform, "Stove plate", Stove.x - 4, Stove.y + Stove.height + 6, Stove.width + 8, 46,
             PixelUIFactory.Hex("#B86F3F"));
         ui.Label(stovePlate, "Name", "COCINA", 0, 4, Stove.width + 8, 22, 16, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
@@ -89,10 +91,10 @@ public sealed class HouseScreen : MonoBehaviour
         ui.Hit(transform, "Stove hit", Stove.x - 10, Stove.y - 110, Stove.width + 20, Stove.height + 170, () => navigate?.Invoke(6));
 
         // ---- Plorp's computer (minigames) ----
-        ui.Texture(transform, "Computer", "World/Sprites/house_computer", Computer.x, Computer.y, Computer.width, Computer.height);
+        ui.Texture(transform, "Computer", "house_computer", Computer.x, Computer.y, Computer.width, Computer.height);
         screen = ui.Rect(transform, "Computer screen", Computer.x + ScreenInSprite.x, Computer.y + ScreenInSprite.y,
             ScreenInSprite.width, ScreenInSprite.height);
-        screenGlow = screen.gameObject.AddComponent<Image>();
+        screenGlow = screen.gameObject.GetOrAdd<Image>();
         screenGlow.color = new Color(.5f, 1f, .5f, 0f);
         screenGlow.raycastTarget = false;
         var pcPlate = ui.Panel(transform, "Computer plate", Computer.x + 12, Computer.y + Computer.height + 6, Computer.width - 24, 46,
@@ -112,9 +114,9 @@ public sealed class HouseScreen : MonoBehaviour
     {
         var holder = ui.Rect(catLayer, "Cat " + color, 0, 0, 64, 48);
         holder.pivot = new Vector2(.5f, 0f);
-        var hit = holder.gameObject.AddComponent<Image>();
+        var hit = holder.gameObject.GetOrAdd<Image>();
         hit.color = new Color(0, 0, 0, 0);
-        var art = ui.Texture(holder, "Art", "World/Sprites/cat_" + color + "_0", 0, 0, 64, 48);
+        var art = ui.Texture(holder, "Art", "cat_" + color + "_0", 0, 0, 64, 48);
         var cat = new Cat
         {
             rect = holder,
@@ -125,7 +127,7 @@ public sealed class HouseScreen : MonoBehaviour
             idle = UnityEngine.Random.Range(0f, 2f),
         };
         cat.target = RandomFloor();
-        var button = holder.gameObject.AddComponent<Button>();
+        var button = holder.gameObject.GetOrAdd<Button>();
         button.targetGraphic = hit;
         button.transition = Selectable.Transition.None;
         button.onClick.AddListener(() => Pet(cat));
@@ -142,24 +144,11 @@ public sealed class HouseScreen : MonoBehaviour
         var label = ui.Label(catLayer, "Miau", line, 0, 0, 160, 28, 16, Color.white, TextAnchor.MiddleCenter);
         label.rectTransform.pivot = new Vector2(.5f, .5f);
         label.rectTransform.anchoredPosition = new Vector2(cat.pos.x, -(cat.pos.y - 62f));
-        label.gameObject.AddComponent<RiseAndFade>();
+        RisingText.Attach(label, 1.2f, 30f);
         cat.idle = 1.2f; // stops to be petted
-        cat.art.texture = Load("World/Sprites/cat_" + cat.color + "_0");
+        cat.art.texture = Art.Tex("cat_" + cat.color + "_0");
     }
 
-    sealed class RiseAndFade : MonoBehaviour
-    {
-        float age;
-        Text text;
-        void Awake() => text = GetComponent<Text>();
-        void Update()
-        {
-            age += Time.unscaledDeltaTime;
-            transform.localPosition += new Vector3(0f, 30f * Time.unscaledDeltaTime, 0f);
-            if (text != null) { var c = text.color; c.a = 1f - age / 1.2f; text.color = c; }
-            if (age >= 1.2f) Destroy(gameObject);
-        }
-    }
 
     void Update()
     {
@@ -178,12 +167,12 @@ public sealed class HouseScreen : MonoBehaviour
             {
                 cat.idle = UnityEngine.Random.Range(.8f, 3f);
                 cat.target = RandomFloor();
-                cat.art.texture = Load("World/Sprites/cat_" + cat.color + "_0");
+                cat.art.texture = Art.Tex("cat_" + cat.color + "_0");
                 continue;
             }
             cat.pos += to.normalized * cat.speed * dt;
             cat.step += dt * 8f;
-            cat.art.texture = Load("World/Sprites/cat_" + cat.color + "_" + ((int)cat.step % 2));
+            cat.art.texture = Art.Tex("cat_" + cat.color + "_" + ((int)cat.step % 2));
             cat.art.uvRect = to.x >= 0f ? new Rect(0, 0, 1, 1) : new Rect(1, 0, -1, 1);
             Place(cat);
         }
@@ -196,7 +185,7 @@ public sealed class HouseScreen : MonoBehaviour
         float pulse = .5f + .5f * Mathf.Sin(now * 5f);
         potGlow.color = new Color(1f, .85f, .3f, ready ? .15f + .25f * pulse : 0f);
         potReady.gameObject.SetActive(ready);
-        potReady.rectTransform.anchoredPosition = new Vector2(Stove.x, -(Stove.y - 104f - pulse * 4f));
+        potReady.rectTransform.anchoredPosition = potReadyBase + new Vector2(0f, pulse * 4f);
         screenGlow.color = new Color(.5f, 1f, .5f, .05f + .05f * Mathf.Sin(now * 13f) + .04f * pulse);
 
         if (now >= nextInfo)
@@ -209,34 +198,17 @@ public sealed class HouseScreen : MonoBehaviour
     void Refresh()
     {
         int ready = Kitchen.ReadyCount();
-        int cooking = 0;
-        for (int i = 0; i < Kitchen.Slots; i++) if (!Kitchen.SlotEmpty(i) && !Kitchen.SlotReady(i)) cooking++;
+        int cooking = Kitchen.CookingCount();
         stoveInfo.text = ready > 0 ? ready + (ready == 1 ? " plato listo" : " platos listos")
             : cooking > 0 ? "cocinando " + cooking : "toca para cocinar";
-        SetTexture(pot, ready > 0 ? "World/Sprites/pot_done" : "World/Sprites/pot_cooking");
+        UiUtil.SetTexture(pot, ready > 0 ? "pot_done" : "pot_cooking");
         pot.color = ready > 0 || cooking > 0 ? Color.white : new Color(1f, 1f, 1f, .6f);
-        int tickets = MinigameTickets.Count("abduction") + MinigameTickets.Count("eggs");
+        int tickets = MinigameTickets.Total;
         computerInfo.text = tickets + " boletos · minijuegos";
     }
 
     static void Place(Cat cat) => cat.rect.anchoredPosition = new Vector2(cat.pos.x, -cat.pos.y);
 
-    static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 
-    static Texture2D Load(string path)
-    {
-        if (!Cache.TryGetValue(path, out var tex) || tex == null)
-        {
-            tex = Resources.Load<Texture2D>(path);
-            if (tex != null) tex.filterMode = FilterMode.Point;
-            Cache[path] = tex;
-        }
-        return tex;
-    }
 
-    static void SetTexture(RawImage image, string path)
-    {
-        var tex = Load(path);
-        if (tex != null && image.texture != tex) image.texture = tex;
-    }
 }

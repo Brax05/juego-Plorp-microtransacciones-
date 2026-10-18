@@ -61,17 +61,17 @@ public static class ShopCatalog
 {
     public static readonly BoostOffer[] Boosts =
     {
-        new BoostOffer("income15", "Ganancias x2", "Todo lo que ganas vale el doble por 15 min", "UI/Garden/icon_coin", BoostKind.Income, 15, 20),
-        new BoostOffer("income60", "Ganancias x2 (1 h)", "El doble de monedas por 1 hora", "UI/Garden/icon_coin", BoostKind.Income, 60, 60),
-        new BoostOffer("turbo10", "Cosecha turbo", "Cultivos y animales el doble de rápido, trabajadores también (10 min)", "UI/Garden/icon_sprout", BoostKind.Turbo, 10, 25),
-        new BoostOffer("garden10", "Jardín mágico", "El cuidado de la planta sube x3 (10 min)", "UI/Garden/icon_water", BoostKind.Garden, 10, 30),
+        new BoostOffer("income15", "Ganancias x2", "Todo lo que ganas vale el doble por 15 min", "icon_coin", BoostKind.Income, 15, 20),
+        new BoostOffer("income60", "Ganancias x2 (1 h)", "El doble de monedas por 1 hora", "icon_coin", BoostKind.Income, 60, 60),
+        new BoostOffer("turbo10", "Cosecha turbo", "Cultivos y animales el doble de rápido, trabajadores también (10 min)", "icon_sprout", BoostKind.Turbo, 10, 25),
+        new BoostOffer("garden10", "Jardín mágico", "El cuidado de la planta sube x3 (10 min)", "icon_water", BoostKind.Garden, 10, 30),
     };
 
     public static readonly GemItem[] Items =
     {
-        new GemItem("skip1h", "Salto de tiempo 1 h", "Recibe al instante las monedas de 1 hora de granja", "UI/Garden/icon_sun", 40),
-        new GemItem("skip4h", "Salto de tiempo 4 h", "Recibe al instante las monedas de 4 horas", "UI/Garden/icon_sun", 140),
-        new GemItem("flower5", "5 monedas de flor", "Para abono y plantas nuevas del jardín", "UI/Garden/icon_flowercoin", 25),
+        new GemItem("skip1h", "Salto de tiempo 1 h", "Recibe al instante las monedas de 1 hora de granja", "icon_sun", 40),
+        new GemItem("skip4h", "Salto de tiempo 4 h", "Recibe al instante las monedas de 4 horas", "icon_sun", 140),
+        new GemItem("flower5", "5 monedas de flor", "Para abono y plantas nuevas del jardín", "icon_flowercoin", 25),
     };
 
     public static readonly GemPack[] Packs =

@@ -21,7 +21,7 @@ public sealed class RewardFx : MonoBehaviour
     {
         var ui = new PixelUIFactory();
         var layer = ui.Rect(portrait, "Reward effects", 0, 0, 570, 1018);
-        var fx = layer.gameObject.AddComponent<RewardFx>();
+        var fx = layer.gameObject.GetOrAdd<RewardFx>();
         fx.ui = ui;
         fx.layer = layer;
         fx.goldTarget = goldLabel;
@@ -61,7 +61,7 @@ public sealed class RewardFx : MonoBehaviour
                 Fly(from, foodTarget, item.Icon, 26f, i * .06f, null);
         if (goldTarget != null && gold > 0)
             for (int i = 0; i < Mathf.Min(4, 1 + count / 3); i++)
-                Fly(from, goldTarget, "UI/Garden/icon_coin", 22f, .1f + i * .07f, () => goldPunch = 1f);
+                Fly(from, goldTarget, "icon_coin", 22f, .1f + i * .07f, () => goldPunch = 1f);
 
         if (gold > 0)
             Float(from, "+" + FarmGameState.Format(gold), golden ? PixelUIFactory.Gold : Color.white, golden ? 22 : 18);
@@ -72,14 +72,14 @@ public sealed class RewardFx : MonoBehaviour
     {
         var raw = ui.Texture(layer, "Flying", icon, 0, 0, size, size);
         raw.rectTransform.pivot = new Vector2(.5f, .5f);
-        raw.gameObject.AddComponent<Flyer>().Launch(from, target, delay, onArrive);
+        raw.gameObject.GetOrAdd<Flyer>().Launch(from, target, delay, onArrive);
     }
 
     void Float(Vector3 from, string text, Color color, int size)
     {
         var label = ui.Label(layer, "Popup", text, 0, 0, 260, 30, size, color, TextAnchor.MiddleCenter);
         label.rectTransform.pivot = new Vector2(.5f, .5f);
-        label.gameObject.AddComponent<FloatingText>().Launch(from);
+        label.gameObject.GetOrAdd<FloatingText>().Launch(from);
     }
 
     void Update()
@@ -106,7 +106,7 @@ public sealed class RewardFx : MonoBehaviour
             delay = wait;
             arrive = onArrive;
             transform.position = start;
-            group = gameObject.AddComponent<CanvasGroup>();
+            group = gameObject.GetOrAdd<CanvasGroup>();
             group.alpha = 0f;
             group.blocksRaycasts = false;
             float s = transform.lossyScale.x;
@@ -122,7 +122,7 @@ public sealed class RewardFx : MonoBehaviour
             if (t >= 1f || target == null)
             {
                 arrive?.Invoke();
-                Destroy(gameObject);
+                UiUtil.Kill(gameObject);
                 return;
             }
             float e = t * t * (3f - 2f * t);
@@ -158,7 +158,7 @@ public sealed class RewardFx : MonoBehaviour
             var c = text.color;
             c.a = t < .6f ? 1f : 1f - (t - .6f) / .4f;
             text.color = c;
-            if (t >= 1f) Destroy(gameObject);
+            if (t >= 1f) UiUtil.Kill(gameObject);
         }
     }
 }

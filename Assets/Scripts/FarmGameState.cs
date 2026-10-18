@@ -126,6 +126,16 @@ public sealed class FarmGameState
         Save();
     }
 
+    /// <summary>Removes up to <paramref name="max"/> of an item from the barn (fox, fair truck). Returns how many.</summary>
+    public int TakeItems(string id, int max)
+    {
+        int taken = (int)Math.Min(max, ItemCount(id));
+        if (taken <= 0) return 0;
+        barn[id] = ItemCount(id) - taken;
+        Save();
+        return taken;
+    }
+
     void AddItem(string id, long amount)
     {
         if (amount <= 0) return;

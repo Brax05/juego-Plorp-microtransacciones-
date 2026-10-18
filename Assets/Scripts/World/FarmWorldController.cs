@@ -9,6 +9,7 @@ using UnityEngine;
 public sealed class FarmWorldController : MonoBehaviour
 {
     readonly List<CropPlot> plots = new List<CropPlot>();
+    public IReadOnlyList<CropPlot> Plots => plots;
     readonly List<WorldActor> actors = new List<WorldActor>();
     readonly HashSet<string> actorIds = new HashSet<string>();
     FarmGameState state;

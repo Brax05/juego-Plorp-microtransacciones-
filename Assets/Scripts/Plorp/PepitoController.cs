@@ -115,6 +115,7 @@ public sealed class PepitoController : MonoBehaviour
     }
 
     bool suppressed;
+    public bool Started => started;
 
     /// <summary>
     /// True while another tab (Jardinería, Tienda, Logros...) is open: the farm Pepito hides and stays

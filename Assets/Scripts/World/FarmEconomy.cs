@@ -49,7 +49,24 @@ public static class FarmEconomy
     /// <summary>Workers (+5% each) times the gardening "todo" bonus.</summary>
     /// <summary>The running game state (for timers that have no reference to it, like crop growth).</summary>
     public static FarmGameState Current;
-    static float Speed => Current != null && Current.Boosts != null ? Current.Boosts.SpeedMultiplier : 1f;
+    static float Speed => (Current != null && Current.Boosts != null ? Current.Boosts.SpeedMultiplier : 1f)
+                          * FarmEvents.GrowthMultiplier; // rain makes everything grow faster
+
+    /// <summary>What one unit of a food item is worth right now (for the fair truck).</summary>
+    public static long UnitValue(FarmGameState s, FarmItem item)
+    {
+        if (item == null) return 0;
+        switch (item.Id)
+        {
+            case "egg": return AnimalProductValue(s, 0);
+            case "cheese": return AnimalProductValue(s, 1);
+            case "milk": return AnimalProductValue(s, 2);
+            case "tomato": return CropHarvestValue(s, CropKind.Tomato);
+            case "pumpkin": return CropHarvestValue(s, CropKind.Pumpkin);
+            case "cabbage": return CropHarvestValue(s, CropKind.Cabbage);
+            default: return CropHarvestValue(s, CropKind.Carrot);
+        }
+    }
 
     /// <summary>Workers (+5% each) × garden "todo" bonus × the x2 income boost.</summary>
     public static double WorkerBonus(FarmGameState s) =>

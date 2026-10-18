@@ -146,6 +146,11 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         Navigate(0);
         if (preview) return;
 
+        // Crows, rain, foxes and the fair truck now and then.
+        var worldRoot = FindChildRecursive(content, "Modular farm world");
+        var worldController = worldRoot != null ? worldRoot.GetComponent<FarmWorldController>() : null;
+        if (worldController != null) farmEvents = FarmEvents.Create(worldController, state, pepito, content, ShowMessage);
+
         // Pepito's welcome tour: the first time in each section he explains what everything is.
         guide = PepitoGuide.Create(content);
         AddGuideButton(content);
@@ -196,6 +201,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     PepitoGuide guide;
     bool guideReady;
     float nextSeenSave;
+    FarmEvents farmEvents;
 
     /// <summary>"VER GUÍA DE PEPITO" in Ajustes: shows every section's tour again, starting with the farm.</summary>
     void AddGuideButton(Transform root)
@@ -222,6 +228,8 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         // The farm Pepito only walks around on the farm, and never during the welcome tour.
         bool popupOpen = PepitoGuide.Active || OfflinePanel.Active || StreakPanel.Active;
         if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || popupOpen;
+        if (farmEvents != null)
+            farmEvents.Running = guideReady && farmPepito != null && farmPepito.Started && currentTab == 0 && !popupOpen;
         // Remember that the player is here (for "Mientras no estabas").
         if (guideReady && !OfflinePanel.Active && Time.unscaledTime >= nextSeenSave)
         {

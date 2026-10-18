@@ -59,6 +59,18 @@ public sealed class CropPlot : MonoBehaviour
         return harvested;
     }
 
+    /// <summary>A crow eats up to <paramref name="max"/> ripe crops (nothing is earned). Returns how many.</summary>
+    public int StealReady(int max)
+    {
+        int eaten = 0;
+        foreach (var cell in cells)
+        {
+            if (eaten >= max) break;
+            if (cell.IsReady) eaten += (int)cell.TakeHarvest();
+        }
+        return eaten;
+    }
+
     public int ReadyCount
     {
         get

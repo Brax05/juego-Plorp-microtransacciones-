@@ -57,6 +57,7 @@ public static class FarmEconomy
     {
         if (item == null) return 0;
         if (item.IsDish) return Kitchen.DishValue(s, item.Id);
+        if (item.Id == "fish" || item.Id == "honey" || item.Id == "apple") return FarmZones.ItemValue(s, item.Id);
         switch (item.Id)
         {
             case "egg": return AnimalProductValue(s, 0);
@@ -72,7 +73,8 @@ public static class FarmEconomy
     /// <summary>Workers (+5% each) × garden "todo" bonus × the x2 income boost.</summary>
     public static double WorkerBonus(FarmGameState s) =>
         (1.0 + 0.05 * s.Levels[Workers]) * (s.Garden != null ? s.Garden.GlobalMultiplier : 1f)
-        * (s.Boosts != null ? s.Boosts.IncomeMultiplier : 1f);
+        * (s.Boosts != null ? s.Boosts.IncomeMultiplier : 1f)
+        * StarTrip.Multiplier; // star seeds: +10% each, forever
 
     /// <summary>Rough coins per second of the whole farm (used by the time-skip items).</summary>
     public static double IncomePerSecond(FarmGameState s)

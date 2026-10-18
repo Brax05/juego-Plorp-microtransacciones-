@@ -37,8 +37,15 @@ public static class FarmItems
     public static readonly FarmItem Pizza      = new FarmItem("dish_pizza",    "Pizzas de queso",       "pizza de queso",      "World/Sprites/dish_pizza",    false, true);
     public static readonly FarmItem Soup       = new FarmItem("dish_sopa",     "Sopas de calabaza",     "sopa de calabaza",    "World/Sprites/dish_sopa",     false, true);
 
+    // From the zones behind the clouds (FarmZones).
+    public static readonly FarmItem Fish  = new FarmItem("fish",  "Pescados", "pescado", "World/Sprites/fish_common", true);
+    public static readonly FarmItem Honey = new FarmItem("honey", "Mieles",   "miel",    "World/Sprites/item_honey",  true);
+    public static readonly FarmItem Apple = new FarmItem("apple", "Manzanas", "manzana", "World/Sprites/item_apple",  false);
+    public static readonly FarmItem ApplePie = new FarmItem("dish_tarta", "Tartas de manzana", "tarta de manzana", "World/Sprites/dish_tarta", false, true);
+
     public static readonly FarmItem[] All = { Carrot, Tomato, Pumpkin, Cabbage, Egg, Cheese, Milk,
-                                              CarrotCake, Salad, Omelette, Pizza, Soup };
+                                              CarrotCake, Salad, Omelette, Pizza, Soup,
+                                              Fish, Honey, Apple, ApplePie };
     static readonly FarmItem[] CropsByTier = { Carrot, Cabbage, Tomato, Pumpkin }; // FarmEconomy.CropTiers
     static readonly FarmItem[] AnimalProducts = { Egg, Cheese, Milk };             // species 0..2
 
@@ -75,6 +82,9 @@ public static class FarmItems
         for (int i = 0; i <= FarmEconomy.SeedTier(state); i++) list.Add(CropsByTier[i]);
         for (int i = 0; i < AnimalProducts.Length; i++)
             if (FarmEconomy.AnimalCount(state, i) > 0) list.Add(AnimalProducts[i]);
+        if (FarmZones.IsOpen(ZoneId.Pond)) list.Add(Fish);
+        if (FarmZones.IsOpen(ZoneId.Hives)) list.Add(Honey);
+        if (FarmZones.IsOpen(ZoneId.Orchard)) list.Add(Apple);
         return list;
     }
 }

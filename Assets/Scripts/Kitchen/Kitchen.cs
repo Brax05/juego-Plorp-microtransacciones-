@@ -41,6 +41,7 @@ public static class Kitchen
         new Recipe("dish_tortilla", 45,  ("egg", 3), ("tomato", 2)),
         new Recipe("dish_pizza",    120, ("tomato", 3), ("cheese", 2)),
         new Recipe("dish_sopa",     90,  ("pumpkin", 2), ("milk", 1)),
+        new Recipe("dish_tarta",    75,  ("apple", 4), ("honey", 1), ("egg", 2)),
     };
 
     static readonly string[] slotDish = new string[MaxSlots];

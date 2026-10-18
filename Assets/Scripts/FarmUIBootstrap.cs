@@ -164,6 +164,10 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             };
         if (worldController != null) farmEvents = FarmEvents.Create(worldController, state, pepito, content, ShowMessage);
 
+        // Areas behind the clouds (pond, orchard, hives, launch pad) and the games room.
+        if (worldController != null) FarmZones.Create(worldController, state, pepito, content, ShowMessage);
+        if (worldController != null) GamesSign.Create(worldController, () => GamesHub.Open(content, state, ShowMessage));
+
         // Plorp's kitchen: sign on the farm (opens tab 5) and Pepito says when a dish is done.
         if (worldController != null) KitchenSign.Create(worldController, () => Navigate(5));
         Kitchen.DishReady += recipe =>
@@ -189,7 +193,11 @@ public sealed class FarmUIBootstrap : MonoBehaviour
                 OfflinePanel.ShowIfAway(content, state, awayAtStart, ShowMessage, () =>
                 {
                     OfflinePanel.MarkSeen();
-                    StreakPanel.ShowIfReady(content, state, ShowMessage, () => pepito.Begin(!firstTime));
+                    StreakPanel.ShowIfReady(content, state, ShowMessage, () =>
+                    {
+                        pepito.Begin(!firstTime);
+                        StarTrip.AfterTrip(pepito);
+                    });
                 }));
         });
 
@@ -261,6 +269,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         "¡Toca los tickets dorados!", "¡Arrastra para recorrer la granja!", "¡Cada 10 compras, algo nuevo!",
         "¡Los trabajadores cosechan solos!", "¡Mira la planta en JARDINERÍA!",
+        "¡Hay zonas por abrir en las nubes!", "¡Prueba la sala de JUEGOS!", "¡Cocina platos para Plorp!",
     };
 
     void Update()
@@ -268,7 +277,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (Screen.width != lastWidth || Screen.height != lastHeight) FitScreen();
         // Arched tips over the farm now and then.
         // The farm Pepito only walks around on the farm, and never during the welcome tour.
-        bool popupOpen = PepitoGuide.Active || OfflinePanel.Active || StreakPanel.Active;
+        bool popupOpen = PepitoGuide.Active || OfflinePanel.Active || StreakPanel.Active || Popup.AnyOpen;
         if (farmPepito != null) farmPepito.Suppressed = currentTab != 0 || popupOpen;
         bool farmQuiet = guideReady && farmPepito != null && farmPepito.Started && currentTab == 0 && !popupOpen;
         if (farmEvents != null) farmEvents.Running = farmQuiet;
@@ -297,7 +306,12 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (gameState != null && Time.unscaledTime >= nextHudRefresh)
         {
             nextHudRefresh = Time.unscaledTime + 1f;
-            if (boostLabel != null) boostLabel.text = gameState.Boosts.Summary;
+            if (boostLabel != null)
+            {
+                string stars = StarTrip.Stars > 0 ? "Semillas estelares " + StarTrip.Stars + " (+" + StarTrip.Stars * 10 + "%)" : "";
+                string boosts = gameState.Boosts.Summary;
+                boostLabel.text = stars + (stars.Length > 0 && boosts.Length > 0 ? " · " : "") + boosts;
+            }
             if (achievementBadge != null)
             {
                 int ready = AchievementCatalog.ReadyCount(gameState) + DailyMissions.ReadyCount(gameState);

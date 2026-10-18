@@ -12,6 +12,7 @@ public sealed class FarmMenuScreen
     readonly GardenScreen garden;
     readonly StoreScreen store;
     readonly AchievementsScreen achievements;
+    readonly KitchenScreen kitchen;
     int selectedTab;
 
     public FarmMenuScreen(Transform parent, FarmGameState state,
@@ -34,6 +35,8 @@ public sealed class FarmMenuScreen
         // Tienda and Logros are rebuilt at runtime too (gem packs, boosts, scrolling achievements).
         store = StoreScreen.Create(overlay, state, message);
         achievements = AchievementsScreen.Create(overlay, state, message);
+        // Tab 5 (no button in the bar): Plorp's kitchen, opened from the sign on the farm.
+        kitchen = KitchenScreen.Create(overlay, state, message, () => navigate(0));
         SyncStoreLabels();
         state.Changed += Refresh;
     }
@@ -130,6 +133,8 @@ public sealed class FarmMenuScreen
         garden.gameObject.SetActive(tab == 3);
         if (tab == 3) garden.transform.SetAsLastSibling();
         if (pSettings != null) pSettings.gameObject.SetActive(tab == 4);
+        kitchen.gameObject.SetActive(tab == 5);
+        if (tab == 5) kitchen.transform.SetAsLastSibling();
 
         RefreshPrebuilt();
     }

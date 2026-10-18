@@ -56,6 +56,7 @@ public static class FarmEconomy
     public static long UnitValue(FarmGameState s, FarmItem item)
     {
         if (item == null) return 0;
+        if (item.IsDish) return Kitchen.DishValue(s, item.Id);
         switch (item.Id)
         {
             case "egg": return AnimalProductValue(s, 0);

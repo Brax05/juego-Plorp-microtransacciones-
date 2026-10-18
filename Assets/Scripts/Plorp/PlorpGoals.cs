@@ -27,7 +27,7 @@ public sealed class PlorpGoal
         Title = PlorpGoals.TitleFor(stage);
         Quote = PlorpGoals.QuoteFor(stage);
         int total = 0;
-        foreach (var line in lines) total += line.Amount * (line.Item.FromAnimal ? 5 : 1);
+        foreach (var line in lines) total += line.Amount * (line.Item.IsDish ? 12 : line.Item.FromAnimal ? 5 : 1);
         RewardGold = 15L * total + 60L * stage;
         RewardGems = 3 + stage * 2;
     }
@@ -93,7 +93,8 @@ public static class PlorpGoals
         stage < Quotes.Length ? Quotes[stage] : "Plorp. (Otra vez hambre.)";
 
     /// <summary>Builds the order for this stage from what the player can produce right now.</summary>
-    public static PlorpGoal Generate(int stage, List<FarmItem> unlocked, ICollection<string> tasted)
+    public static PlorpGoal Generate(int stage, List<FarmItem> unlocked, ICollection<string> tasted,
+        List<FarmItem> dishes = null)
     {
         if (unlocked.Count == 0) unlocked = new List<FarmItem> { FarmItems.Carrot };
         var rng = new Random(7919 * (stage + 1));
@@ -111,7 +112,9 @@ public static class PlorpGoals
             rest.RemoveAt(k);
         }
 
-        int kinds = Math.Min(pool.Count, Math.Min(3, 1 + stage / 2));
+        // From the third order on, Plorp also asks for a dish from the kitchen (if one can be cooked).
+        bool wantsDish = dishes != null && dishes.Count > 0 && stage >= 2;
+        int kinds = Math.Min(pool.Count, Math.Min(wantsDish ? 2 : 3, 1 + stage / 2));
         double size = 10 * Math.Pow(1.5, Math.Min(stage, 12)) / kinds;
         var lines = new List<OrderLine>();
         for (int i = 0; i < kinds; i++)
@@ -122,6 +125,13 @@ public static class PlorpGoals
                 ? Math.Max(2, (int)Math.Round(size / 6.0))
                 : Math.Max(5, (int)Math.Round(size / 5.0) * 5);
             lines.Add(new OrderLine(item, amount));
+        }
+        if (wantsDish)
+        {
+            FarmItem dish = null;
+            foreach (var d in dishes) if (!tasted.Contains(d.Id)) { dish = d; break; }
+            if (dish == null) dish = dishes[rng.Next(dishes.Count)];
+            lines.Add(new OrderLine(dish, stage >= 6 ? 2 : 1));
         }
         return new PlorpGoal(stage, lines);
     }

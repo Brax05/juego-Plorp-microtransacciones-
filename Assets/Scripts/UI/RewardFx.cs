@@ -63,7 +63,8 @@ public sealed class RewardFx : MonoBehaviour
             for (int i = 0; i < Mathf.Min(4, 1 + count / 3); i++)
                 Fly(from, goldTarget, "UI/Garden/icon_coin", 22f, .1f + i * .07f, () => goldPunch = 1f);
 
-        Float(from, "+" + FarmGameState.Format(gold), golden ? PixelUIFactory.Gold : Color.white, golden ? 22 : 18);
+        if (gold > 0)
+            Float(from, "+" + FarmGameState.Format(gold), golden ? PixelUIFactory.Gold : Color.white, golden ? 22 : 18);
         if (golden) Float(from + Vector3.up * 40f * layer.lossyScale.y, "¡COSECHA DORADA!", PixelUIFactory.Gold, 20);
     }
 

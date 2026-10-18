@@ -46,7 +46,8 @@ public sealed class FarmGameState
         {
             if (currentGoal == null)
             {
-                currentGoal = PlorpGoals.Generate(PlorpStage, FarmItems.Unlocked(this), tasted);
+                currentGoal = PlorpGoals.Generate(PlorpStage, FarmItems.Unlocked(this), tasted,
+                    Kitchen.AvailableDishes(this));
                 PlayerPrefs.SetString("GlorpFarm.plorpOrder", currentGoal.Serialize());
             }
             return currentGoal;
@@ -123,6 +124,14 @@ public sealed class FarmGameState
             if (item != null) DailyMissions.Report(item.FromAnimal ? MissionKind.AnimalProducts : MissionKind.Crops, pair.Value);
         }
         AddGold(earned);
+        Save();
+    }
+
+    /// <summary>Puts items in the barn without coins (a dish out of the kitchen).</summary>
+    public void GiveItem(string id, int amount)
+    {
+        if (amount <= 0) return;
+        AddItem(id, amount);
         Save();
     }
 

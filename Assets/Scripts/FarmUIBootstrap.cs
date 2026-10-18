@@ -151,6 +151,14 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         var worldController = worldRoot != null ? worldRoot.GetComponent<FarmWorldController>() : null;
         if (worldController != null) farmEvents = FarmEvents.Create(worldController, state, pepito, content, ShowMessage);
 
+        // Plorp's kitchen: sign on the farm (opens tab 5) and Pepito says when a dish is done.
+        if (worldController != null) KitchenSign.Create(worldController, () => Navigate(5));
+        Kitchen.DishReady += recipe =>
+        {
+            if (pepito != null && currentTab == 0 && recipe != null)
+                pepito.Say("Miau... ¡" + recipe.Name + " lista! Toca la COCINA para sacarla de la olla.", 6f);
+        };
+
         // Pepito's welcome tour: the first time in each section he explains what everything is.
         guide = PepitoGuide.Create(content);
         AddGuideButton(content);
@@ -243,6 +251,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             {
                 nextFarmTip = 35f + UnityEngine.Random.value * 20f;
                 string tip = gameState.GoalReady ? "¡Entrégale el pedido a Plorp!"
+                    : Kitchen.ReadyCount() > 0 ? "¡Hay platos listos en la COCINA!"
                     : DailyMissions.ReadyCount(gameState) > 0 ? "¡Hay misiones por cobrar!"
                     : AchievementCatalog.AnyReady(gameState) ? "¡Hay logros por cobrar!"
                     : FarmTips[UnityEngine.Random.Range(0, FarmTips.Length)];
@@ -261,6 +270,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
                 achievementBadgeText.text = ready.ToString();
             }
         }
+        Kitchen.Tick();
         // The garden plant keeps living while the player is on other tabs.
         gameState?.Garden?.Tick(Time.unscaledDeltaTime);
     }

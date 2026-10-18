@@ -8,10 +8,11 @@ public sealed class FarmItem
     public readonly string Single;    // one of them ("tomate")
     public readonly string Icon;      // Resources path
     public readonly bool FromAnimal;  // animal products come slower, so orders ask for fewer
+    public readonly bool IsDish;      // cooked in Plorp's kitchen
 
-    public FarmItem(string id, string name, string single, string icon, bool fromAnimal)
+    public FarmItem(string id, string name, string single, string icon, bool fromAnimal, bool isDish = false)
     {
-        Id = id; Name = name; Single = single; Icon = icon; FromAnimal = fromAnimal;
+        Id = id; Name = name; Single = single; Icon = icon; FromAnimal = fromAnimal; IsDish = isDish;
     }
 }
 
@@ -29,7 +30,15 @@ public static class FarmItems
     public static readonly FarmItem Cheese  = new FarmItem("cheese",  "Quesos",     "queso",     "UI/Items/cheese",         true);
     public static readonly FarmItem Milk    = new FarmItem("milk",    "Leche",      "leche",     "UI/Items/milk",           true);
 
-    public static readonly FarmItem[] All = { Carrot, Tomato, Pumpkin, Cabbage, Egg, Cheese, Milk };
+    // Dishes from Plorp's kitchen (see Kitchen.Recipes).
+    public static readonly FarmItem CarrotCake = new FarmItem("dish_pastel",   "Pasteles de zanahoria", "pastel de zanahoria", "World/Sprites/dish_pastel",   false, true);
+    public static readonly FarmItem Salad      = new FarmItem("dish_ensalada", "Ensaladas",             "ensalada",            "World/Sprites/dish_ensalada", false, true);
+    public static readonly FarmItem Omelette   = new FarmItem("dish_tortilla", "Tortillas",             "tortilla",            "World/Sprites/dish_tortilla", false, true);
+    public static readonly FarmItem Pizza      = new FarmItem("dish_pizza",    "Pizzas de queso",       "pizza de queso",      "World/Sprites/dish_pizza",    false, true);
+    public static readonly FarmItem Soup       = new FarmItem("dish_sopa",     "Sopas de calabaza",     "sopa de calabaza",    "World/Sprites/dish_sopa",     false, true);
+
+    public static readonly FarmItem[] All = { Carrot, Tomato, Pumpkin, Cabbage, Egg, Cheese, Milk,
+                                              CarrotCake, Salad, Omelette, Pizza, Soup };
     static readonly FarmItem[] CropsByTier = { Carrot, Cabbage, Tomato, Pumpkin }; // FarmEconomy.CropTiers
     static readonly FarmItem[] AnimalProducts = { Egg, Cheese, Milk };             // species 0..2
 

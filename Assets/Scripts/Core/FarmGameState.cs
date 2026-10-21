@@ -71,6 +71,7 @@ public sealed class FarmGameState
     public FarmGameState()
     {
         EnsureProgressionVersion();
+        PurchaseDeliveryJournal.Recover();
         Gold = ReadLong("gold", 250);
         Gems = PlayerPrefs.GetInt("GlorpFarm.gems", 0);
         FarmLevel = PlayerPrefs.GetInt("GlorpFarm.farmLevel", 1);
@@ -260,14 +261,23 @@ public sealed class FarmGameState
     }
 
     /// <summary>Gives what a real-money pack contains (called by PurchaseService after a successful purchase).</summary>
-    public void GrantPack(GemPack pack)
+    public bool GrantPack(GemPack pack, string purchaseToken)
     {
-        Gems += pack.Gems;
-        if (pack.BonusFlowerCoins > 0) Garden.AddFlowerCoins(pack.BonusFlowerCoins);
-        if (pack.BoostMinutes > 0) Boosts.Add(BoostKind.Income, pack.BoostMinutes);
-        if (pack.OncePerPlayer) PlayerPrefs.SetInt("GlorpFarm.iap.starter", 1);
-        PlayerPrefs.SetInt("GlorpFarm.iap.count", PlayerPrefs.GetInt("GlorpFarm.iap.count", 0) + 1);
-        Save();
+        if (pack == null || string.IsNullOrEmpty(purchaseToken)) throw new ArgumentException("Missing purchase.");
+        if (PurchaseDeliveryJournal.WasDelivered(purchaseToken)) return false;
+        bool granted = !(pack.OncePerPlayer && StarterPackBought);
+        var delivery = PurchaseDeliveryJournal.Prepare(pack, purchaseToken, Gems, Garden.FlowerCoins,
+            Boosts.IncomeUntil, StarterPackBought);
+        try { PurchaseDeliveryJournal.Commit(delivery); }
+        finally
+        {
+            // Keep runtime balances aligned even with staged preferences after a storage error.
+            Gems = PlayerPrefs.GetInt("GlorpFarm.gems", Gems);
+            Garden.ReloadPurchaseBalance();
+            Boosts.ReloadIncome();
+        }
+        Changed?.Invoke();
+        return granted;
     }
 
     /// <summary>Pays coins and/or gems for something (gardening tools, seeds).</summary>

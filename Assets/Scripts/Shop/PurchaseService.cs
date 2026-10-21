@@ -1,53 +1,37 @@
 using System;
 using UnityEngine;
-#if PLORP_IAP
-using Unity.Services.Core;
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Purchasing;
-using UnityEngine.Purchasing.Extension;
 #endif
 
-/// <summary>
-/// Real-money purchases of gem packs (Google Play / App Store) through Unity In-App Purchasing.
-///
-/// How it works:
-///  1. Initialize() registers every ShopCatalog.Packs product id with the store.
-///  2. Buy(pack) opens the store's payment sheet.
-///  3. When the store confirms, ProcessPurchase grants the pack (FarmGameState.GrantPack) and saves.
-///     Purchases the store still has pending (app closed mid-purchase) are delivered on the next start.
-///
-/// Requirements: the "In-App Purchasing" package (com.unity.purchasing) and the PLORP_IAP scripting
-/// define (both already set in Packages/manifest.json and ProjectSettings). Without them the store runs
-/// in TEST MODE: purchases are simulated and granted immediately, so the flow can be tried in the Editor.
-///
-/// Before publishing: create the same product ids in Google Play Console (consumables; the starter pack
-/// as a one-time product) and validate receipts on a server (see ValidateReceipt).
-/// </summary>
+/// <summary>Google Play purchases with signed receipt validation and durable local delivery.</summary>
 public static class PurchaseService
 {
     static FarmGameState state;
     static Action<string> message;
+    public static event Action Changed;
 
     public static bool TestMode
     {
         get
         {
-#if PLORP_IAP
-            return false;
-#else
+#if UNITY_EDITOR
             return true;
+#else
+            return false;
 #endif
         }
     }
-
-    /// <summary>Raised when prices load or a purchase finishes (store page refreshes).</summary>
-    public static event Action Changed;
 
     public static void Initialize(FarmGameState gameState, Action<string> showMessage)
     {
         state = gameState;
         message = showMessage;
-#if PLORP_IAP
-        Store.Init();
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+        PurchaseRecoveryDriver.EnsureExists();
+        Store.Refresh();
 #endif
     }
 
@@ -55,134 +39,396 @@ public static class PurchaseService
     {
         get
         {
-#if PLORP_IAP
-            return Store.Controller != null;
-#else
+            if (state == null || PurchaseDeliveryJournal.Faulted) return false;
+#if UNITY_EDITOR
             return true;
+#elif PLORP_IAP && UNITY_ANDROID
+            return Store.ProductsReady && Store.ValidatorReady;
+#else
+            return false;
 #endif
         }
     }
 
-    /// <summary>Localized price from the store ("$500"), or the CLP fallback while loading / in test mode.</summary>
+    public static bool Busy
+    {
+        get
+        {
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+            return Store.IsBusy;
+#else
+            return false;
+#endif
+        }
+    }
+
+    public static string Status
+    {
+        get
+        {
+            if (PurchaseDeliveryJournal.Faulted) return "No se pudo guardar una compra. Libera espacio y vuelve a abrir el juego.";
+            if (TestMode) return "Modo editor: las compras se simulan";
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+            return Store.Status;
+#else
+            return "Las compras no están disponibles en esta plataforma";
+#endif
+        }
+    }
+
+    public static bool CanBuy(GemPack pack)
+    {
+        if (pack == null || !Ready || Busy || (pack.OncePerPlayer && state.StarterPackBought)) return false;
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+        var product = Store.Product(pack.ProductId);
+        return !Store.DeferredProducts.Contains(pack.ProductId) && !Store.PendingProducts.Contains(pack.ProductId) &&
+            product != null && product.availableToPurchase &&
+            !string.IsNullOrEmpty(product.metadata.localizedPriceString);
+#else
+        return TestMode;
+#endif
+    }
+
     public static string PriceOf(GemPack pack)
     {
-#if PLORP_IAP
-        var product = Store.Controller?.products.WithID(pack.ProductId);
+        if (TestMode) return pack.FallbackPrice;
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+        var product = Store.Product(pack.ProductId);
         if (product != null && product.availableToPurchase && !string.IsNullOrEmpty(product.metadata.localizedPriceString))
             return product.metadata.localizedPriceString;
+        return Store.Loading ? "Cargando…" : "No disponible";
+#else
+        return "No disponible";
 #endif
-        return pack.FallbackPrice;
     }
 
     public static void Buy(GemPack pack)
     {
         if (pack == null) return;
-        if (pack.OncePerPlayer && state != null && state.StarterPackBought)
+        if (!CanBuy(pack))
         {
-            message?.Invoke("Ya compraste este pack");
+            message?.Invoke(pack.OncePerPlayer && state != null && state.StarterPackBought
+                ? "Ya compraste este pack" : Busy ? "Espera a que termine la compra actual" : "La tienda no está disponible. Revisa tu conexión e inténtalo otra vez.");
             return;
         }
-#if PLORP_IAP
-        if (Store.Controller == null)
-        {
-            message?.Invoke("La tienda aún no está lista. Revisa tu conexión.");
-            Store.Init();
-            return;
-        }
-        Store.Controller.InitiatePurchase(pack.ProductId);
-#else
-        Grant(pack);
-        message?.Invoke("Modo prueba: compra simulada de " + pack.Name);
+#if UNITY_EDITOR
+        Grant(pack, "editor-" + Guid.NewGuid().ToString("N"));
+#elif PLORP_IAP && UNITY_ANDROID
+        Store.Buy(pack);
 #endif
     }
 
-    /// <summary>iOS needs a "restore purchases" button for the one-time starter pack.</summary>
     public static void Restore()
     {
-#if PLORP_IAP && UNITY_IOS
-        Store.Extensions?.GetExtension<IAppleExtensions>()?.RestoreTransactions((ok, error) =>
-            message?.Invoke(ok ? "Compras restauradas" : "No se pudo restaurar: " + error));
+        if (Busy) { message?.Invoke("Espera a que termine la compra actual"); return; }
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+        message?.Invoke("Revisando compras con Google Play…");
+        Store.Refresh(true);
 #else
-        message?.Invoke("En Android las compras se restauran solas al abrir el juego");
+        message?.Invoke(TestMode ? "Las compras del editor son simuladas" : "Las compras no están disponibles");
 #endif
     }
 
-    static void Grant(GemPack pack)
+    static void Grant(GemPack pack, string token)
     {
-        if (pack == null || state == null) return;
-        if (pack.OncePerPlayer && state.StarterPackBought) return; // already delivered (restore)
-        state.GrantPack(pack);
-        message?.Invoke("¡Gracias! +" + pack.Gems + " gemas");
-        Changed?.Invoke();
+        if (state == null) throw new InvalidOperationException("Game state is not ready.");
+        if (state.GrantPack(pack, token)) message?.Invoke("¡Gracias! +" + pack.Gems + " gemas");
+        NotifyChanged();
     }
 
-    /// <summary>
-    /// Hook for receipt validation. In production send <paramref name="receipt"/> to your server
-    /// (for example Unity Cloud Code or your own backend calling the Google Play Developer API)
-    /// and only grant when it confirms. Returning true trusts the store response.
-    /// </summary>
-    static bool ValidateReceipt(string receipt) => !string.IsNullOrEmpty(receipt);
+    static void NotifyChanged() => Changed?.Invoke();
 
-#if PLORP_IAP
-    sealed class Store : IStoreListener
+    public static void Tick()
     {
-        public static IStoreController Controller;
-        public static IExtensionProvider Extensions;
-        static bool initializing;
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+        Store.Tick();
+#endif
+    }
 
-        public static async void Init()
+#if PLORP_IAP && UNITY_ANDROID && !UNITY_EDITOR
+    static class Store
+    {
+        public static bool ProductsReady, ValidatorReady;
+        public static string ActiveProduct;
+        public static string Status = "Conectando con Google Play…";
+        public static readonly HashSet<string> DeferredProducts = new HashSet<string>();
+        public static readonly HashSet<string> PendingProducts = new HashSet<string>();
+        static readonly HashSet<string> confirming = new HashSet<string>();
+        static StoreController controller;
+        static GooglePlayReceiptValidation validator;
+        static bool connected, connecting, fetchingProducts, fetchingPurchases, needsRetry, manualRestore;
+        static float nextRetry, activeSince;
+        public static bool Loading => connecting || fetchingProducts;
+        public static bool IsBusy => ActiveProduct != null || confirming.Count > 0 || fetchingPurchases;
+
+        public static Product Product(string id) => ProductsReady ? controller.GetProducts().FirstOrDefault(p => p.definition.id == id) : null;
+
+        static void UpdateStatus(string value)
         {
-            if (Controller != null || initializing) return;
-            initializing = true;
+            Status = value;
+            NotifyChanged();
+        }
+
+        static void RetryLater(string status)
+        {
+            needsRetry = true;
+            nextRetry = Time.realtimeSinceStartup + 20f;
+            UpdateStatus(status);
+        }
+
+        public static async void Refresh(bool manual = false)
+        {
+            if (state == null || PurchaseDeliveryJournal.Faulted || connecting || fetchingProducts || fetchingPurchases) return;
+            manualRestore |= manual;
             try
             {
-                await UnityServices.InitializeAsync();
+                if (validator == null)
+                {
+                    if (!GooglePlayLicenseKey.IsConfigured) { UpdateStatus("La tienda está temporalmente fuera de servicio"); return; }
+                    validator = new GooglePlayReceiptValidation(GooglePlayLicenseKey.Data(), Application.identifier);
+                    ValidatorReady = true;
+                }
+                if (controller == null)
+                {
+                    controller = UnityIAPServices.StoreController();
+                    controller.ProcessPendingOrdersOnPurchasesFetched(false);
+                    controller.OnStoreConnected += OnConnected;
+                    controller.OnStoreDisconnected += OnDisconnected;
+                    controller.OnProductsFetched += OnProductsFetched;
+                    controller.OnProductsFetchFailed += OnProductsFetchFailed;
+                    controller.OnPurchasesFetched += OnPurchasesFetched;
+                    controller.OnPurchasesFetchFailed += OnPurchasesFetchFailed;
+                    controller.OnPurchasePending += OnPurchasePending;
+                    controller.OnPurchaseConfirmed += OnPurchaseConfirmed;
+                    controller.OnPurchaseFailed += OnPurchaseFailed;
+                    controller.OnPurchaseDeferred += OnPurchaseDeferred;
+                }
+                if (!connected)
+                {
+                    connecting = true;
+                    UpdateStatus("Conectando con Google Play…");
+                    await controller.Connect();
+                    connecting = false;
+                    if (!connected) return;
+                }
+                needsRetry = false;
+                if (!ProductsReady)
+                {
+                    fetchingProducts = true;
+                    UpdateStatus("Cargando precios de Google Play…");
+                    controller.FetchProducts(ShopCatalog.Packs.Select(p => new ProductDefinition(p.ProductId,
+                        p.OncePerPlayer ? ProductType.NonConsumable : ProductType.Consumable)).ToList());
+                }
+                else FetchPurchases();
             }
-            catch (Exception e)
+            catch
             {
-                Debug.LogWarning("Unity Services init failed (IAP continues): " + e.Message);
+                connecting = fetchingProducts = fetchingPurchases = false;
+                RetryLater("No se pudo conectar con la tienda. Puedes reintentar.");
+                Debug.LogWarning("IAP: no se pudo preparar la tienda o la clave de validación.");
             }
-            var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-            foreach (var pack in ShopCatalog.Packs)
-                builder.AddProduct(pack.ProductId, pack.OncePerPlayer ? ProductType.NonConsumable : ProductType.Consumable);
-#pragma warning disable 0618
-            UnityPurchasing.Initialize(new Store(), builder);
-#pragma warning restore 0618
         }
 
-        public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
+        static void OnConnected() { connected = true; }
+        static void OnDisconnected(StoreConnectionFailureDescription failure)
         {
-            Controller = controller;
-            Extensions = extensions;
-            initializing = false;
-            Changed?.Invoke();
+            connected = ProductsReady = false;
+            fetchingProducts = fetchingPurchases = false;
+            RetryLater("Se perdió la conexión con la tienda. Reintentando…");
         }
 
-        public void OnInitializeFailed(InitializationFailureReason error) => OnInitializeFailed(error, null);
-
-        public void OnInitializeFailed(InitializationFailureReason error, string details)
+        static void OnProductsFetched(List<Product> products)
         {
-            initializing = false;
-            Debug.LogWarning("IAP init failed: " + error + " " + details);
+            fetchingProducts = false;
+            ProductsReady = products != null && products.Any(p => p.availableToPurchase);
+            if (!ProductsReady) { RetryLater("No hay productos disponibles. Puedes reintentar."); return; }
+            UpdateStatus("Pago con Google Play");
+            FetchPurchases();
         }
 
-        public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
+        static void OnProductsFetchFailed(ProductFetchFailed failure)
         {
-            var product = args.purchasedProduct;
-            var pack = ShopCatalog.Pack(product.definition.id);
-            if (pack == null) return PurchaseProcessingResult.Complete;
-            if (!ValidateReceipt(product.receipt))
+            fetchingProducts = false;
+            ProductsReady = false;
+            RetryLater("No se pudieron cargar los precios. Revisa tu conexión.");
+        }
+
+        static void FetchPurchases()
+        {
+            if (fetchingPurchases || !connected) return;
+            fetchingPurchases = true;
+            NotifyChanged();
+            controller.FetchPurchases();
+        }
+
+        static void OnPurchasesFetchFailed(PurchasesFetchFailureDescription failure)
+        {
+            fetchingPurchases = false;
+            RetryLater("No se pudieron revisar las compras. Reintentaremos al conectar.");
+        }
+
+        static void OnPurchasesFetched(Orders orders)
+        {
+            fetchingPurchases = false;
+            DeferredProducts.Clear();
+            if (orders == null) { RetryLater("No se pudieron revisar las compras"); return; }
+            PendingProducts.Clear();
+            var pendingTokens = new HashSet<string>();
+            if (orders.PendingOrders != null)
+                foreach (var pending in orders.PendingOrders)
+                    if (pending?.Info?.Google?.PurchaseToken != null) pendingTokens.Add(pending.Info.Google.PurchaseToken);
+            confirming.RemoveWhere(token => !pendingTokens.Contains(token));
+            if (orders.DeferredOrders != null)
+                foreach (var order in orders.DeferredOrders) RememberDeferred(order);
+            if (orders.PendingOrders != null)
+                foreach (var order in orders.PendingOrders) OnPurchasePending(order);
+            if (orders.ConfirmedOrders != null)
+                foreach (var order in orders.ConfirmedOrders)
+                {
+                    var pack = PackOf(order);
+                    if (pack == null || !pack.OncePerPlayer || state.StarterPackBought) continue;
+                    if (!TryDeliver(order, pack)) RetryLater("Una compra necesita revisión. Puedes reintentar.");
+                }
+            if (manualRestore)
             {
-                message?.Invoke("No se pudo verificar la compra");
-                return PurchaseProcessingResult.Complete;
+                manualRestore = false;
+                message?.Invoke(needsRetry ? "Hay compras pendientes de revisión. Puedes reintentar." : "Compras revisadas con Google Play");
             }
-            Grant(pack);
-            return PurchaseProcessingResult.Complete;
+            if (ActiveProduct == null && !needsRetry) UpdateStatus(DeferredProducts.Count > 0
+                ? "Hay una compra esperando aprobación o pago" : "Pago con Google Play");
         }
 
-        public void OnPurchaseFailed(Product product, PurchaseFailureReason reason)
+        static GemPack PackOf(Order order)
         {
-            if (reason != PurchaseFailureReason.UserCancelled) message?.Invoke("La compra no se completó");
+            var items = order?.CartOrdered?.Items();
+            return items != null && items.Count == 1 && items[0].Quantity == 1
+                ? ShopCatalog.Pack(items[0].Product.definition.id) : null;
+        }
+
+        static bool TryDeliver(Order order, GemPack pack)
+        {
+            try
+            {
+                string token = validator.Validate(order.Info.Receipt, pack.ProductId, order.Info.Google?.PurchaseToken);
+                Grant(pack, token);
+                return true;
+            }
+            catch
+            {
+                message?.Invoke(PurchaseDeliveryJournal.Faulted
+                    ? "No se pudo guardar la compra. Libera espacio y vuelve a abrir el juego."
+                    : "No se pudo verificar la compra. Revisa tus compras e inténtalo otra vez.");
+                Debug.LogWarning("IAP: entrega detenida por un recibo inválido o un error de guardado.");
+                return false;
+            }
+        }
+
+        public static void Buy(GemPack pack)
+        {
+            ActiveProduct = pack.ProductId;
+            activeSince = Time.realtimeSinceStartup;
+            UpdateStatus("Compra en curso. Completa el pago en Google Play…");
+            try { controller.PurchaseProduct(Product(pack.ProductId)); }
+            catch
+            {
+                ActiveProduct = null;
+                RetryLater("No se pudo abrir el pago. Puedes reintentar.");
+            }
+        }
+
+        static void OnPurchasePending(PendingOrder order)
+        {
+            var pack = PackOf(order);
+            string token = order?.Info?.Google?.PurchaseToken;
+            if (pack == null || string.IsNullOrEmpty(token))
+            {
+                ReleaseActive(order);
+                RetryLater("No se pudo verificar una compra. Revisa tus compras.");
+                return;
+            }
+            if (confirming.Contains(token)) return;
+            PendingProducts.Add(pack.ProductId);
+            if (!TryDeliver(order, pack))
+            {
+                ReleaseActive(order);
+                RetryLater("Una compra necesita revisión. Puedes reintentar.");
+                return;
+            }
+            DeferredProducts.Remove(pack.ProductId);
+            confirming.Add(token);
+            activeSince = Time.realtimeSinceStartup;
+            UpdateStatus("Confirmando la compra con Google Play…");
+            try { controller.ConfirmPurchase(order); }
+            catch
+            {
+                confirming.Remove(token);
+                ReleaseActive(order);
+                RetryLater("Tu compra está guardada. Falta confirmarla con Google Play.");
+            }
+        }
+
+        static void OnPurchaseConfirmed(Order order)
+        {
+            if (order?.Info?.Google?.PurchaseToken != null) confirming.Remove(order.Info.Google.PurchaseToken);
+            ReleaseActive(order);
+            if (order is FailedOrder)
+                RetryLater("Tu compra está guardada. Reintentaremos la confirmación.");
+            else
+            {
+                var pack = PackOf(order);
+                if (pack != null) PendingProducts.Remove(pack.ProductId);
+                UpdateStatus("Pago con Google Play");
+            }
+        }
+
+        static void OnPurchaseFailed(FailedOrder order)
+        {
+            ReleaseActive(order);
+            if (order.FailureReason == PurchaseFailureReason.UserCancelled)
+            {
+                message?.Invoke("Compra cancelada");
+                UpdateStatus("Pago con Google Play");
+            }
+            else
+            {
+                message?.Invoke("La compra no se completó. Puedes revisar tus compras.");
+                RetryLater("No se completó la compra. Puedes reintentar.");
+            }
+        }
+
+        static void RememberDeferred(Order order)
+        {
+            var pack = PackOf(order);
+            if (pack != null) DeferredProducts.Add(pack.ProductId);
+        }
+
+        static void OnPurchaseDeferred(DeferredOrder order)
+        {
+            RememberDeferred(order);
+            ReleaseActive(order);
+            message?.Invoke("El pago está pendiente. Recibirás el pack cuando Google Play lo apruebe.");
+            RetryLater("Compra pendiente de aprobación o pago");
+        }
+
+        public static void Tick()
+        {
+            if ((ActiveProduct != null || confirming.Count > 0) && Time.realtimeSinceStartup - activeSince > 120f)
+            {
+                ActiveProduct = null;
+                confirming.Clear();
+                RetryLater("Revisando el estado de tu compra…");
+            }
+            if ((needsRetry || DeferredProducts.Count > 0) && Time.realtimeSinceStartup >= nextRetry &&
+                Application.internetReachability != NetworkReachability.NotReachable)
+            {
+                nextRetry = Time.realtimeSinceStartup + 20f;
+                Refresh();
+            }
+        }
+
+        static void ReleaseActive(Order order)
+        {
+            if (PackOf(order)?.ProductId == ActiveProduct) ActiveProduct = null;
         }
     }
 #endif

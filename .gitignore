@@ -29,3 +29,13 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local verification artifacts and Android signing files
+/.utmp/
+*.keystore
+*.jks
+*.aab
+*.apk
+
+# Keep the standalone purchase test project
+!/Tests/LocalPurchases/LocalPurchases.csproj

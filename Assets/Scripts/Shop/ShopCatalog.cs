@@ -27,7 +27,7 @@ public sealed class GemItem
     }
 }
 
-/// <summary>A real-money product (Google Play / App Store). Prices in Chilean pesos.</summary>
+/// <summary>A real-money product with a reference price in CLP for editor previews.</summary>
 public sealed class GemPack
 {
     public readonly string ProductId, Name, Badge;
@@ -41,14 +41,14 @@ public sealed class GemPack
         BonusFlowerCoins = flowerCoins; BoostMinutes = boostMinutes; OncePerPlayer = once;
     }
 
-    /// <summary>"$1.000" — Chilean format, used until the store returns the real localized price.</summary>
+    /// <summary>Reference price for editor previews only; real purchases use the store's localized price.</summary>
     public string FallbackPrice
     {
         get
         {
             string digits = PriceClp.ToString(System.Globalization.CultureInfo.InvariantCulture);
             for (int i = digits.Length - 3; i > 0; i -= 3) digits = digits.Insert(i, ".");
-            return "$" + digits;
+            return "CLP $" + digits;
         }
     }
 }
@@ -76,12 +76,12 @@ public static class ShopCatalog
 
     public static readonly GemPack[] Packs =
     {
-        new GemPack("plorp.gems.50", "Puñado de gemas", 50, 20),
-        new GemPack("plorp.gems.100", "Bolsita de gemas", 100, 45),
-        new GemPack("plorp.starter", "Pack de inicio", 300, 150, "UNA VEZ", flowerCoins: 10, boostMinutes: 60, once: true),
-        new GemPack("plorp.gems.250", "Bolsa de gemas", 250, 120, "+10%"),
-        new GemPack("plorp.gems.500", "Cofre de gemas", 500, 260, "POPULAR"),
-        new GemPack("plorp.gems.1000", "Nave de gemas", 1000, 560, "MEJOR VALOR"),
+        new GemPack("plorp.gems.20", "Puñado de gemas", 200, 20),
+        new GemPack("plorp.gems.45", "Bolsita de gemas", 400, 45),
+        new GemPack("plorp.starter.150", "Pack de inicio", 700, 150, "UNA VEZ", flowerCoins: 10, boostMinutes: 60, once: true),
+        new GemPack("plorp.gems.120", "Bolsa de gemas", 900, 120, "+10%"),
+        new GemPack("plorp.gems.260", "Cofre de gemas", 1800, 260, "POPULAR"),
+        new GemPack("plorp.gems.560", "Nave de gemas", 3500, 560, "MEJOR VALOR"),
     };
 
     public static GemPack Pack(string productId) => Array.Find(Packs, p => p.ProductId == productId);
@@ -104,6 +104,14 @@ public sealed class BoostState
 
     public bool Active(BoostKind kind) => Now < until[(int)kind];
     public float SecondsLeft(BoostKind kind) => (float)Math.Max(0, until[(int)kind] - Now);
+    internal double IncomeUntil => until[(int)BoostKind.Income];
+
+    internal void ReloadIncome()
+    {
+        if (double.TryParse(PlayerPrefs.GetString(Key + (int)BoostKind.Income, "0"),
+                System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double saved))
+            until[(int)BoostKind.Income] = saved;
+    }
 
     /// <summary>Adds time (stacks with what's left).</summary>
     public void Add(BoostKind kind, int minutes)

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 /// <summary>
 /// "Tienda" tab with two sections:
 ///  - BOOSTS: time boosts and items bought with gems (x2 income, turbo, garden, time skips, monedas de flor).
-///  - GEMAS: gem packs for real money ($50 to $1.000 CLP) through PurchaseService.
+///  - GEMAS: gem packs with localized store prices through PurchaseService.
 /// </summary>
 public sealed class StoreScreen : MonoBehaviour
 {
@@ -96,7 +96,7 @@ public sealed class StoreScreen : MonoBehaviour
         string boosts = state.Boosts.Summary;
         return tab == 0
             ? (boosts.Length > 0 ? "Activos: " + boosts : "Acelera tu granja con gemas")
-            : (PurchaseService.TestMode ? "Modo prueba: las compras se simulan" : "Pago seguro con tu tienda de apps");
+            : PurchaseService.Status;
     }
 
     void Rebuild()
@@ -143,10 +143,11 @@ public sealed class StoreScreen : MonoBehaviour
                 PackCard(pack, x, y, i);
             }
             y += 230;
-            ui.Paragraph(content, "Legal", "Las gemas son un bien virtual sin valor monetario. Precios en pesos chilenos con IVA incluido.",
+            ui.Paragraph(content, "Legal", "Las gemas son un bien virtual sin valor monetario. El importe y la moneda se confirman en tu tienda de apps.",
                 12, y, 518, 36, 12, PixelUIFactory.Cream, TextAnchor.MiddleCenter);
             y += 42;
-            ui.ActionButton(content, "Restore", "RESTAURAR COMPRAS", 130, y, 280, 46, PurchaseService.Restore);
+            ui.ActionButton(content, "Restore", PurchaseService.Busy ? "PROCESANDO…" : "REVISAR COMPRAS", 130, y, 280, 46,
+                PurchaseService.Restore, !PurchaseService.Busy);
             y += 60;
         }
         MenuPage.SetHeight(content, y + 10);
@@ -182,7 +183,7 @@ public sealed class StoreScreen : MonoBehaviour
             ui.Label(badge, "Text", pack.Badge, 0, 0, 112, 28, 12, Color.white, TextAnchor.MiddleCenter);
         }
         ui.ActionButton(card, "Buy", sold ? "COMPRADO" : PurchaseService.PriceOf(pack), 34, 152, 190, 50,
-            () => PurchaseService.Buy(pack), !sold);
+            () => PurchaseService.Buy(pack), PurchaseService.CanBuy(pack));
     }
 
     void OnDestroy()

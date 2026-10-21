@@ -516,6 +516,11 @@ public sealed class GardenState
         Changed?.Invoke();
     }
 
+    internal void ReloadPurchaseBalance()
+    {
+        if (long.TryParse(PlayerPrefs.GetString(Key + "flowerCoins", "3"), out long saved)) FlowerCoins = saved;
+    }
+
     /// <summary>Squash a bug: gives 1-2 monedas de flor (to buy plants and fertilizer).</summary>
     public int SquashBug(GardenBug bug)
     {

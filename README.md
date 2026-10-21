@@ -29,11 +29,12 @@ Juego idle de granja en Unity (6000.5, uGUI, vertical 570×1018). Plorp es un ex
 19. [Módulo 10: Viaje estelar](#módulo-10-viaje-estelar)
 20. [Sonido y música](#sonido-y-música)
 21. [Cómo se juntan todos los multiplicadores](#cómo-se-juntan-todos-los-multiplicadores)
-22. [Guardado y pruebas](#guardado-y-pruebas)
-23. [De dónde salen las gemas](#de-dónde-salen-las-gemas)
-24. [Ajustes](#ajustes)
-25. [Mapa de archivos](#mapa-de-archivos)
-26. [Estado y pendientes](#estado-y-pendientes)
+22. [Guardado en la nube y reembolsos](#guardado-en-la-nube-y-reembolsos)
+23. [Guardado y pruebas](#guardado-y-pruebas)
+24. [De dónde salen las gemas](#de-dónde-salen-las-gemas)
+25. [Ajustes](#ajustes)
+26. [Mapa de archivos](#mapa-de-archivos)
+27. [Estado y pendientes](#estado-y-pendientes)
 
 ---
 
@@ -183,18 +184,19 @@ Pestaña JARDINERÍA: cuidar la planta de Plorp.
   - Jardín mágico (cuidados x3) por 10 min (30 gemas).
   - Saltos de tiempo de 1 h (40 gemas) y 4 h (140 gemas).
   - 5 monedas de flor (25 gemas).
-- **GEMAS con dinero real** (Unity IAP, define `PLORP_IAP`; sin ese define funciona en modo prueba):
+- **GEMAS con dinero real** (Unity IAP 5, define `PLORP_IAP`). En el Editor se simulan; en un teléfono nunca. Los precios reales los da Google Play; estos son los de referencia en pesos chilenos:
 
-| Pack | Precio | Gemas | Extra |
-|---|---|---|---|
-| Puñado | $50 | 20 | — |
-| Bolsita | $100 | 45 | — |
-| Bolsa | $250 | 120 | — |
-| Cofre | $500 | 260 | — |
-| Nave | $1.000 | 560 | — |
-| Pack de inicio | $300, una vez | 150 | 10 monedas de flor y 1 h de boost |
+| Pack | Producto | Precio (CLP) | Gemas | Extra |
+|---|---|---|---|---|
+| Puñado | `plorp.gems.20` | 200 | 20 | — |
+| Bolsita | `plorp.gems.45` | 400 | 45 | — |
+| Pack de inicio | `plorp.starter.150` | 700, una vez | 150 | 10 monedas de flor y 1 h de ganancias x2 |
+| Bolsa | `plorp.gems.120` | 900 | 120 | — |
+| Cofre | `plorp.gems.260` | 1.800 | 260 | — |
+| Nave | `plorp.gems.560` | 3.500 | 560 | — |
 
-- **Antes de publicar:** crear los productos `plorp.gems.*` y `plorp.starter` en Google Play Console y validar los recibos en un servidor.
+- **Cómo se protege una compra:** se valida la firma de Google Play en el teléfono, cada compra se entrega una sola vez y una entrega cortada se recupera al volver a abrir. Detalles en [`Docs/ComprasAndroid.md`](Docs/ComprasAndroid.md).
+- **Reembolsos:** con el servidor de `Server/` y el define `PLORP_REFUNDS`, las gemas de una compra reembolsada se descuentan. Ver [Guardado en la nube y reembolsos](#guardado-en-la-nube-y-reembolsos).
 
 ## Logros
 
@@ -388,9 +390,17 @@ probabilidad de cosecha dorada = 4% × noche (x2)
 plato = 1,6 × suma de sus ingredientes
 ```
 
+## Guardado en la nube y reembolsos
+
+- **`SaveStore`** es la única puerta al guardado. Se usa igual que `PlayerPrefs`, con las mismas claves `GlorpFarm.*`, y además permite copiar la partida completa.
+- **Aviso TU PARTIDA:** sale la primera vez que se abre el juego y explica dónde se guarda la partida. Se vuelve a ver en AJUSTES ▸ PARTIDA GUARDADA, donde también está el estado de la nube y el botón CONECTAR.
+- **Google Play Juegos** (define `PLORP_PGS`): la partida se copia en la cuenta del jugador y vuelve al reinstalar o en otro teléfono. Gana la copia con más tiempo jugado.
+- **Reembolsos** (define `PLORP_REFUNDS`): cada compra se registra en el servidor (`Server/`, Firebase). Si Google la anula, el juego descuenta sus gemas y Pepito lo explica.
+- Configuración paso a paso y pruebas: [`Docs/GuardadoYReembolsos.md`](Docs/GuardadoYReembolsos.md).
+
 ## Guardado y pruebas
 
-- **Todo se guarda solo** en `PlayerPrefs`. Si cambia el balance base, `ProgressionVersion` en `FarmGameState` reinicia la partida (hoy está en la versión 7).
+- **Todo se guarda solo** con `SaveStore` (que escribe en `PlayerPrefs`). Si cambia el balance base, `ProgressionVersion` en `FarmGameState` reinicia la partida (hoy está en la versión 7).
 - **El progreso ya no se borra al compilar ni al dar Play.** Se quitó la herramienta que lo hacía, porque chocaba con "Mientras no estabas", las misiones y la racha.
 - **Probar estaciones o la racha:** cambia la fecha del computador. La noche llega sola cada 16 min.
 - **Probar "Mientras no estabas":** cierra el juego más de 1 minuto y vuelve a abrir.
@@ -416,6 +426,7 @@ plato = 1,6 × suma de sus ingredientes
 
 - **MÚSICA:** prende o apaga la música (ACTIVADO / APAGADO).
 - **SONIDOS:** prende o apaga los efectos y los ambientes.
+- **PARTIDA GUARDADA:** dónde se guarda la partida, el botón CONECTAR (Google Play Juegos) y VER AVISO.
 - **VER GUÍA DE PEPITO:** vuelve a mostrar la guía de todas las secciones, empezando por la granja.
 
 Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
@@ -432,11 +443,16 @@ Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
 | `Scripts/House/` | Casa de Plorp (interior, gatos) y entrada en el granero amarillo |
 | `Scripts/Kitchen/` | Recetas, ollas y página de la cocina |
 | `Scripts/Minigames/` | Computador PLORP-OS, pesca, Abducción, Atrapa huevos, boletos |
-| `Scripts/Shop/`, `Scripts/Achievements/` | Tienda, compras reales y logros |
+| `Scripts/Core/SaveStore.cs`, `CloudSave.cs` | Guardado y copia en Google Play Juegos |
+| `Scripts/Daily/SaveNotice.cs` | Aviso TU PARTIDA y tarjeta PARTIDA GUARDADA de Ajustes |
+| `Scripts/Shop/`, `Scripts/Achievements/` | Tienda, compras reales (validación, registro de entregas, `RefundSync`) y logros |
 | `Scripts/UI/` | `PixelUIFactory` (usa el canvas primero), `Art` (imágenes por nombre), `UiUtil` (ayudas comunes), `Popup` (ventanas), textos curvos, recompensas, portada |
 | `Scripts/Core/GameAudio.cs` | Música, ambientes y efectos |
 | `Editor/PlorpCanvasBaker.cs` | Menú **Plorp ▸ Hornear UI en el canvas** |
 | `AudioSource/` (fuera de Assets) | Scripts en Python que generan la música y los efectos |
+| `Server/` (fuera de Assets) | Funciones de Firebase para los reembolsos |
+| `Docs/` | Compras, guardado y reembolsos, términos, privacidad y ficha de Google Play |
+| `Tests/LocalPurchases/` | Pruebas de las compras fuera de Unity (.NET 10) |
 
 ## Estado y pendientes
 
@@ -444,6 +460,7 @@ Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
 - **Hornear el canvas** una vez con **Plorp ▸ Hornear UI en el canvas** para poder editar todo a mano.
 - **Sonidos provisionales:** la música y los efectos de `Assets/Resources/Audio/` son sintetizados. Para la versión final se pueden reemplazar por otros (por ejemplo, hechos con Suno, Udio o ElevenLabs) **manteniendo el nombre de cada archivo**.
 - **Antes de publicar:**
-  - Crear en Google Play Console los productos `plorp.gems.50`, `plorp.gems.100`, `plorp.gems.250`, `plorp.gems.500`, `plorp.gems.1000` y `plorp.starter`.
-  - Compilar con el define `PLORP_IAP`.
-  - Validar los recibos de compra en un servidor.
+  - Crear en Google Play Console los 6 productos de la tabla de la tienda.
+  - Configurar Play Games y el servidor, y probar en el celular (ver [`Docs/GuardadoYReembolsos.md`](Docs/GuardadoYReembolsos.md)).
+  - Revisar y publicar los [términos de uso](Docs/TerminosDeUso.md) y la [política de privacidad](Docs/PoliticaDePrivacidad.md).
+  - Completar la ficha de Google Play ([borrador](Docs/FichaGooglePlay.md)).

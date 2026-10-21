@@ -16,8 +16,8 @@ public static class StarTrip
     public const double BonusPerStar = .10;
     const double CoinsPerSeed = 20000;
 
-    public static int Stars => PlayerPrefs.GetInt(StarsKey, 0);
-    public static int Trips => PlayerPrefs.GetInt(TripsKey, 0);
+    public static int Stars => SaveStore.GetInt(StarsKey, 0);
+    public static int Trips => SaveStore.GetInt(TripsKey, 0);
     /// <summary>Permanent multiplier for all income (read by FarmEconomy).</summary>
     public static double Multiplier => 1.0 + BonusPerStar * Stars;
 
@@ -78,52 +78,44 @@ public static class StarTrip
         if (gain <= 0) return;
         GameAudio.PlayJingle("music_star_trip_jingle"); // keeps playing while the farm reloads
         int stars = Stars + gain;
-        PlayerPrefs.SetInt(StarsKey, stars);
-        PlayerPrefs.SetInt(TripsKey, Trips + 1);
-        PlayerPrefs.SetInt(JustKey, gain);
+        SaveStore.SetInt(StarsKey, stars);
+        SaveStore.SetInt(TripsKey, Trips + 1);
+        SaveStore.SetInt(JustKey, gain);
 
         // This run's progress.
-        PlayerPrefs.SetString("GlorpFarm.gold", (250 + 500L * stars).ToString());
-        PlayerPrefs.SetInt("GlorpFarm.farmLevel", 1);
-        PlayerPrefs.SetInt("GlorpFarm.purchases", 0);
-        PlayerPrefs.SetString("GlorpFarm.harvestGold", "0");
+        SaveStore.SetString("GlorpFarm.gold", (250 + 500L * stars).ToString());
+        SaveStore.SetInt("GlorpFarm.farmLevel", 1);
+        SaveStore.SetInt("GlorpFarm.purchases", 0);
+        SaveStore.SetString("GlorpFarm.harvestGold", "0");
         for (int i = 0; i < FarmEconomy.StartingLevels.Length; i++)
         {
-            PlayerPrefs.SetInt("GlorpFarm.level." + i, FarmEconomy.StartingLevels[i]);
-            PlayerPrefs.DeleteKey("GlorpFarm.price." + i);
+            SaveStore.SetInt("GlorpFarm.level." + i, FarmEconomy.StartingLevels[i]);
+            SaveStore.DeleteKey("GlorpFarm.price." + i);
         }
         foreach (string key in new[] { "plorpStage", "plorpOrder", "tasted", "totalFood" })
-            PlayerPrefs.DeleteKey("GlorpFarm." + key);
-        foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
+            SaveStore.DeleteKey("GlorpFarm." + key);
+        foreach (var item in FarmItems.All) SaveStore.DeleteKey("GlorpFarm.item." + item.Id);
         for (int p = 0; p < 5; p++)
             for (int c = 0; c < FarmArtLayout.CellsPerPlot; c++)
             {
-                PlayerPrefs.DeleteKey("GlorpFarm.world.crop." + p + "." + c + ".stage");
-                PlayerPrefs.DeleteKey("GlorpFarm.world.crop." + p + "." + c + ".since");
+                SaveStore.DeleteKey("GlorpFarm.world.crop." + p + "." + c + ".stage");
+                SaveStore.DeleteKey("GlorpFarm.world.crop." + p + "." + c + ".since");
             }
         foreach (string animal in new[] { "chicken", "sheep", "cow" })
-            for (int n = 1; n <= 6; n++) PlayerPrefs.DeleteKey("GlorpFarm.world.actor." + animal + "-" + n + ".readyAt");
+            for (int n = 1; n <= 6; n++) SaveStore.DeleteKey("GlorpFarm.world.actor." + animal + "-" + n + ".readyAt");
         OfflinePanel.MarkSeen();
-        PlayerPrefs.Save();
+        SaveStore.Save();
 
         // Reload the farm: the UI is built again from scratch with the new numbers.
-        SceneManager.sceneLoaded += Rebuild;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
-    static void Rebuild(Scene scene, LoadSceneMode mode)
-    {
-        SceneManager.sceneLoaded -= Rebuild;
-        if (UnityEngine.Object.FindAnyObjectByType<FarmUIBootstrap>() == null)
-            new GameObject("PlorpFarm UI").GetOrAdd<FarmUIBootstrap>();
+        FarmUIBootstrap.ReloadFarm();
     }
 
     /// <summary>After the trip Pepito tells what happened (call when the farm is visible).</summary>
     public static void AfterTrip(PepitoController pepito)
     {
-        int gain = PlayerPrefs.GetInt(JustKey, 0);
+        int gain = SaveStore.GetInt(JustKey, 0);
         if (gain <= 0 || pepito == null) return;
-        PlayerPrefs.DeleteKey(JustKey);
+        SaveStore.DeleteKey(JustKey);
         pepito.Say("¡Miau! Volvimos del viaje estelar. Plorp trajo " + gain + (gain == 1 ? " semilla estelar" : " semillas estelares") +
                    ": ahora todo rinde +" + Math.Round(BonusPerStar * 100 * Stars) + "%. Y otra vez tiene hambre.", 9f);
     }

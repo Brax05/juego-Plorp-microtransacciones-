@@ -25,12 +25,12 @@ public sealed class StreakPanel : MonoBehaviour
     public static void ShowIfReady(Transform portrait, FarmGameState state, Action<string> message, Action closed)
     {
         string today = DateTime.Now.ToString("yyyy-MM-dd");
-        if (Active || !DailyMissions.StreakReady || PlayerPrefs.GetString(ShownKey, "") == today)
+        if (Active || !DailyMissions.StreakReady || SaveStore.GetString(ShownKey, "") == today)
         {
             closed?.Invoke();
             return;
         }
-        PlayerPrefs.SetString(ShownKey, today);
+        SaveStore.SetString(ShownKey, today);
         var ui = new PixelUIFactory();
         var root = Popup.OpenBlank(portrait, "Daily streak");
         var panel = root.gameObject.GetOrAdd<StreakPanel>();

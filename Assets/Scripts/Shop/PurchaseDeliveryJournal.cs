@@ -15,6 +15,8 @@ public static class PurchaseDeliveryJournal
     const string MarkerPrefix = "GlorpFarm.iap.delivered.";
     static string JournalPath => Path.Combine(Application.persistentDataPath, "iap-delivery-v1.journal");
     public static bool Faulted { get; private set; }
+    /// <summary>A delivery was started and not finished (the cloud save must not replace the local save then).</summary>
+    public static bool HasPendingDelivery => File.Exists(JournalPath);
 
     [Serializable]
     public sealed class Delivery
@@ -33,8 +35,8 @@ public static class PurchaseDeliveryJournal
     {
         if (string.IsNullOrEmpty(token)) return false;
         // Migrate deliveries from the old integration without granting them again.
-        return PlayerPrefs.GetInt(MarkerPrefix + Hash(token), 0) == 1 ||
-            PlayerPrefs.GetInt("GlorpFarm.iap.tx." + token, 0) == 1;
+        return SaveStore.GetInt(MarkerPrefix + Hash(token), 0) == 1 ||
+            SaveStore.GetInt("GlorpFarm.iap.tx." + token, 0) == 1;
     }
 
     public static void Recover()
@@ -52,9 +54,9 @@ public static class PurchaseDeliveryJournal
             Check(delivery);
             // If the save completed but removing the journal failed, do not overwrite
             // balances the player has subsequently earned or spent.
-            if (PlayerPrefs.GetInt(MarkerPrefix + delivery.tokenHash, 0) != 1)
+            if (SaveStore.GetInt(MarkerPrefix + delivery.tokenHash, 0) != 1)
                 Apply(delivery);
-            PlayerPrefs.Save();
+            SaveStore.Save();
             File.Delete(JournalPath);
         }
         catch
@@ -82,7 +84,7 @@ public static class PurchaseDeliveryJournal
             }
             File.Move(temporary, JournalPath);
             Apply(delivery);
-            PlayerPrefs.Save();
+            SaveStore.Save();
             // A leftover committed journal is harmless: Recover sees the marker.
             try { File.Delete(JournalPath); }
             catch (IOException) { Faulted = true; }
@@ -106,7 +108,7 @@ public static class PurchaseDeliveryJournal
             flowerCoins = checked(flowerCoins + (grant ? pack.BonusFlowerCoins : 0)),
             incomeUntil = grant && pack.BoostMinutes > 0 ? Math.Max(now, incomeUntil) + pack.BoostMinutes * 60 : incomeUntil,
             starter = starter || (grant && pack.OncePerPlayer) ? 1 : 0,
-            count = checked(PlayerPrefs.GetInt("GlorpFarm.iap.count", 0) + (grant ? 1 : 0))
+            count = checked(SaveStore.GetInt("GlorpFarm.iap.count", 0) + (grant ? 1 : 0))
         };
     }
 
@@ -125,12 +127,12 @@ public static class PurchaseDeliveryJournal
 
     static void Apply(Delivery delivery)
     {
-        PlayerPrefs.SetInt("GlorpFarm.gems", delivery.gems);
-        PlayerPrefs.SetString("GlorpFarm.garden.flowerCoins", delivery.flowerCoins.ToString(CultureInfo.InvariantCulture));
-        PlayerPrefs.SetString("GlorpFarm.boost.0", delivery.incomeUntil.ToString("R", CultureInfo.InvariantCulture));
-        PlayerPrefs.SetInt("GlorpFarm.iap.starter", delivery.starter);
-        PlayerPrefs.SetInt("GlorpFarm.iap.count", delivery.count);
-        PlayerPrefs.SetInt(MarkerPrefix + delivery.tokenHash, 1);
+        SaveStore.SetInt("GlorpFarm.gems", delivery.gems);
+        SaveStore.SetString("GlorpFarm.garden.flowerCoins", delivery.flowerCoins.ToString(CultureInfo.InvariantCulture));
+        SaveStore.SetString("GlorpFarm.boost.0", delivery.incomeUntil.ToString("R", CultureInfo.InvariantCulture));
+        SaveStore.SetInt("GlorpFarm.iap.starter", delivery.starter);
+        SaveStore.SetInt("GlorpFarm.iap.count", delivery.count);
+        SaveStore.SetInt(MarkerPrefix + delivery.tokenHash, 1);
     }
 
     public static string Hash(string value)

@@ -41,6 +41,9 @@ namespace UnityEngine
         public static string GetString(string key, string fallback = "") => values.TryGetValue(key, out var value) ? (string)value : fallback;
         public static void SetInt(string key, int value) => values[key] = value;
         public static void SetString(string key, string value) => values[key] = value;
+        public static float GetFloat(string key, float fallback = 0f) => values.TryGetValue(key, out var value) ? (float)value : fallback;
+        public static void SetFloat(string key, float value) => values[key] = value;
+        public static bool HasKey(string key) => values.ContainsKey(key);
         public static void DeleteKey(string key) => values.Remove(key);
         public static void Save()
         {

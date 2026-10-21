@@ -17,13 +17,13 @@ public static class MinigameTickets
     /// <summary>Tickets of every arcade game together.</summary>
     public static int Total => Count("abduction") + Count("eggs");
 
-    public static int Best(string game) => PlayerPrefs.GetInt(Key + game + ".best", 0);
+    public static int Best(string game) => SaveStore.GetInt(Key + game + ".best", 0);
 
     public static bool SaveBest(string game, int score)
     {
         if (score <= Best(game)) return false;
-        PlayerPrefs.SetInt(Key + game + ".best", score);
-        PlayerPrefs.Save();
+        SaveStore.SetInt(Key + game + ".best", score);
+        SaveStore.Save();
         return true;
     }
 }

@@ -52,7 +52,7 @@ public sealed class FarmZones : MonoBehaviour
     public static bool IsOpen(ZoneId z)
     {
         if (z == ZoneId.Launch) return Current != null && Current.PlorpSatisfied;
-        return PlayerPrefs.GetInt(Key + (int)z + ".open", 0) == 1;
+        return SaveStore.GetInt(Key + (int)z + ".open", 0) == 1;
     }
 
     public static long CostToOpen(ZoneId z) => OpenCost[(int)z];
@@ -60,14 +60,14 @@ public sealed class FarmZones : MonoBehaviour
     public static bool Open(FarmGameState s, ZoneId z)
     {
         if (IsOpen(z) || z == ZoneId.Launch || !s.Spend(CostToOpen(z), 0)) return false;
-        PlayerPrefs.SetInt(Key + (int)z + ".open", 1);
-        PlayerPrefs.SetInt(Key + (int)z + ".units", 1);
-        PlayerPrefs.SetString(Key + (int)z + ".since", Now.ToString());
-        PlayerPrefs.Save();
+        SaveStore.SetInt(Key + (int)z + ".open", 1);
+        SaveStore.SetInt(Key + (int)z + ".units", 1);
+        SaveStore.SetString(Key + (int)z + ".since", Now.ToString());
+        SaveStore.Save();
         return true;
     }
 
-    public static int Units(ZoneId z) => Mathf.Clamp(PlayerPrefs.GetInt(Key + (int)z + ".units", 1), 1, MaxUnits);
+    public static int Units(ZoneId z) => Mathf.Clamp(SaveStore.GetInt(Key + (int)z + ".units", 1), 1, MaxUnits);
 
     public static long UnitCost(ZoneId z) => (long)Math.Ceiling(UnitBaseCost[(int)z] * Math.Pow(1.8, Units(z) - 1));
 
@@ -75,15 +75,15 @@ public sealed class FarmZones : MonoBehaviour
     {
         if (!IsOpen(z) || Units(z) >= MaxUnits || !s.Spend(UnitCost(z), 0)) return false;
         Collect(s, z); // keep what was made so far
-        PlayerPrefs.SetInt(Key + (int)z + ".units", Units(z) + 1);
-        PlayerPrefs.Save();
+        SaveStore.SetInt(Key + (int)z + ".units", Units(z) + 1);
+        SaveStore.Save();
         return true;
     }
 
     public static int Capacity(ZoneId z) => StorePerUnit[(int)z] * Units(z);
 
     static long Since(ZoneId z) =>
-        long.TryParse(PlayerPrefs.GetString(Key + (int)z + ".since", Now.ToString()), out long v) ? v : Now;
+        long.TryParse(SaveStore.GetString(Key + (int)z + ".since", Now.ToString()), out long v) ? v : Now;
 
     /// <summary>Items waiting in a production zone (honey / apples).</summary>
     public static int Ready(ZoneId z)
@@ -110,7 +110,7 @@ public sealed class FarmZones : MonoBehaviour
         int every = Math.Max(1, UnitSeconds[(int)z]);
         // Full storage: the clock restarts; otherwise the time already spent on the next item is kept.
         long since = ready >= Capacity(z) ? Now : Now - elapsed % every;
-        PlayerPrefs.SetString(Key + (int)z + ".since", since.ToString());
+        SaveStore.SetString(Key + (int)z + ".since", since.ToString());
         if (ready <= 0) return 0;
         string id = ItemId[(int)z];
         long coins = ItemValue(s, id) * ready;

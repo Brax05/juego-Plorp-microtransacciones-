@@ -79,6 +79,7 @@ public sealed class FarmMenuScreen
         if (page == null) return;
         SetCaption(page.Find("Musica"), state.MusicEnabled);
         SetCaption(page.Find("Sonidos"), state.SoundEnabled);
+        SaveNotice.Refresh();
     }
 
     static void Bind(Transform card, UnityEngine.Events.UnityAction action)

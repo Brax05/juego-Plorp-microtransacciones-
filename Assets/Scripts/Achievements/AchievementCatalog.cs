@@ -68,7 +68,7 @@ public static class AchievementCatalog
         return n;
     }
 
-    public static bool Claimed(AchievementDef a) => PlayerPrefs.GetInt("GlorpFarm.ach." + a.Id, 0) == 1;
+    public static bool Claimed(AchievementDef a) => SaveStore.GetInt("GlorpFarm.ach." + a.Id, 0) == 1;
     public static bool Ready(FarmGameState s, AchievementDef a) => !Claimed(a) && a.Progress(s) >= a.Target;
 
     public static bool AnyReady(FarmGameState s)
@@ -87,7 +87,7 @@ public static class AchievementCatalog
     public static bool Claim(FarmGameState s, AchievementDef a)
     {
         if (!Ready(s, a)) return false;
-        PlayerPrefs.SetInt("GlorpFarm.ach." + a.Id, 1);
+        SaveStore.SetInt("GlorpFarm.ach." + a.Id, 1);
         s.AddGems(a.Gems);
         return true;
     }

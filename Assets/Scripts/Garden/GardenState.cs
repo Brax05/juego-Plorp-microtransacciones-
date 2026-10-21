@@ -518,7 +518,7 @@ public sealed class GardenState
 
     internal void ReloadPurchaseBalance()
     {
-        if (long.TryParse(PlayerPrefs.GetString(Key + "flowerCoins", "3"), out long saved)) FlowerCoins = saved;
+        if (long.TryParse(SaveStore.GetString(Key + "flowerCoins", "3"), out long saved)) FlowerCoins = saved;
     }
 
     /// <summary>Squash a bug: gives 1-2 monedas de flor (to buy plants and fertilizer).</summary>
@@ -527,7 +527,7 @@ public sealed class GardenState
         if (!Bugs.Remove(bug)) return 0;
         BugsSquashed++;
         DailyMissions.Report(MissionKind.Bugs, 1);
-        PlayerPrefs.SetInt(Key + "bugs", BugsSquashed);
+        SaveStore.SetInt(Key + "bugs", BugsSquashed);
         int coins = rng.NextDouble() < .3 ? 2 : 1;
         FlowerCoins += coins;
         Save();
@@ -579,24 +579,24 @@ public sealed class GardenState
 
     void Load()
     {
-        Current = Mathf.Clamp(PlayerPrefs.GetInt(Key + "current", 0), 0, Species.Length - 1);
-        Water = PlayerPrefs.GetFloat(Key + "water", 55f);
-        Light = PlayerPrefs.GetFloat(Key + "light", 55f);
+        Current = Mathf.Clamp(SaveStore.GetInt(Key + "current", 0), 0, Species.Length - 1);
+        Water = SaveStore.GetFloat(Key + "water", 55f);
+        Light = SaveStore.GetFloat(Key + "light", 55f);
         for (int i = 0; i < Species.Length; i++)
         {
-            Care[i] = PlayerPrefs.GetFloat(Key + "care." + i, 0f);
-            Owned[i] = i == 0 || PlayerPrefs.GetInt(Key + "owned." + i, 0) == 1;
-            EverBloomed[i] = PlayerPrefs.GetInt(Key + "bloomed." + i, 0) == 1;
+            Care[i] = SaveStore.GetFloat(Key + "care." + i, 0f);
+            Owned[i] = i == 0 || SaveStore.GetInt(Key + "owned." + i, 0) == 1;
+            EverBloomed[i] = SaveStore.GetInt(Key + "bloomed." + i, 0) == 1;
         }
-        Bloomed = PlayerPrefs.GetInt(Key + "bloomNow", 0) == 1;
-        FlowerCoins = long.TryParse(PlayerPrefs.GetString(Key + "flowerCoins", "3"), out long fc) ? fc : 3;
-        StoredCoins = PlayerPrefs.GetInt(Key + "stored", 0);
-        string leaves = PlayerPrefs.GetString(Key + "leaves", "");
+        Bloomed = SaveStore.GetInt(Key + "bloomNow", 0) == 1;
+        FlowerCoins = long.TryParse(SaveStore.GetString(Key + "flowerCoins", "3"), out long fc) ? fc : 3;
+        StoredCoins = SaveStore.GetInt(Key + "stored", 0);
+        string leaves = SaveStore.GetString(Key + "leaves", "");
         for (int i = 0; i < LeafSlots; i++)
             Leaves[i] = i < leaves.Length ? (LeafState)Mathf.Clamp(leaves[i] - '0', 0, 5) : LeafState.Healthy;
         FertilizerUntil = ReadDouble("fert");
-        CurtainsClosed = PlayerPrefs.GetInt(Key + "curtains", 0) == 1;
-        BugsSquashed = PlayerPrefs.GetInt(Key + "bugs", 0);
+        CurtainsClosed = SaveStore.GetInt(Key + "curtains", 0) == 1;
+        BugsSquashed = SaveStore.GetInt(Key + "bugs", 0);
         lastLevel = LevelFor(Care[Current]);
         lastProblems[1] = TooMuchWater; lastProblems[2] = TooLittleWater;
         lastProblems[3] = TooMuchLight; lastProblems[4] = TooLittleLight;
@@ -611,30 +611,30 @@ public sealed class GardenState
     }
 
     static double ReadDouble(string key) =>
-        double.TryParse(PlayerPrefs.GetString(Key + key, "0"), System.Globalization.NumberStyles.Float,
+        double.TryParse(SaveStore.GetString(Key + key, "0"), System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : 0;
 
     static void WriteDouble(string key, double v) =>
-        PlayerPrefs.SetString(Key + key, v.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        SaveStore.SetString(Key + key, v.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     public void Save()
     {
-        PlayerPrefs.SetInt(Key + "current", Current);
-        PlayerPrefs.SetFloat(Key + "water", Water);
-        PlayerPrefs.SetFloat(Key + "light", Light);
+        SaveStore.SetInt(Key + "current", Current);
+        SaveStore.SetFloat(Key + "water", Water);
+        SaveStore.SetFloat(Key + "light", Light);
         for (int i = 0; i < Species.Length; i++)
         {
-            PlayerPrefs.SetFloat(Key + "care." + i, Care[i]);
-            PlayerPrefs.SetInt(Key + "owned." + i, Owned[i] ? 1 : 0);
-            PlayerPrefs.SetInt(Key + "bloomed." + i, EverBloomed[i] ? 1 : 0);
+            SaveStore.SetFloat(Key + "care." + i, Care[i]);
+            SaveStore.SetInt(Key + "owned." + i, Owned[i] ? 1 : 0);
+            SaveStore.SetInt(Key + "bloomed." + i, EverBloomed[i] ? 1 : 0);
         }
-        PlayerPrefs.SetInt(Key + "bloomNow", Bloomed ? 1 : 0);
-        PlayerPrefs.SetInt(Key + "curtains", CurtainsClosed ? 1 : 0);
-        PlayerPrefs.SetString(Key + "flowerCoins", FlowerCoins.ToString());
-        PlayerPrefs.SetInt(Key + "stored", StoredCoins);
+        SaveStore.SetInt(Key + "bloomNow", Bloomed ? 1 : 0);
+        SaveStore.SetInt(Key + "curtains", CurtainsClosed ? 1 : 0);
+        SaveStore.SetString(Key + "flowerCoins", FlowerCoins.ToString());
+        SaveStore.SetInt(Key + "stored", StoredCoins);
         var chars = new char[LeafSlots];
         for (int i = 0; i < LeafSlots; i++) chars[i] = (char)('0' + (int)Leaves[i]);
-        PlayerPrefs.SetString(Key + "leaves", new string(chars));
+        SaveStore.SetString(Key + "leaves", new string(chars));
         WriteDouble("fert", FertilizerUntil);
         WriteDouble("saved", Now);
     }
@@ -642,12 +642,12 @@ public sealed class GardenState
     public static void ResetSaved()
     {
         foreach (string k in new[] { "current", "water", "light", "leaves", "fert", "saved", "bloomNow", "flowerCoins", "stored", "curtains", "bugs" })
-            PlayerPrefs.DeleteKey(Key + k);
+            SaveStore.DeleteKey(Key + k);
         for (int i = 0; i < Species.Length; i++)
         {
-            PlayerPrefs.DeleteKey(Key + "care." + i);
-            PlayerPrefs.DeleteKey(Key + "owned." + i);
-            PlayerPrefs.DeleteKey(Key + "bloomed." + i);
+            SaveStore.DeleteKey(Key + "care." + i);
+            SaveStore.DeleteKey(Key + "owned." + i);
+            SaveStore.DeleteKey(Key + "bloomed." + i);
         }
     }
 }

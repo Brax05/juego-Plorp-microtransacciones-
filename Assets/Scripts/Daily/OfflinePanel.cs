@@ -33,13 +33,13 @@ public sealed class OfflinePanel : MonoBehaviour
     /// <summary>Remembers "now" as the last moment the player was in the game.</summary>
     public static void MarkSeen()
     {
-        PlayerPrefs.SetString(LastSeenKey, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+        SaveStore.SetString(LastSeenKey, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
     }
 
     /// <summary>Seconds since the player was last in the game (0 the very first time).</summary>
     public static double SecondsAway()
     {
-        if (!long.TryParse(PlayerPrefs.GetString(LastSeenKey, ""), out long last) || last <= 0) return 0;
+        if (!long.TryParse(SaveStore.GetString(LastSeenKey, ""), out long last) || last <= 0) return 0;
         return Math.Max(0, DateTimeOffset.UtcNow.ToUnixTimeSeconds() - last);
     }
 

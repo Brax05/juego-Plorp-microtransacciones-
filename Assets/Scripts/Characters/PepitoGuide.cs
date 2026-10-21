@@ -150,13 +150,13 @@ public sealed class PepitoGuide : MonoBehaviour
         return guide;
     }
 
-    public static bool Seen(int section) => PlayerPrefs.GetInt(SeenKey + section, 0) == 1;
+    public static bool Seen(int section) => SaveStore.GetInt(SeenKey + section, 0) == 1;
 
     /// <summary>Shows the guide for every section again ("VER GUÍA DE PEPITO").</summary>
     public static void ResetAll()
     {
-        for (int i = 0; i < Tours.Length; i++) PlayerPrefs.DeleteKey(SeenKey + i);
-        PlayerPrefs.Save();
+        for (int i = 0; i < Tours.Length; i++) SaveStore.DeleteKey(SeenKey + i);
+        SaveStore.Save();
     }
 
     /// <summary>Shows the tour of a section if the player hasn't seen it. <paramref name="done"/> always runs.</summary>
@@ -252,8 +252,8 @@ public sealed class PepitoGuide : MonoBehaviour
         steps = Tours[tab];
         // Seen from the moment it opens: closing the game halfway must not bring the whole tour back
         // (it can be watched again with "VER GUÍA DE PEPITO" in Ajustes).
-        PlayerPrefs.SetInt(SeenKey + tab, 1);
-        PlayerPrefs.Save();
+        SaveStore.SetInt(SeenKey + tab, 1);
+        SaveStore.Save();
         onDone = done;
         index = 0;
         Active = true;
@@ -315,8 +315,8 @@ public sealed class PepitoGuide : MonoBehaviour
         if (!Active) return;
         if (markSeen && section >= 0)
         {
-            PlayerPrefs.SetInt(SeenKey + section, 1);
-            PlayerPrefs.Save();
+            SaveStore.SetInt(SeenKey + section, 1);
+            SaveStore.Save();
         }
         Active = false;
         steps = null;

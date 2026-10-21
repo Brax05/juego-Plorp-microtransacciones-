@@ -72,7 +72,7 @@ public static class DailyMissions
             var m = missions[i];
             if (m == null || m.Kind != kind || m.Done) continue;
             m.Progress = Math.Min(m.Target, m.Progress + amount);
-            PlayerPrefs.SetString(Key + "m" + i + ".progress", m.Progress.ToString());
+            SaveStore.SetString(Key + "m" + i + ".progress", m.Progress.ToString());
             changed = true;
         }
         if (changed) Changed?.Invoke();
@@ -85,10 +85,10 @@ public static class DailyMissions
     {
         if (m == null || !m.Done || m.Claimed) return false;
         m.Claimed = true;
-        PlayerPrefs.SetInt(Key + "m" + m.Slot + ".claimed", 1);
+        SaveStore.SetInt(Key + "m" + m.Slot + ".claimed", 1);
         s.AddGems(m.Gems);
         s.BuyGold(0, MissionCoins(s, m));
-        PlayerPrefs.Save();
+        SaveStore.Save();
         Changed?.Invoke();
         return true;
     }
@@ -99,15 +99,15 @@ public static class DailyMissions
         return true;
     }
 
-    public static bool BonusClaimed => PlayerPrefs.GetString(Key + "bonusDay", "") == Today;
+    public static bool BonusClaimed => SaveStore.GetString(Key + "bonusDay", "") == Today;
     public static bool BonusReady(FarmGameState s) => AllClaimed(s) && !BonusClaimed;
 
     public static bool ClaimBonus(FarmGameState s)
     {
         if (!BonusReady(s)) return false;
-        PlayerPrefs.SetString(Key + "bonusDay", Today);
+        SaveStore.SetString(Key + "bonusDay", Today);
         s.AddGems(BonusGems);
-        PlayerPrefs.Save();
+        SaveStore.Save();
         Changed?.Invoke();
         return true;
     }
@@ -160,17 +160,17 @@ public static class DailyMissions
         string today = Today;
         if (loadedDay == today) return;
         loadedDay = today;
-        if (PlayerPrefs.GetString(Key + "day", "") == today)
+        if (SaveStore.GetString(Key + "day", "") == today)
         {
             for (int i = 0; i < Count; i++)
             {
                 missions[i] = new DailyMission
                 {
                     Slot = i,
-                    Kind = (MissionKind)PlayerPrefs.GetInt(Key + "m" + i + ".kind", 0),
+                    Kind = (MissionKind)SaveStore.GetInt(Key + "m" + i + ".kind", 0),
                     Target = ReadLong(Key + "m" + i + ".target", 10),
                     Progress = ReadLong(Key + "m" + i + ".progress", 0),
-                    Claimed = PlayerPrefs.GetInt(Key + "m" + i + ".claimed", 0) == 1,
+                    Claimed = SaveStore.GetInt(Key + "m" + i + ".claimed", 0) == 1,
                 };
             }
             return;
@@ -178,7 +178,7 @@ public static class DailyMissions
 
         // A new day: three new missions, the same for the whole day.
         var rng = new System.Random(today.GetHashCode() ^ 0x5eed);
-        PlayerPrefs.SetString(Key + "day", today);
+        SaveStore.SetString(Key + "day", today);
         bool[] used = new bool[Enum.GetValues(typeof(MissionKind)).Length];
         for (int i = 0; i < Count; i++)
         {
@@ -189,12 +189,12 @@ public static class DailyMissions
             used[(int)kind] = true;
             var m = new DailyMission { Slot = i, Kind = kind, Target = TargetFor(s, kind, i), Progress = 0, Claimed = false };
             missions[i] = m;
-            PlayerPrefs.SetInt(Key + "m" + i + ".kind", (int)kind);
-            PlayerPrefs.SetString(Key + "m" + i + ".target", m.Target.ToString());
-            PlayerPrefs.SetString(Key + "m" + i + ".progress", "0");
-            PlayerPrefs.SetInt(Key + "m" + i + ".claimed", 0);
+            SaveStore.SetInt(Key + "m" + i + ".kind", (int)kind);
+            SaveStore.SetString(Key + "m" + i + ".target", m.Target.ToString());
+            SaveStore.SetString(Key + "m" + i + ".progress", "0");
+            SaveStore.SetInt(Key + "m" + i + ".claimed", 0);
         }
-        PlayerPrefs.Save();
+        SaveStore.Save();
     }
 
     /// <summary>Targets grow with the farm so missions stay a few minutes of play.</summary>
@@ -221,21 +221,21 @@ public static class DailyMissions
 
     // ---------- Daily streak ----------
 
-    public static int Streak => Math.Max(1, PlayerPrefs.GetInt(Key + "streak", 1));
+    public static int Streak => Math.Max(1, SaveStore.GetInt(Key + "streak", 1));
     /// <summary>0..6: which of the 7 reward days is today's.</summary>
     public static int StreakDay => (Streak - 1) % 7;
-    public static bool StreakReady => PlayerPrefs.GetString(Key + "streakClaimed", "") != Today;
+    public static bool StreakReady => SaveStore.GetString(Key + "streakClaimed", "") != Today;
 
     /// <summary>Call when the game opens (and when it comes back): advances or resets the streak.</summary>
     public static void RegisterLogin()
     {
         string today = Today;
-        string last = PlayerPrefs.GetString(Key + "lastLogin", "");
+        string last = SaveStore.GetString(Key + "lastLogin", "");
         if (last == today) return;
-        int streak = last == Yesterday ? PlayerPrefs.GetInt(Key + "streak", 0) + 1 : 1;
-        PlayerPrefs.SetInt(Key + "streak", streak);
-        PlayerPrefs.SetString(Key + "lastLogin", today);
-        PlayerPrefs.Save();
+        int streak = last == Yesterday ? SaveStore.GetInt(Key + "streak", 0) + 1 : 1;
+        SaveStore.SetInt(Key + "streak", streak);
+        SaveStore.SetString(Key + "lastLogin", today);
+        SaveStore.Save();
         Changed?.Invoke();
     }
 
@@ -246,10 +246,10 @@ public static class DailyMissions
     {
         if (!StreakReady) return false;
         int day = StreakDay;
-        PlayerPrefs.SetString(Key + "streakClaimed", Today);
+        SaveStore.SetString(Key + "streakClaimed", Today);
         s.AddGems(StreakGems[day]);
         s.BuyGold(0, StreakCoins(s, day));
-        PlayerPrefs.Save();
+        SaveStore.Save();
         Changed?.Invoke();
         return true;
     }
@@ -265,5 +265,5 @@ public static class DailyMissions
     }
 
     static long ReadLong(string key, long fallback) =>
-        long.TryParse(PlayerPrefs.GetString(key, fallback.ToString()), out long v) ? v : fallback;
+        long.TryParse(SaveStore.GetString(key, fallback.ToString()), out long v) ? v : fallback;
 }

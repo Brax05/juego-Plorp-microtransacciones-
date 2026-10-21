@@ -20,13 +20,13 @@ public readonly struct Recharge
 
     public int Max => max;
     static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-    long Since => long.TryParse(PlayerPrefs.GetString(sinceKey, Now.ToString()), out long v) ? v : Now;
+    long Since => long.TryParse(SaveStore.GetString(sinceKey, Now.ToString()), out long v) ? v : Now;
 
     public int Count
     {
         get
         {
-            int stored = PlayerPrefs.GetInt(countKey, max);
+            int stored = SaveStore.GetInt(countKey, max);
             if (stored >= max) return max;
             return Mathf.Min(max, stored + (int)((Now - Since) / seconds));
         }
@@ -40,9 +40,9 @@ public readonly struct Recharge
         int n = Count;
         if (n <= 0) return false;
         long keep = n >= max ? 0 : (Now - Since) % seconds;
-        PlayerPrefs.SetInt(countKey, n - 1);
-        PlayerPrefs.SetString(sinceKey, (Now - keep).ToString());
-        PlayerPrefs.Save();
+        SaveStore.SetInt(countKey, n - 1);
+        SaveStore.SetString(sinceKey, (Now - keep).ToString());
+        SaveStore.Save();
         return true;
     }
 }

@@ -7,6 +7,7 @@
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0022;CS0649;CS0618;CA2022;CA2200</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Core/SaveStore.cs" Link="Production/SaveStore.cs" />
     <Compile Include="../../Assets/Scripts/Shop/ShopCatalog.cs" Link="Production/ShopCatalog.cs" />
     <Compile Include="../../Assets/Scripts/Shop/PurchaseDeliveryJournal.cs" Link="Production/PurchaseDeliveryJournal.cs" />
     <Compile Include="../../Assets/Scripts/Shop/GooglePlayReceiptValidation.cs" Link="Production/GooglePlayReceiptValidation.cs" />

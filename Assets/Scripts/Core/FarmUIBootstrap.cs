@@ -50,6 +50,23 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     void Awake() => Compose(false);
 
     /// <summary>
+    /// Reloads the farm scene and builds the whole UI again from the save (star trip, a save brought back
+    /// from Google Play Juegos).
+    /// </summary>
+    public static void ReloadFarm()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += RebuildAfterReload;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+    }
+
+    static void RebuildAfterReload(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= RebuildAfterReload;
+        SaveStore.Frozen = false;
+        if (FindAnyObjectByType<FarmUIBootstrap>() == null) new GameObject("PlorpFarm UI").GetOrAdd<FarmUIBootstrap>();
+    }
+
+    /// <summary>
     /// Editor only (Plorp ▸ Hornear UI en el canvas): builds the whole UI on the canvas without playing, so
     /// it can be saved into PixelFarmCanvas and edited in Unity. Nothing that needs Play mode runs here
     /// (title screen flow, store purchases, timers, EventSystem).
@@ -143,6 +160,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         PurchaseService.Initialize(state, ShowMessage);
         state.Garden.Alert += text => { if (currentTab == 0 && farmPepito != null) farmPepito.Say(text, 7f); };
         Kitchen.DishReady += OnDishReady;
+        RefundSync.Revoked += OnGemsRevoked;
         if (ambience != null) ambience.BadgeTapped = () => farmPepito.Say(FarmClock.BadgeLine(), 8f);
         Navigate(0);
 
@@ -150,21 +168,24 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         double awayAtStart = OfflinePanel.SecondsAway();
         DailyMissions.RegisterLogin();
 
-        // Title → loading → farm tour (first time) → "Mientras no estabas" → daily streak → Pepito.
+        // Title → loading → save notice (first time) → farm tour (first time) → "Mientras no estabas" →
+        // daily streak → Pepito.
         StartScreens.Create(content, state, () =>
         {
             guideReady = true;
             bool firstTime = !PepitoGuide.Seen(0);
-            guide.ShowIfNew(0, () =>
-                OfflinePanel.ShowIfAway(content, state, awayAtStart, ShowMessage, () =>
-                {
-                    OfflinePanel.MarkSeen();
-                    StreakPanel.ShowIfReady(content, state, ShowMessage, () =>
+            SaveNotice.ShowIfNew(content, () =>
+                guide.ShowIfNew(0, () =>
+                    OfflinePanel.ShowIfAway(content, state, awayAtStart, ShowMessage, () =>
                     {
-                        pepito.Begin(!firstTime);
-                        StarTrip.AfterTrip(pepito);
-                    });
-                }));
+                        OfflinePanel.MarkSeen();
+                        StreakPanel.ShowIfReady(content, state, ShowMessage, () =>
+                        {
+                            pepito.Begin(!firstTime);
+                            StarTrip.AfterTrip(pepito);
+                            CloudSave.AnnounceTo(pepito);
+                        });
+                    })));
         });
 
         if (FindAnyObjectByType<EventSystem>() == null)
@@ -174,7 +195,19 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         }
     }
 
-    void OnDestroy() => Kitchen.DishReady -= OnDishReady;
+    void OnDestroy()
+    {
+        Kitchen.DishReady -= OnDishReady;
+        RefundSync.Revoked -= OnGemsRevoked;
+    }
+
+    void OnGemsRevoked(int gems)
+    {
+        ShowMessage("-" + gems + " gemas por una compra reembolsada");
+        if (farmPepito != null)
+            farmPepito.Say("Miau... Google nos avisó que una compra se reembolsó, así que Plorp tuvo que devolver " + gems +
+                           " gemas. Reglas de la nave.", 9f);
+    }
 
     void OnDishReady(Recipe recipe)
     {
@@ -188,6 +221,8 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         var settings = FindChildRecursive(root, "Page - Ajustes");
         if (settings == null) return;
+        // PARTIDA GUARDADA card: cloud save status, CONECTAR and VER AVISO.
+        SaveNotice.BindSettings(settings, root, ShowMessage);
         new PixelUIFactory().ActionButton(settings, "Guide button", "VER GUÍA DE PEPITO", 110, 656, 350, 60, () =>
         {
             PepitoGuide.ResetAll();
@@ -287,9 +322,9 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         wasNight = night;
         if (!canTalk) return;
         string today = System.DateTime.Now.ToString("yyyy-MM-dd");
-        if (PlayerPrefs.GetString(SeasonAnnouncedKey, "") != today)
+        if (SaveStore.GetString(SeasonAnnouncedKey, "") != today)
         {
-            PlayerPrefs.SetString(SeasonAnnouncedKey, today);
+            SaveStore.SetString(SeasonAnnouncedKey, today);
             farmPepito.Say(FarmClock.SeasonLine(FarmClock.CurrentSeason), 8f);
         }
         else if (nightFell)
@@ -304,7 +339,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         {
             gameState?.Garden?.Save();
             if (guideReady && !OfflinePanel.Active) OfflinePanel.MarkSeen();
-            PlayerPrefs.Save();
+            SaveStore.Save();
             return;
         }
         // Back from the background (phone): show what the farm made meanwhile.
@@ -324,7 +359,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
     {
         gameState?.Garden?.Save();
         if (guideReady && !OfflinePanel.Active) OfflinePanel.MarkSeen();
-        PlayerPrefs.Save();
+        SaveStore.Save();
     }
 
     // ---------- Navigation and messages ----------

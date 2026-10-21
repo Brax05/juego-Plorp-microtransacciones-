@@ -62,22 +62,22 @@ public static class Kitchen
         loaded = true;
         for (int i = 0; i < MaxSlots; i++)
         {
-            slotDish[i] = PlayerPrefs.GetString(Key + "slot" + i, "");
-            long.TryParse(PlayerPrefs.GetString(Key + "slot" + i + ".end", "0"), out slotEnd[i]);
+            slotDish[i] = SaveStore.GetString(Key + "slot" + i, "");
+            long.TryParse(SaveStore.GetString(Key + "slot" + i + ".end", "0"), out slotEnd[i]);
             announced[i] = SlotReady(i); // dishes finished while away are not announced again
         }
     }
 
     static void SaveSlot(int i)
     {
-        PlayerPrefs.SetString(Key + "slot" + i, slotDish[i] ?? "");
-        PlayerPrefs.SetString(Key + "slot" + i + ".end", slotEnd[i].ToString());
-        PlayerPrefs.Save();
+        SaveStore.SetString(Key + "slot" + i, slotDish[i] ?? "");
+        SaveStore.SetString(Key + "slot" + i + ".end", slotEnd[i].ToString());
+        SaveStore.Save();
     }
 
     // ---------- Pots ----------
 
-    public static int Slots => Mathf.Clamp(PlayerPrefs.GetInt(Key + "slots", BaseSlots), BaseSlots, MaxSlots);
+    public static int Slots => Mathf.Clamp(SaveStore.GetInt(Key + "slots", BaseSlots), BaseSlots, MaxSlots);
 
     public static Recipe SlotRecipe(int slot)
     {
@@ -137,8 +137,8 @@ public static class Kitchen
     public static bool BuySlot(FarmGameState s)
     {
         if (Slots >= MaxSlots || !s.Spend(0, ExtraSlotGems)) return false;
-        PlayerPrefs.SetInt(Key + "slots", Slots + 1);
-        PlayerPrefs.Save();
+        SaveStore.SetInt(Key + "slots", Slots + 1);
+        SaveStore.Save();
         Changed?.Invoke();
         return true;
     }

@@ -48,7 +48,7 @@ public sealed class FarmGameState
             {
                 currentGoal = PlorpGoals.Generate(PlorpStage, FarmItems.Unlocked(this), tasted,
                     Kitchen.AvailableDishes(this));
-                PlayerPrefs.SetString("GlorpFarm.plorpOrder", currentGoal.Serialize());
+                SaveStore.SetString("GlorpFarm.plorpOrder", currentGoal.Serialize());
             }
             return currentGoal;
         }
@@ -73,32 +73,32 @@ public sealed class FarmGameState
         EnsureProgressionVersion();
         PurchaseDeliveryJournal.Recover();
         Gold = ReadLong("gold", 250);
-        Gems = PlayerPrefs.GetInt("GlorpFarm.gems", 0);
-        FarmLevel = PlayerPrefs.GetInt("GlorpFarm.farmLevel", 1);
-        Harvests = PlayerPrefs.GetInt("GlorpFarm.harvests", 0);
-        Purchases = PlayerPrefs.GetInt("GlorpFarm.purchases", 0);
+        Gems = SaveStore.GetInt("GlorpFarm.gems", 0);
+        FarmLevel = SaveStore.GetInt("GlorpFarm.farmLevel", 1);
+        Harvests = SaveStore.GetInt("GlorpFarm.harvests", 0);
+        Purchases = SaveStore.GetInt("GlorpFarm.purchases", 0);
         TotalHarvestGold = ReadLong("harvestGold", 0);
         TotalFood = ReadLong("totalFood", 0);
-        PlorpStage = PlayerPrefs.GetInt("GlorpFarm.plorpStage", 0);
+        PlorpStage = SaveStore.GetInt("GlorpFarm.plorpStage", 0);
         foreach (var item in FarmItems.All)
         {
             long n = ReadLong("item." + item.Id, 0);
             if (n > 0) barn[item.Id] = n;
         }
-        foreach (string id in PlayerPrefs.GetString("GlorpFarm.tasted", "").Split(','))
+        foreach (string id in SaveStore.GetString("GlorpFarm.tasted", "").Split(','))
             if (id.Length > 0) tasted.Add(id);
-        currentGoal = PlorpGoal.Parse(PlorpStage, PlayerPrefs.GetString("GlorpFarm.plorpOrder", ""));
-        PepitoMeals = PlayerPrefs.GetInt("GlorpFarm.pepitoMeals", 0);
-        MusicEnabled = PlayerPrefs.GetInt("GlorpFarm.music", 1) == 1;
-        SoundEnabled = PlayerPrefs.GetInt("GlorpFarm.sound", 1) == 1;
+        currentGoal = PlorpGoal.Parse(PlorpStage, SaveStore.GetString("GlorpFarm.plorpOrder", ""));
+        PepitoMeals = SaveStore.GetInt("GlorpFarm.pepitoMeals", 0);
+        MusicEnabled = SaveStore.GetInt("GlorpFarm.music", 1) == 1;
+        SoundEnabled = SaveStore.GetInt("GlorpFarm.sound", 1) == 1;
         for (int i = 0; i < Levels.Length; i++)
         {
-            Levels[i] = PlayerPrefs.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
+            Levels[i] = SaveStore.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
             Prices[i] = FarmEconomy.Cost(i, Levels[i]);
         }
         for (int i = 0; i < Claimed.Length; i++)
-            Claimed[i] = PlayerPrefs.GetInt("GlorpFarm.claimed." + i, 0) == 1;
-        GoldenHarvests = PlayerPrefs.GetInt("GlorpFarm.golden", 0);
+            Claimed[i] = SaveStore.GetInt("GlorpFarm.claimed." + i, 0) == 1;
+        GoldenHarvests = SaveStore.GetInt("GlorpFarm.golden", 0);
         Boosts = new BoostState();
         FarmEconomy.Current = this;
         Garden = new GardenState(this);
@@ -215,14 +215,14 @@ public sealed class FarmGameState
     /// <summary>Time boosts bought in the store.</summary>
     public BoostState Boosts { get; private set; }
     public int GoldenHarvests { get; private set; }
-    public bool StarterPackBought => PlayerPrefs.GetInt("GlorpFarm.iap.starter", 0) == 1;
+    public bool StarterPackBought => SaveStore.GetInt("GlorpFarm.iap.starter", 0) == 1;
 
     public void RegisterGolden(int count)
     {
         if (count <= 0) return;
         GoldenHarvests += count;
         DailyMissions.Report(MissionKind.Golden, count);
-        PlayerPrefs.SetInt("GlorpFarm.golden", GoldenHarvests);
+        SaveStore.SetInt("GlorpFarm.golden", GoldenHarvests);
     }
 
     // ---------- Store ----------
@@ -272,12 +272,25 @@ public sealed class FarmGameState
         finally
         {
             // Keep runtime balances aligned even with staged preferences after a storage error.
-            Gems = PlayerPrefs.GetInt("GlorpFarm.gems", Gems);
+            Gems = SaveStore.GetInt("GlorpFarm.gems", Gems);
             Garden.ReloadPurchaseBalance();
             Boosts.ReloadIncome();
         }
         Changed?.Invoke();
+        // Remember on the refund server who owns this purchase (does nothing without PLORP_REFUNDS).
+        if (granted) RefundSync.Register(pack.ProductId, purchaseToken);
         return granted;
+    }
+
+    /// <summary>
+    /// A purchase was refunded: its gems are taken back. The balance may go below zero; gem prices then
+    /// stay out of reach until it is positive again.
+    /// </summary>
+    public void RevokeGems(int gems)
+    {
+        if (gems <= 0) return;
+        Gems -= gems;
+        Save();
     }
 
     /// <summary>Pays coins and/or gems for something (gardening tools, seeds).</summary>
@@ -343,60 +356,60 @@ public sealed class FarmGameState
 
     void Save()
     {
-        PlayerPrefs.SetString("GlorpFarm.gold", Gold.ToString());
-        PlayerPrefs.SetInt("GlorpFarm.gems", Gems);
-        PlayerPrefs.SetInt("GlorpFarm.farmLevel", FarmLevel);
-        PlayerPrefs.SetInt("GlorpFarm.harvests", Harvests);
-        PlayerPrefs.SetInt("GlorpFarm.purchases", Purchases);
-        PlayerPrefs.SetString("GlorpFarm.harvestGold", TotalHarvestGold.ToString());
-        PlayerPrefs.SetString("GlorpFarm.totalFood", TotalFood.ToString());
-        foreach (var pair in barn) PlayerPrefs.SetString("GlorpFarm.item." + pair.Key, pair.Value.ToString());
-        PlayerPrefs.SetString("GlorpFarm.tasted", string.Join(",", tasted));
-        PlayerPrefs.SetString("GlorpFarm.plorpOrder", CurrentGoal.Serialize());
-        PlayerPrefs.SetInt("GlorpFarm.plorpStage", PlorpStage);
-        PlayerPrefs.SetInt("GlorpFarm.pepitoMeals", PepitoMeals);
-        PlayerPrefs.SetInt("GlorpFarm.music", MusicEnabled ? 1 : 0);
-        PlayerPrefs.SetInt("GlorpFarm.sound", SoundEnabled ? 1 : 0);
+        SaveStore.SetString("GlorpFarm.gold", Gold.ToString());
+        SaveStore.SetInt("GlorpFarm.gems", Gems);
+        SaveStore.SetInt("GlorpFarm.farmLevel", FarmLevel);
+        SaveStore.SetInt("GlorpFarm.harvests", Harvests);
+        SaveStore.SetInt("GlorpFarm.purchases", Purchases);
+        SaveStore.SetString("GlorpFarm.harvestGold", TotalHarvestGold.ToString());
+        SaveStore.SetString("GlorpFarm.totalFood", TotalFood.ToString());
+        foreach (var pair in barn) SaveStore.SetString("GlorpFarm.item." + pair.Key, pair.Value.ToString());
+        SaveStore.SetString("GlorpFarm.tasted", string.Join(",", tasted));
+        SaveStore.SetString("GlorpFarm.plorpOrder", CurrentGoal.Serialize());
+        SaveStore.SetInt("GlorpFarm.plorpStage", PlorpStage);
+        SaveStore.SetInt("GlorpFarm.pepitoMeals", PepitoMeals);
+        SaveStore.SetInt("GlorpFarm.music", MusicEnabled ? 1 : 0);
+        SaveStore.SetInt("GlorpFarm.sound", SoundEnabled ? 1 : 0);
         for (int i = 0; i < Levels.Length; i++)
         {
-            PlayerPrefs.SetInt("GlorpFarm.level." + i, Levels[i]);
+            SaveStore.SetInt("GlorpFarm.level." + i, Levels[i]);
         }
         for (int i = 0; i < Claimed.Length; i++)
-            PlayerPrefs.SetInt("GlorpFarm.claimed." + i, Claimed[i] ? 1 : 0);
-        PlayerPrefs.Save();
+            SaveStore.SetInt("GlorpFarm.claimed." + i, Claimed[i] ? 1 : 0);
+        SaveStore.Save();
         Changed?.Invoke();
     }
 
     static long ReadLong(string key, long fallback)
     {
-        return long.TryParse(PlayerPrefs.GetString("GlorpFarm." + key, fallback.ToString()), out long result)
+        return long.TryParse(SaveStore.GetString("GlorpFarm." + key, fallback.ToString()), out long result)
             ? result : fallback;
     }
 
     static void EnsureProgressionVersion()
     {
-        if (PlayerPrefs.GetInt(ProgressionVersionKey, 0) >= ProgressionVersion) return;
+        if (SaveStore.GetInt(ProgressionVersionKey, 0) >= ProgressionVersion) return;
 
-        PlayerPrefs.SetString("GlorpFarm.gold", "250");
-        PlayerPrefs.SetInt("GlorpFarm.gems", 0);
-        PlayerPrefs.SetInt("GlorpFarm.farmLevel", 1);
-        PlayerPrefs.SetInt("GlorpFarm.harvests", 0);
-        PlayerPrefs.SetInt("GlorpFarm.purchases", 0);
-        PlayerPrefs.SetString("GlorpFarm.harvestGold", "0");
+        SaveStore.SetString("GlorpFarm.gold", "250");
+        SaveStore.SetInt("GlorpFarm.gems", 0);
+        SaveStore.SetInt("GlorpFarm.farmLevel", 1);
+        SaveStore.SetInt("GlorpFarm.harvests", 0);
+        SaveStore.SetInt("GlorpFarm.purchases", 0);
+        SaveStore.SetString("GlorpFarm.harvestGold", "0");
         for (int i = 0; i < StartingLevels.Length; i++)
         {
-            PlayerPrefs.SetInt("GlorpFarm.level." + i, StartingLevels[i]);
-            PlayerPrefs.DeleteKey("GlorpFarm.price." + i);
+            SaveStore.SetInt("GlorpFarm.level." + i, StartingLevels[i]);
+            SaveStore.DeleteKey("GlorpFarm.price." + i);
         }
-        for (int i = 0; i < AchievementNames.Length; i++) PlayerPrefs.SetInt("GlorpFarm.claimed." + i, 0);
+        for (int i = 0; i < AchievementNames.Length; i++) SaveStore.SetInt("GlorpFarm.claimed." + i, 0);
 
-        PlayerPrefs.DeleteKey("GlorpFarm.animalRosterBaselineLevel");
-        PlayerPrefs.DeleteKey("GlorpFarm.animalTestPriceApplied");
+        SaveStore.DeleteKey("GlorpFarm.animalRosterBaselineLevel");
+        SaveStore.DeleteKey("GlorpFarm.animalTestPriceApplied");
         foreach (string key in new[] { "plorpStage", "plorpOrder", "tasted", "totalFood", "pepitoMeals" })
-            PlayerPrefs.DeleteKey("GlorpFarm." + key);
-        foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
-        PlayerPrefs.SetInt(ProgressionVersionKey, ProgressionVersion);
-        PlayerPrefs.Save();
+            SaveStore.DeleteKey("GlorpFarm." + key);
+        foreach (var item in FarmItems.All) SaveStore.DeleteKey("GlorpFarm.item." + item.Id);
+        SaveStore.SetInt(ProgressionVersionKey, ProgressionVersion);
+        SaveStore.Save();
     }
 
     /// <summary>Clears only gameplay progress, leaving audio preferences intact.</summary>
@@ -408,43 +421,43 @@ public sealed class FarmGameState
             "food", "totalFood", "plorpStage", "pepitoMeals", "tasted", "plorpOrder",
             "progressionVersion", "animalRosterBaselineLevel", "animalTestPriceApplied"
         };
-        foreach (string key in coreKeys) PlayerPrefs.DeleteKey("GlorpFarm." + key);
+        foreach (string key in coreKeys) SaveStore.DeleteKey("GlorpFarm." + key);
 
         for (int i = 0; i < 3; i++)
         {
-            PlayerPrefs.DeleteKey("GlorpFarm.level." + i);
-            PlayerPrefs.DeleteKey("GlorpFarm.price." + i);
+            SaveStore.DeleteKey("GlorpFarm.level." + i);
+            SaveStore.DeleteKey("GlorpFarm.price." + i);
         }
         // Remove the obsolete machinery upgrade from older editor saves.
-        PlayerPrefs.DeleteKey("GlorpFarm.level.3");
-        PlayerPrefs.DeleteKey("GlorpFarm.price.3");
-        for (int i = 0; i < AchievementNames.Length; i++) PlayerPrefs.DeleteKey("GlorpFarm.claimed." + i);
+        SaveStore.DeleteKey("GlorpFarm.level.3");
+        SaveStore.DeleteKey("GlorpFarm.price.3");
+        for (int i = 0; i < AchievementNames.Length; i++) SaveStore.DeleteKey("GlorpFarm.claimed." + i);
 
-        foreach (var item in FarmItems.All) PlayerPrefs.DeleteKey("GlorpFarm.item." + item.Id);
+        foreach (var item in FarmItems.All) SaveStore.DeleteKey("GlorpFarm.item." + item.Id);
         GardenState.ResetSaved();
         BoostState.ResetSaved();
-        PlayerPrefs.DeleteKey("GlorpFarm.golden");
-        foreach (var a in AchievementCatalog.All) PlayerPrefs.DeleteKey("GlorpFarm.ach." + a.Id);
+        SaveStore.DeleteKey("GlorpFarm.golden");
+        foreach (var a in AchievementCatalog.All) SaveStore.DeleteKey("GlorpFarm.ach." + a.Id);
 
         for (int plot = 0; plot < FarmArtLayout.Fields.Length; plot++)
         {
             for (int cell = 0; cell < FarmArtLayout.CellsPerPlot; cell++)
             {
                 string cropKey = "GlorpFarm.world.crop." + plot + "." + cell;
-                PlayerPrefs.DeleteKey(cropKey + ".stage");
-                PlayerPrefs.DeleteKey(cropKey + ".since");
+                SaveStore.DeleteKey(cropKey + ".stage");
+                SaveStore.DeleteKey(cropKey + ".since");
             }
         }
 
         for (int i = 1; i <= 6; i++)
         {
-            PlayerPrefs.DeleteKey("GlorpFarm.world.actor.chicken-" + i + ".readyAt");
-            PlayerPrefs.DeleteKey("GlorpFarm.world.actor.sheep-" + i + ".readyAt");
-            PlayerPrefs.DeleteKey("GlorpFarm.world.actor.cow-" + i + ".readyAt");
+            SaveStore.DeleteKey("GlorpFarm.world.actor.chicken-" + i + ".readyAt");
+            SaveStore.DeleteKey("GlorpFarm.world.actor.sheep-" + i + ".readyAt");
+            SaveStore.DeleteKey("GlorpFarm.world.actor.cow-" + i + ".readyAt");
         }
         for (int i = 1; i <= 4; i++)
-            PlayerPrefs.DeleteKey("GlorpFarm.world.actor.worker-" + i + ".readyAt");
-        PlayerPrefs.Save();
+            SaveStore.DeleteKey("GlorpFarm.world.actor.worker-" + i + ".readyAt");
+        SaveStore.Save();
     }
 
     public static string Format(long value)

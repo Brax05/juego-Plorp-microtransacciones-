@@ -98,7 +98,7 @@ public sealed class BoostState
     public BoostState()
     {
         for (int i = 0; i < until.Length; i++)
-            double.TryParse(PlayerPrefs.GetString(Key + i, "0"), System.Globalization.NumberStyles.Float,
+            double.TryParse(SaveStore.GetString(Key + i, "0"), System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out until[i]);
     }
 
@@ -108,7 +108,7 @@ public sealed class BoostState
 
     internal void ReloadIncome()
     {
-        if (double.TryParse(PlayerPrefs.GetString(Key + (int)BoostKind.Income, "0"),
+        if (double.TryParse(SaveStore.GetString(Key + (int)BoostKind.Income, "0"),
                 System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double saved))
             until[(int)BoostKind.Income] = saved;
     }
@@ -118,8 +118,8 @@ public sealed class BoostState
     {
         int i = (int)kind;
         until[i] = Math.Max(Now, until[i]) + minutes * 60;
-        PlayerPrefs.SetString(Key + i, until[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
-        PlayerPrefs.Save();
+        SaveStore.SetString(Key + i, until[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
+        SaveStore.Save();
     }
 
     public float IncomeMultiplier => Active(BoostKind.Income) ? 2f : 1f;
@@ -148,6 +148,6 @@ public sealed class BoostState
 
     public static void ResetSaved()
     {
-        for (int i = 0; i < 3; i++) PlayerPrefs.DeleteKey(Key + i);
+        for (int i = 0; i < 3; i++) SaveStore.DeleteKey(Key + i);
     }
 }

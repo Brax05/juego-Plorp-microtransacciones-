@@ -23,9 +23,9 @@ public sealed class CropCell : MonoBehaviour
         kind = initialKind;
         tapped = onTapped;
         saveKey = "GlorpFarm.world.crop." + plotId + "." + cellId;
-        stage = Mathf.Clamp(PlayerPrefs.GetInt(saveKey + ".stage", 2), 0, 2);
+        stage = Mathf.Clamp(SaveStore.GetInt(saveKey + ".stage", 2), 0, 2);
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (!long.TryParse(PlayerPrefs.GetString(saveKey + ".since", now.ToString()), out stageStarted))
+        if (!long.TryParse(SaveStore.GetString(saveKey + ".since", now.ToString()), out stageStarted))
             stageStarted = now;
         sprite = gameObject.GetOrAdd<WorldSprite>();
         // Never keep the texture baked in the prefab (a field saved with ripe tomatoes looked
@@ -78,8 +78,8 @@ public sealed class CropCell : MonoBehaviour
 
     void Save()
     {
-        PlayerPrefs.SetInt(saveKey + ".stage", stage);
-        PlayerPrefs.SetString(saveKey + ".since", stageStarted.ToString());
+        SaveStore.SetInt(saveKey + ".stage", stage);
+        SaveStore.SetString(saveKey + ".since", stageStarted.ToString());
     }
 
     void Refresh()

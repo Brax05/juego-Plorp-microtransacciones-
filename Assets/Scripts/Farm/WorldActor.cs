@@ -30,7 +30,7 @@ public sealed class WorldActor : MonoBehaviour
         displayName = title;
         role = actorRole;
         species = FarmEconomy.SpeciesOf(actorId);
-        long.TryParse(PlayerPrefs.GetString(SaveKey, "0"), out nextReady);
+        long.TryParse(SaveStore.GetString(SaveKey, "0"), out nextReady);
         sprite = gameObject.GetOrAdd<WorldSprite>();
         sprite.Initialize(texture, OnTapped, true);
         (gameObject.GetOrAdd<WorldActorAnimator>())
@@ -84,7 +84,7 @@ public sealed class WorldActor : MonoBehaviour
     void SetCooldown()
     {
         nextReady = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + FarmEconomy.AnimalCooldown(species);
-        PlayerPrefs.SetString(SaveKey, nextReady.ToString());
+        SaveStore.SetString(SaveKey, nextReady.ToString());
         RefreshReady();
     }
 

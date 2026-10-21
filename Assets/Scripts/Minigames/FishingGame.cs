@@ -56,7 +56,7 @@ public sealed class FishingGame : MonoBehaviour
     static int SecondsToNextBait() => BaitStock.SecondsToNext;
     static bool UseBait() => BaitStock.Use();
 
-    public static int TotalCaught => PlayerPrefs.GetInt(Key + "total", 0);
+    public static int TotalCaught => SaveStore.GetInt(Key + "total", 0);
 
     // ---------- Window ----------
 
@@ -190,7 +190,7 @@ public sealed class FishingGame : MonoBehaviour
         long coins = FarmZones.ItemValue(state, "fish") * k.Items;
         state.Collect(coins, new Dictionary<string, int> { { "fish", k.Items } });
         if (k.Gems > 0) state.AddGems(k.Gems);
-        PlayerPrefs.SetInt(Key + "total", TotalCaught + k.Items);
+        SaveStore.SetInt(Key + "total", TotalCaught + k.Items);
         RewardFx.Collect(floatRect.position, FarmItems.Fish, k.Items, coins, kind == 2);
         resultIcon.gameObject.SetActive(true);
         var tex = Art.Tex(k.Sprite);

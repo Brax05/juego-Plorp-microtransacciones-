@@ -8,27 +8,67 @@ Juego idle de granja en Unity (6000.5, uGUI, vertical 570×1018). Plorp es un ex
 
 ## Índice
 
-1. [Cómo está armado el proyecto](#cómo-está-armado-el-proyecto)
-2. [La granja (núcleo idle)](#la-granja-núcleo-idle)
-3. [Plorp, sus pedidos y Pepito](#plorp-sus-pedidos-y-pepito)
-4. [Jardinería](#jardinería)
-5. [Tienda y gemas](#tienda-y-gemas)
-6. [Logros](#logros)
-7. [Guía de bienvenida de Pepito](#guía-de-bienvenida-de-pepito)
-8. [Módulo 1: Mientras no estabas](#módulo-1-mientras-no-estabas)
-9. [Módulo 2: Misiones diarias y racha](#módulo-2-misiones-diarias-y-racha)
-10. [Módulo 3: Eventos en la granja](#módulo-3-eventos-en-la-granja)
-11. [Casa de Plorp](#casa-de-plorp) y [Módulo 4: Cocina de Plorp](#módulo-4-cocina-de-plorp)
-12. [Módulo 5: Día y noche, y estaciones](#módulo-5-día-y-noche-y-estaciones)
-13. [Módulo 6: Zonas en las nubes y pesca](#módulo-6-zonas-en-las-nubes-y-pesca)
-14. [Módulos 7 y 8: Sala de juegos](#módulos-7-y-8-sala-de-juegos)
-15. [Módulo 9: Colmenas y huerto](#módulo-9-colmenas-y-huerto)
-16. [Módulo 10: Viaje estelar](#módulo-10-viaje-estelar)
-17. [Cómo se juntan todos los multiplicadores](#cómo-se-juntan-todos-los-multiplicadores)
-18. [Guardado y pruebas](#guardado-y-pruebas)
-19. [Mapa de archivos](#mapa-de-archivos)
+1. [Cómo abrir y probar el juego](#cómo-abrir-y-probar-el-juego)
+2. [Personajes](#personajes)
+3. [Pantallas y controles](#pantallas-y-controles)
+4. [Cómo está armado el proyecto](#cómo-está-armado-el-proyecto)
+5. [La granja (núcleo idle)](#la-granja-núcleo-idle)
+6. [Plorp, sus pedidos y Pepito](#plorp-sus-pedidos-y-pepito)
+7. [Jardinería](#jardinería)
+8. [Tienda y gemas](#tienda-y-gemas)
+9. [Logros](#logros)
+10. [Guía de bienvenida de Pepito](#guía-de-bienvenida-de-pepito)
+11. [Módulo 1: Mientras no estabas](#módulo-1-mientras-no-estabas)
+12. [Módulo 2: Misiones diarias y racha](#módulo-2-misiones-diarias-y-racha)
+13. [Módulo 3: Eventos en la granja](#módulo-3-eventos-en-la-granja)
+14. [Casa de Plorp](#casa-de-plorp) y [Módulo 4: Cocina de Plorp](#módulo-4-cocina-de-plorp)
+15. [Módulo 5: Día y noche, y estaciones](#módulo-5-día-y-noche-y-estaciones)
+16. [Módulo 6: Zonas en las nubes y pesca](#módulo-6-zonas-en-las-nubes-y-pesca)
+17. [Módulos 7 y 8: Sala de juegos](#módulos-7-y-8-sala-de-juegos)
+18. [Módulo 9: Colmenas y huerto](#módulo-9-colmenas-y-huerto)
+19. [Módulo 10: Viaje estelar](#módulo-10-viaje-estelar)
+20. [Sonido y música](#sonido-y-música)
+21. [Cómo se juntan todos los multiplicadores](#cómo-se-juntan-todos-los-multiplicadores)
+22. [Guardado y pruebas](#guardado-y-pruebas)
+23. [De dónde salen las gemas](#de-dónde-salen-las-gemas)
+24. [Ajustes](#ajustes)
+25. [Mapa de archivos](#mapa-de-archivos)
+26. [Estado y pendientes](#estado-y-pendientes)
 
 ---
+
+## Cómo abrir y probar el juego
+
+- **Requisitos:** Unity **6000.5.1f1** (URP), con el módulo **Android Build Support** para el celular. Paquetes principales: uGUI, Input System y Unity Purchasing (IAP).
+- **Abrir:** abre la carpeta del repositorio en Unity Hub y luego la escena `Assets/Scenes/Granja.unity`. Usa la vista **Game** en formato vertical (570×1018 o un celular en vertical).
+- **Jugar:** dale Play. Sale la portada, la pantalla de carga y luego la granja. La primera vez, Pepito explica la granja con su guía.
+- **Primera vez después de bajar el proyecto:** usa una vez el menú **Plorp ▸ Hornear UI en el canvas** (ver [Editar el layout en Unity](#editar-el-layout-en-unity)) para que toda la interfaz quede en el canvas y se pueda mover a mano.
+- **Celular:** File ▸ Build Profiles ▸ Android, con orientación vertical. Las compras reales solo funcionan con el define `PLORP_IAP` y los productos creados en Google Play (ver [Tienda y gemas](#tienda-y-gemas)).
+
+## Personajes
+
+| Personaje | Quién es | Qué hace en el juego |
+|---|---|---|
+| **Plorp** | Extraterrestre verde que vive en su nave (un platillo). Solo dice "plorp". | Hace los pedidos de comida (tarjeta "PLORP QUIERE"), pasa en su nave por la ventana de Jardinería soltando gemas, tiene su casa en el granero amarillo y su computador con minijuegos. |
+| **Pepito** | Gato callejero gris, el traductor de Plorp. | Da la guía de bienvenida de cada sección, aparece en la granja con consejos, avisa de eventos, platos listos, la noche y la estación nueva, y pide antojos para Plorp. |
+| **Gatos de la casa** | 4 gatos: gris, naranjo, negro y blanco. | Caminan dentro de la casa de Plorp; al tocarlos ronronean. |
+| **Visitas de la granja** | Cuervo, zorro y camión de feria. | Son los eventos del Módulo 3. |
+
+## Pantallas y controles
+
+**HUD (arriba, siempre visible en la granja):**
+- **Nivel de granja** con su barra de progreso (izquierda).
+- **Monedas** y **gemas** con su botón **+**, que abre la tienda en la pestaña correspondiente (derecha).
+- **Pedido de Plorp** ("PLORP QUIERE") debajo del nivel, con los 3 ingredientes y el botón ENTREGAR.
+- **Insignia de estación** (estación, cultivo de temporada, sol o luna) y, si hiciste un viaje estelar, las semillas estelares.
+
+**Abajo:** las tres filas de mejoras (Semillas, Animales, Trabajadores) y las pestañas **GRANJA, TIENDA, LOGROS, JARDINERÍA y AJUSTES**. La **Casa de Plorp** y la **Cocina** se abren desde el granero amarillo de la granja.
+
+**Controles (todo con un dedo):**
+- **Tocar** las palabras doradas (¡COSECHA!, ¡HUEVO!…) para recoger, los carteles de las zonas para abrirlas, y los botones.
+- **Arrastrar** sobre la granja para recorrer el mapa. El mapa puede bajar más allá del borde de arriba, para que lo que está al norte (las colmenas) quede visible debajo del HUD.
+- **Arrastrar** las herramientas de Jardinería (regadera, lámpara, tijeras, abono) sobre la planta.
+- **Mantener apretado** en Abducción; **arrastrar** la canasta en Atrapa huevos; **tocar a tiempo** en la pesca.
 
 ## Cómo está armado el proyecto
 
@@ -89,6 +129,7 @@ Todas las imágenes están en `Assets/Resources/Art/`, separadas por sección:
 
 - **Precios:** semillas `150 × 1,21^nivel`, animales `250 × 1,24^nivel`, trabajadores `1.200 × 1,32^nivel`. Si un precio sale en rojo te faltan monedas, y el botón te dice cuántas.
 - **Ritmo esperado:** una compra cada 30 a 60 segundos al principio, y cada 2 a 3 minutos pasada la primera hora.
+- **Nivel máximo de cada mejora:** Semillas 100, Animales 80 y Trabajadores 50. Al llegar, el precio dice MAX.
 - **Nivel de granja:** sube cada 3 compras y hace que zonas y premios valgan más.
 
 ## Plorp, sus pedidos y Pepito
@@ -163,6 +204,7 @@ Pestaña LOGROS ▸ sub-pestaña LOGROS. Son metas permanentes que dan gemas: co
 
 - La primera vez que entras a cada sección (Granja, Tienda, Logros, Jardinería, Ajustes, Casa de Plorp y Cocina), Pepito la explica paso a paso.
 - Oscurece la pantalla y marca cada cosa con un marco dorado y una flecha que salta. Tiene botones **SIGUIENTE** y **SALTAR**, y al tocar el globo se completa el texto.
+- Cada sección se marca como vista **apenas se abre su guía**: si cierras el juego a mitad de camino, no vuelve a empezar.
 - En Ajustes, **VER GUÍA DE PEPITO** la repite entera.
 
 ---
@@ -354,6 +396,30 @@ plato = 1,6 × suma de sus ingredientes
 - **Probar "Mientras no estabas":** cierra el juego más de 1 minuto y vuelve a abrir.
 - **Reiniciar todo:** Edit ▸ Clear All PlayerPrefs.
 
+## De dónde salen las gemas
+
+| Fuente | Cuántas |
+|---|---|
+| Pedidos de Plorp | según el pedido; más en los pedidos con platos |
+| Logros | cada logro cobrado |
+| Misiones diarias | 2, 3 o 5 por misión, y +5 del Cofre del día |
+| Racha diaria | de 2 a 15 (día 7) |
+| Plorp en la ventana de Jardinería | las que suelta su nave cada 2,5 a 5 min |
+| Zorro (evento) | 1 al espantarlo |
+| Pez dorado | +2 |
+| Abducción y Atrapa huevos | 1, 2 o 3 según los puntos |
+| Tienda (dinero real) | packs de 20 a 560 |
+
+**En qué se gastan:** boosts y saltos de tiempo de la tienda, monedas de flor, la 3ª olla de la cocina (50), el x2 de "Mientras no estabas" y algunos antojos de Pepito.
+
+## Ajustes
+
+- **MÚSICA:** prende o apaga la música (ACTIVADO / APAGADO).
+- **SONIDOS:** prende o apaga los efectos y los ambientes.
+- **VER GUÍA DE PEPITO:** vuelve a mostrar la guía de todas las secciones, empezando por la granja.
+
+Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
+
 ## Mapa de archivos
 
 | Carpeta | Qué hay |
@@ -371,3 +437,13 @@ plato = 1,6 × suma de sus ingredientes
 | `Scripts/Core/GameAudio.cs` | Música, ambientes y efectos |
 | `Editor/PlorpCanvasBaker.cs` | Menú **Plorp ▸ Hornear UI en el canvas** |
 | `AudioSource/` (fuera de Assets) | Scripts en Python que generan la música y los efectos |
+
+## Estado y pendientes
+
+- **Probar en Unity:** los últimos cambios no se pudieron compilar ni escuchar fuera de Unity. Revisa la consola al abrir el proyecto.
+- **Hornear el canvas** una vez con **Plorp ▸ Hornear UI en el canvas** para poder editar todo a mano.
+- **Sonidos provisionales:** la música y los efectos de `Assets/Resources/Audio/` son sintetizados. Para la versión final se pueden reemplazar por otros (por ejemplo, hechos con Suno, Udio o ElevenLabs) **manteniendo el nombre de cada archivo**.
+- **Antes de publicar:**
+  - Crear en Google Play Console los productos `plorp.gems.50`, `plorp.gems.100`, `plorp.gems.250`, `plorp.gems.500`, `plorp.gems.1000` y `plorp.starter`.
+  - Compilar con el define `PLORP_IAP`.
+  - Validar los recibos de compra en un servidor.

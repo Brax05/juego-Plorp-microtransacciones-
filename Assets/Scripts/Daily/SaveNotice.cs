@@ -42,6 +42,8 @@ public static class SaveNotice
         }
         Show(portrait, () =>
         {
+            // Closed because a save from the cloud is reloading the farm: the new farm starts over.
+            if (SaveStore.Frozen) return;
             SaveStore.SetInt(SeenKey, 1);
             SaveStore.Save();
             closed?.Invoke();

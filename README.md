@@ -424,12 +424,12 @@ plato = 1,6 × suma de sus ingredientes
 
 ## Ajustes
 
-- **MÚSICA:** prende o apaga la música (ACTIVADO / APAGADO).
-- **SONIDOS:** prende o apaga los efectos y los ambientes.
+- **MÚSICA:** prende o apaga la música (ACTIVADO / APAGADO) y ajusta su nivel de volumen con la barra interactiva o los botones `-` y `+`.
+- **SONIDOS:** prende o apaga los efectos y ambientes (ACTIVADO / APAGADO) y ajusta su nivel de volumen con la barra interactiva o los botones `-` y `+`.
 - **PARTIDA GUARDADA:** dónde se guarda la partida, el botón CONECTAR (Google Play Juegos) y VER AVISO.
 - **VER GUÍA DE PEPITO:** vuelve a mostrar la guía de todas las secciones, empezando por la granja.
 
-Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
+Las preferencias se guardan (incluso en la nube con Google Play Juegos) y se mantienen aunque hagas un viaje estelar.
 
 ## Mapa de archivos
 
@@ -456,10 +456,11 @@ Las preferencias se guardan y se mantienen aunque hagas un viaje estelar.
 
 ## Estado y pendientes
 
-- **Probar en Unity:** los últimos cambios no se pudieron compilar ni escuchar fuera de Unity. Revisa la consola al abrir el proyecto.
-- **Hornear el canvas** una vez con **Plorp ▸ Hornear UI en el canvas** para poder editar todo a mano.
+- **Probar en Unity:** el proyecto compila sin errores. Falta probar en el celular el volumen nuevo, el layout y el audio.
+- **Hornear el canvas** una vez con **Plorp ▸ Hornear UI en el canvas** para poder editar todo a mano, incluidas las barras de volumen de Ajustes.
 - **Sonidos provisionales:** la música y los efectos de `Assets/Resources/Audio/` son sintetizados. Para la versión final se pueden reemplazar por otros (por ejemplo, hechos con Suno, Udio o ElevenLabs) **manteniendo el nombre de cada archivo**.
 - **Antes de publicar:**
+  - Configurar un keystore local: `ProjectSettings` todavía apunta a `C:/Users/cmont/OneDrive/Desktop/plorp-upload.keystore`, una ruta de otra máquina.
   - Crear en Google Play Console los 6 productos de la tabla de la tienda.
   - Configurar Play Games y el servidor, y probar en el celular (ver [`Docs/GuardadoYReembolsos.md`](Docs/GuardadoYReembolsos.md)).
   - Revisar y publicar los [términos de uso](Docs/TerminosDeUso.md) y la [política de privacidad](Docs/PoliticaDePrivacidad.md).

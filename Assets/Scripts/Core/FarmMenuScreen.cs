@@ -59,27 +59,124 @@ public sealed class FarmMenuScreen
     {
         var page = pages[4];
         if (page == null) return;
-        Bind(page.Find("Musica"), () =>
+        var musicaCard = page.Find("Musica");
+        var sonidosCard = page.Find("Sonidos");
+
+        Bind(musicaCard, () =>
         {
             state.ToggleMusic();
             message("Música " + (state.MusicEnabled ? "activada" : "apagada"));
             RefreshSettings();
         });
-        Bind(page.Find("Sonidos"), () =>
+        Bind(sonidosCard, () =>
         {
             state.ToggleSound();
             message("Sonidos " + (state.SoundEnabled ? "activados" : "apagados"));
             RefreshSettings();
         });
+
+        BuildVolumeRow(musicaCard,
+            () => state.MusicVolume,
+            () => state.MusicEnabled,
+            v => state.SetMusicVolume(v, false),
+            delta => state.StepMusicVolume(delta));
+
+        BuildVolumeRow(sonidosCard,
+            () => state.SoundVolume,
+            () => state.SoundEnabled,
+            v => { state.SetSoundVolume(v, false); GameAudio.Play("sfx_ui_click", .7f, 0f, .06f); },
+            delta => { state.StepSoundVolume(delta); GameAudio.Play("sfx_ui_click", .7f, 0f, .06f); });
+    }
+
+    void BuildVolumeRow(Transform card, Func<float> getVolume, Func<bool> isEnabled,
+        Action<float> setVolume, Action<float> stepVolume)
+    {
+        if (card == null) return;
+        if (card.Find("Volume row") != null) return;
+
+        var ui = new PixelUIFactory();
+        var row = ui.Rect(card, "Volume row", 18, 100, 494, 34);
+
+        ui.Label(row, "Label", "VOLUMEN", 0, 4, 82, 24, 13, PixelUIFactory.Gold, TextAnchor.MiddleLeft);
+
+        ui.ActionButton(row, "Minus", "-", 86, 1, 36, 30, () =>
+        {
+            stepVolume(-0.1f);
+            RefreshSettings();
+        });
+        UiUtil.CaptionSize(row, "Minus", 20);
+
+        var track = ui.Panel(row, "Track", 128, 3, 230, 26, PixelUIFactory.Hex("#221316"), true);
+        var trackImg = track.GetComponent<Image>();
+        if (trackImg != null) trackImg.raycastTarget = true;
+
+        var groove = ui.Block(track, "Groove", 2, 2, 226, 22, PixelUIFactory.Hex("#140A0C"));
+        groove.raycastTarget = false;
+
+        float vol = isEnabled() ? getVolume() : 0f;
+        var fill = ui.Block(groove.transform, "Fill", 0, 0, 226f * Mathf.Clamp01(vol), 22,
+            isEnabled() ? PixelUIFactory.Green : PixelUIFactory.Disabled);
+        fill.raycastTarget = false;
+
+        var shine = ui.Block(fill.transform, "Shine", 0, 2, fill.rectTransform.sizeDelta.x, 3,
+            isEnabled() ? PixelUIFactory.Hex("#8FE86A") : PixelUIFactory.Hex("#8A7A70"));
+        shine.raycastTarget = false;
+
+        var slider = track.gameObject.GetOrAdd<PixelSlider>();
+        slider.ValueChanged = frac =>
+        {
+            setVolume(frac);
+            RefreshSettings();
+        };
+        slider.ValueCommitted = _ => state.CommitVolumes();
+
+        ui.ActionButton(row, "Plus", "+", 364, 1, 36, 30, () =>
+        {
+            stepVolume(0.1f);
+            RefreshSettings();
+        });
+        UiUtil.CaptionSize(row, "Plus", 20);
+
+        ui.Label(row, "Percent", (Mathf.RoundToInt((isEnabled() ? getVolume() : 0f) * 100f)) + "%",
+            406, 4, 62, 24, 14, Color.white, TextAnchor.MiddleCenter);
     }
 
     void RefreshSettings()
     {
         var page = pages[4];
         if (page == null) return;
-        SetCaption(page.Find("Musica"), state.MusicEnabled);
-        SetCaption(page.Find("Sonidos"), state.SoundEnabled);
+        var musicaCard = page.Find("Musica");
+        var sonidosCard = page.Find("Sonidos");
+
+        SetCaption(musicaCard, state.MusicEnabled);
+        SetCaption(sonidosCard, state.SoundEnabled);
+
+        RefreshVolumeRow(musicaCard, state.MusicEnabled, state.MusicVolume);
+        RefreshVolumeRow(sonidosCard, state.SoundEnabled, state.SoundVolume);
+
         SaveNotice.Refresh();
+    }
+
+    static void RefreshVolumeRow(Transform card, bool on, float volume)
+    {
+        if (card == null) return;
+        var row = card.Find("Volume row");
+        if (row == null) return;
+
+        var fill = row.Find("Track/Groove/Fill") as RectTransform;
+        var fillImg = fill != null ? fill.GetComponent<Image>() : null;
+        var shine = fill != null ? fill.Find("Shine") as RectTransform : null;
+        var shineImg = shine != null ? shine.GetComponent<Image>() : null;
+        var percent = row.Find("Percent")?.GetComponent<Text>();
+
+        float effective = on ? volume : 0f;
+        float w = Mathf.Clamp01(effective) * 226f;
+
+        if (fill != null) fill.sizeDelta = new Vector2(w, 22f);
+        if (shine != null) shine.sizeDelta = new Vector2(w, 3f);
+        if (fillImg != null) fillImg.color = on && volume > 0.001f ? PixelUIFactory.Green : PixelUIFactory.Disabled;
+        if (shineImg != null) shineImg.color = on && volume > 0.001f ? PixelUIFactory.Hex("#8FE86A") : PixelUIFactory.Hex("#8A7A70");
+        if (percent != null) percent.text = on ? (Mathf.RoundToInt(volume * 100f) + "%") : "APAGADO";
     }
 
     static void Bind(Transform card, UnityEngine.Events.UnityAction action)

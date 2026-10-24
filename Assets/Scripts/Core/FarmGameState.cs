@@ -66,6 +66,8 @@ public sealed class FarmGameState
     public float FarmLevelProgress => (Purchases % 3) / 3f;
     public bool MusicEnabled { get; private set; }
     public bool SoundEnabled { get; private set; }
+    public float MusicVolume { get; private set; }
+    public float SoundVolume { get; private set; }
     public event Action Changed;
 
     public FarmGameState()
@@ -91,6 +93,8 @@ public sealed class FarmGameState
         PepitoMeals = SaveStore.GetInt("GlorpFarm.pepitoMeals", 0);
         MusicEnabled = SaveStore.GetInt("GlorpFarm.music", 1) == 1;
         SoundEnabled = SaveStore.GetInt("GlorpFarm.sound", 1) == 1;
+        MusicVolume = SaveStore.GetFloat("GlorpFarm.musicVolume", 1f);
+        SoundVolume = SaveStore.GetFloat("GlorpFarm.soundVolume", 1f);
         for (int i = 0; i < Levels.Length; i++)
         {
             Levels[i] = SaveStore.GetInt("GlorpFarm.level." + i, StartingLevels[i]);
@@ -351,8 +355,56 @@ public sealed class FarmGameState
         return true;
     }
 
-    public void ToggleMusic() { MusicEnabled = !MusicEnabled; Save(); }
-    public void ToggleSound() { SoundEnabled = !SoundEnabled; Save(); }
+    public void ToggleMusic()
+    {
+        MusicEnabled = !MusicEnabled;
+        if (MusicEnabled && MusicVolume <= 0.05f) MusicVolume = 1f;
+        Save();
+        GameAudio.ApplyVolumeImmediate();
+    }
+
+    public void ToggleSound()
+    {
+        SoundEnabled = !SoundEnabled;
+        if (SoundEnabled && SoundVolume <= 0.05f) SoundVolume = 1f;
+        Save();
+        GameAudio.ApplyVolumeImmediate();
+    }
+
+    public void SetMusicVolume(float volume, bool persist = true)
+    {
+        MusicVolume = Mathf.Clamp01(volume);
+        if (MusicVolume > 0.01f && !MusicEnabled) MusicEnabled = true;
+        else if (MusicVolume <= 0.001f && MusicEnabled) MusicEnabled = false;
+        if (persist) Save();
+        GameAudio.ApplyVolumeImmediate();
+    }
+
+    public void SetSoundVolume(float volume, bool persist = true)
+    {
+        SoundVolume = Mathf.Clamp01(volume);
+        if (SoundVolume > 0.01f && !SoundEnabled) SoundEnabled = true;
+        else if (SoundVolume <= 0.001f && SoundEnabled) SoundEnabled = false;
+        if (persist) Save();
+        GameAudio.ApplyVolumeImmediate();
+    }
+
+    /// <summary>Saves the current volume after a drag, instead of writing PlayerPrefs on every frame.</summary>
+    public void CommitVolumes() => Save();
+
+    public void StepMusicVolume(float delta)
+    {
+        float current = MusicEnabled ? MusicVolume : 0f;
+        float next = Mathf.Clamp01(Mathf.Round((current + delta) * 10f) / 10f);
+        SetMusicVolume(next);
+    }
+
+    public void StepSoundVolume(float delta)
+    {
+        float current = SoundEnabled ? SoundVolume : 0f;
+        float next = Mathf.Clamp01(Mathf.Round((current + delta) * 10f) / 10f);
+        SetSoundVolume(next);
+    }
 
     void Save()
     {
@@ -370,6 +422,8 @@ public sealed class FarmGameState
         SaveStore.SetInt("GlorpFarm.pepitoMeals", PepitoMeals);
         SaveStore.SetInt("GlorpFarm.music", MusicEnabled ? 1 : 0);
         SaveStore.SetInt("GlorpFarm.sound", SoundEnabled ? 1 : 0);
+        SaveStore.SetFloat("GlorpFarm.musicVolume", MusicVolume);
+        SaveStore.SetFloat("GlorpFarm.soundVolume", SoundVolume);
         for (int i = 0; i < Levels.Length; i++)
         {
             SaveStore.SetInt("GlorpFarm.level." + i, Levels[i]);

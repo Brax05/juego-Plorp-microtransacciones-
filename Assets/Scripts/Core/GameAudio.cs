@@ -12,7 +12,7 @@ using UnityEngine;
 /// </summary>
 public sealed class GameAudio : MonoBehaviour
 {
-    const float MusicVolume = .55f, AmbienceVolume = .35f, FadeSeconds = 1.2f;
+    const float BaseMusicVolume = .55f, BaseAmbienceVolume = .35f, FadeSeconds = 1.2f;
     const int Voices = 10;
 
     static GameAudio instance;
@@ -53,6 +53,8 @@ public sealed class GameAudio : MonoBehaviour
 
     static bool MusicOn => FarmEconomy.Current == null || FarmEconomy.Current.MusicEnabled;
     static bool SoundOn => FarmEconomy.Current == null || FarmEconomy.Current.SoundEnabled;
+    public static float MusicVolumeLevel => FarmEconomy.Current != null ? FarmEconomy.Current.MusicVolume : 1f;
+    public static float SoundVolumeLevel => FarmEconomy.Current != null ? FarmEconomy.Current.SoundVolume : 1f;
 
     void Setup()
     {
@@ -107,7 +109,7 @@ public sealed class GameAudio : MonoBehaviour
         var voice = self.voices[self.nextVoice];
         self.nextVoice = (self.nextVoice + 1) % Voices;
         voice.pitch = 1f + Random.Range(-pitchJitter, pitchJitter);
-        voice.PlayOneShot(clip, volume);
+        voice.PlayOneShot(clip, Mathf.Clamp01(volume * SoundVolumeLevel));
     }
 
     /// <summary>A short musical piece over the music (the star trip fanfare), which ducks meanwhile.</summary>
@@ -118,7 +120,7 @@ public sealed class GameAudio : MonoBehaviour
         var clip = Clip(name);
         if (self == null || clip == null) return;
         self.jingle.clip = clip;
-        self.jingle.volume = MusicVolume;
+        self.jingle.volume = BaseMusicVolume * MusicVolumeLevel;
         self.jingle.Play();
     }
 
@@ -157,15 +159,32 @@ public sealed class GameAudio : MonoBehaviour
         }
     }
 
+    public static void ApplyVolumeImmediate()
+    {
+        if (instance == null) return;
+        if (instance.musicA != null && instance.musicA.isPlaying && (instance.musicB == null || !instance.musicB.isPlaying))
+        {
+            float target = MusicOn ? (BaseMusicVolume * MusicVolumeLevel) * (instance.jingle != null && instance.jingle.isPlaying ? .25f : 1f) : 0f;
+            instance.musicA.volume = target;
+        }
+        if (instance.jingle != null && instance.jingle.isPlaying)
+            instance.jingle.volume = MusicOn ? BaseMusicVolume * MusicVolumeLevel : 0f;
+        for (int i = 0; i < instance.beds.Length; i++)
+        {
+            if (instance.beds[i] != null && instance.beds[i].isPlaying)
+                instance.beds[i].volume = SoundOn ? (BaseAmbienceVolume * SoundVolumeLevel) : 0f;
+        }
+    }
+
     void Update()
     {
         float step = Time.unscaledDeltaTime / FadeSeconds;
-        float musicTarget = MusicOn ? MusicVolume * (jingle.isPlaying ? .25f : 1f) : 0f;
+        float musicTarget = MusicOn ? (BaseMusicVolume * MusicVolumeLevel) * (jingle.isPlaying ? .25f : 1f) : 0f;
         musicA.volume = Mathf.MoveTowards(musicA.volume, musicTarget, step);
         musicB.volume = Mathf.MoveTowards(musicB.volume, 0f, step);
         if (musicB.volume <= 0f && musicB.isPlaying) musicB.Stop();
         if (!MusicOn && jingle.isPlaying) jingle.Stop();
-        float bedTarget = SoundOn ? AmbienceVolume : 0f;
+        float bedTarget = SoundOn ? (BaseAmbienceVolume * SoundVolumeLevel) : 0f;
         foreach (var bed in beds) bed.volume = Mathf.MoveTowards(bed.volume, bed.clip != null ? bedTarget : 0f, step);
     }
 }

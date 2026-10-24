@@ -36,6 +36,9 @@ public sealed class StartScreens : MonoBehaviour
     Text tip;
     Image[][] dots;
     Text musicCaption, soundCaption;
+    RectTransform musicFill, soundFill, musicShine, soundShine;
+    Image musicFillImg, soundFillImg, musicShineImg, soundShineImg;
+    Text musicPercent, soundPercent;
     float loadStarted = -1f;
     int tipIndex;
     float nextTip;
@@ -74,11 +77,20 @@ public sealed class StartScreens : MonoBehaviour
         // ---------- Settings popup (from the title) ----------
         settings = ui.Rect(transform, "Title settings", 0, 0, Width, Height);
         ui.Backdrop(settings, "Backdrop", Width, Height, new Color(0f, 0f, .05f, .65f));
-        var card = ui.Panel(settings, "Card", 55, 330, 460, 330, PixelUIFactory.Hex("#CE8854"), true);
-        ui.Label(card, "Title", "AJUSTES", 0, 22, 460, 44, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
-        musicCaption = Toggle(card, "Música", 92, () => { state.ToggleMusic(); RefreshSettings(); });
-        soundCaption = Toggle(card, "Sonidos", 162, () => { state.ToggleSound(); RefreshSettings(); });
-        ui.ActionButton(card, "Volver", "VOLVER", 130, 244, 200, 56, () => settings.gameObject.SetActive(false));
+        var card = ui.Panel(settings, "Card", 45, 260, 480, 460, PixelUIFactory.Hex("#CE8854"), true);
+        ui.Label(card, "Title", "AJUSTES", 0, 20, 480, 44, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
+        musicCaption = Toggle(card, "Música", 74, () => { state.ToggleMusic(); RefreshSettings(); });
+        BuildVolumeRow(card, "MusicaVol", 136, () => state.MusicVolume, () => state.MusicEnabled,
+            v => state.SetMusicVolume(v, false), delta => state.StepMusicVolume(delta),
+            out musicFill, out musicShine, out musicFillImg, out musicShineImg, out musicPercent);
+
+        soundCaption = Toggle(card, "Sonidos", 188, () => { state.ToggleSound(); RefreshSettings(); });
+        BuildVolumeRow(card, "SonidosVol", 250, () => state.SoundVolume, () => state.SoundEnabled,
+            v => { state.SetSoundVolume(v, false); GameAudio.Play("sfx_ui_click", .7f, 0f, .06f); },
+            delta => { state.StepSoundVolume(delta); GameAudio.Play("sfx_ui_click", .7f, 0f, .06f); },
+            out soundFill, out soundShine, out soundFillImg, out soundShineImg, out soundPercent);
+
+        ui.ActionButton(card, "Volver", "VOLVER", 140, 380, 200, 54, () => settings.gameObject.SetActive(false));
         settings.gameObject.SetActive(false);
 
         // ---------- Loading ----------
@@ -146,6 +158,78 @@ public sealed class StartScreens : MonoBehaviour
     {
         musicCaption.text = state.MusicEnabled ? "ACTIVADO" : "APAGADO";
         soundCaption.text = state.SoundEnabled ? "ACTIVADO" : "APAGADO";
+
+        RefreshVolumeDisplay(musicFill, musicShine, musicFillImg, musicShineImg, musicPercent,
+            state.MusicEnabled, state.MusicVolume);
+        RefreshVolumeDisplay(soundFill, soundShine, soundFillImg, soundShineImg, soundPercent,
+            state.SoundEnabled, state.SoundVolume);
+    }
+
+    static void RefreshVolumeDisplay(RectTransform fill, RectTransform shine, Image fillImg, Image shineImg,
+        Text percent, bool on, float volume)
+    {
+        float effective = on ? volume : 0f;
+        float w = Mathf.Clamp01(effective) * 192f;
+        if (fill != null) fill.sizeDelta = new Vector2(w, 22f);
+        if (shine != null) shine.sizeDelta = new Vector2(w, 3f);
+        if (fillImg != null) fillImg.color = on && volume > 0.001f ? PixelUIFactory.Green : PixelUIFactory.Disabled;
+        if (shineImg != null) shineImg.color = on && volume > 0.001f ? PixelUIFactory.Hex("#8FE86A") : PixelUIFactory.Hex("#8A7A70");
+        if (percent != null) percent.text = on ? (Mathf.RoundToInt(volume * 100f) + "%") : "APAGADO";
+    }
+
+    void BuildVolumeRow(Transform card, string name, float y, Func<float> getVolume, Func<bool> isEnabled,
+        Action<float> setVolume, Action<float> stepVolume,
+        out RectTransform fillOut, out RectTransform shineOut, out Image fillImgOut, out Image shineImgOut, out Text percentOut)
+    {
+        var row = ui.Rect(card, name, 24, y, 432, 34);
+        ui.Label(row, "Label", "VOLUMEN", 0, 4, 80, 24, 13, PixelUIFactory.Gold, TextAnchor.MiddleLeft);
+
+        ui.ActionButton(row, "Minus", "-", 84, 1, 36, 30, () =>
+        {
+            stepVolume(-0.1f);
+            RefreshSettings();
+        });
+        UiUtil.CaptionSize(row, "Minus", 20);
+
+        var track = ui.Panel(row, "Track", 126, 3, 196, 26, PixelUIFactory.Hex("#221316"), true);
+        var trackImg = track.GetComponent<Image>();
+        if (trackImg != null) trackImg.raycastTarget = true;
+
+        var groove = ui.Block(track, "Groove", 2, 2, 192, 22, PixelUIFactory.Hex("#140A0C"));
+        groove.raycastTarget = false;
+
+        float vol = isEnabled() ? getVolume() : 0f;
+        var fill = ui.Block(groove.transform, "Fill", 0, 0, 192f * Mathf.Clamp01(vol), 22,
+            isEnabled() ? PixelUIFactory.Green : PixelUIFactory.Disabled);
+        fill.raycastTarget = false;
+
+        var shine = ui.Block(fill.transform, "Shine", 0, 2, fill.rectTransform.sizeDelta.x, 3,
+            isEnabled() ? PixelUIFactory.Hex("#8FE86A") : PixelUIFactory.Hex("#8A7A70"));
+        shine.raycastTarget = false;
+
+        var slider = track.gameObject.GetOrAdd<PixelSlider>();
+        slider.ValueChanged = frac =>
+        {
+            setVolume(frac);
+            RefreshSettings();
+        };
+        slider.ValueCommitted = _ => state.CommitVolumes();
+
+        ui.ActionButton(row, "Plus", "+", 328, 1, 36, 30, () =>
+        {
+            stepVolume(0.1f);
+            RefreshSettings();
+        });
+        UiUtil.CaptionSize(row, "Plus", 20);
+
+        var percent = ui.Label(row, "Percent", (Mathf.RoundToInt((isEnabled() ? getVolume() : 0f) * 100f)) + "%",
+            368, 4, 60, 24, 14, Color.white, TextAnchor.MiddleCenter);
+
+        fillOut = fill.rectTransform;
+        shineOut = shine.rectTransform;
+        fillImgOut = fill;
+        shineImgOut = shine;
+        percentOut = percent;
     }
 
     void OpenSettings()

@@ -5,7 +5,7 @@
   "engines": { "node": "22" },
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node --test lib/test/"
+    "test": "tsc && node --test \"lib/test/**/*.js\""
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",

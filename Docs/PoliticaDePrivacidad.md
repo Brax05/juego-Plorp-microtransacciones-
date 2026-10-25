@@ -1,10 +1,8 @@
 # Política de privacidad de Granja Idle de Plorp
 
-> **Borrador para revisión del cliente.** Completar los datos entre corchetes antes de publicarla. Google Play pide el enlace a esta política en una página web pública.
+Última actualización: 24 de octubre de 2026
 
-Última actualización: [fecha]
-
-Esta política explica qué datos usa **Granja Idle de Plorp** (el "juego"), desarrollado por [nombre del desarrollador o empresa], y para qué.
+Esta política explica qué datos usa **Granja Idle de Plorp** (el "juego"), desarrollado por Brandon Muñoz, y para qué.
 
 ## 1. Datos que se guardan en tu teléfono
 
@@ -20,7 +18,7 @@ Las compras de gemas se pagan a través de Google Play. El juego no recibe ni gu
 
 ## 4. Verificación de compras y reembolsos
 
-[Incluir solo si se activa el servidor de reembolsos.] Para comprobar las compras y descontar las gemas de las compras reembolsadas, el juego envía a nuestro servidor, alojado en [Google Cloud / Firebase], el código de cada compra, el producto y tu identificador de jugador de Google Play Juegos. Estos datos se guardan mientras exista tu cuenta en el juego y [plazo] después, y solo se usan para este fin.
+Cuando el servidor de reembolsos está activo, para comprobar las compras y descontar las gemas de las compras reembolsadas, el juego envía a nuestro servidor, alojado en Google Cloud (Firebase), el código de cada compra, el producto y tu identificador de jugador de Google Play Juegos. Estos datos se guardan mientras exista tu cuenta en el juego y hasta 12 meses después de la última compra, y solo se usan para este fin.
 
 ## 5. Lo que el juego no hace
 
@@ -30,12 +28,12 @@ Las compras de gemas se pagan a través de Google Play. El juego no recibe ni gu
 
 ## 6. Menores de edad
 
-[Definir el público objetivo en Play Console y ajustar este punto.] Las compras dentro del juego requieren la autorización del titular de la cuenta de Google Play.
+El juego está dirigido a público general y no está pensado específicamente para menores de 13 años. Las compras dentro del juego requieren la autorización del titular de la cuenta de Google Play.
 
 ## 7. Tus derechos
 
-Puedes pedir que se eliminen los datos del punto 4 escribiendo a [correo de contacto]. Los datos del punto 1 se borran al desinstalar el juego o borrar sus datos. La copia del punto 2 se puede borrar desde la configuración de Google Play Juegos.
+Puedes pedir que se eliminen los datos del punto 4 escribiendo a brandonmunoz055@gmail.com. Los datos del punto 1 se borran al desinstalar el juego o borrar sus datos. La copia del punto 2 se puede borrar desde la configuración de Google Play Juegos.
 
 ## 8. Contacto
 
-[Nombre del desarrollador o empresa] · [correo de contacto] · [país]
+Brandon Muñoz · brandonmunoz055@gmail.com · Chile

@@ -1,10 +1,8 @@
 # Términos de uso de Granja Idle de Plorp
 
-> **Borrador para revisión del cliente.** Completar los datos entre corchetes antes de publicarlos.
+Última actualización: 24 de octubre de 2026
 
-Última actualización: [fecha]
-
-Al descargar o jugar **Granja Idle de Plorp** (el "juego"), de [nombre del desarrollador o empresa], aceptas estos términos.
+Al descargar o jugar **Granja Idle de Plorp** (el "juego"), de Brandon Muñoz, aceptas estos términos.
 
 ## 1. El juego
 
@@ -14,7 +12,7 @@ El juego es gratuito y ofrece compras opcionales de **gemas**, una moneda virtua
 
 - Las compras se pagan a través de Google Play, con sus precios y condiciones.
 - Las gemas se entregan apenas Google Play confirma el pago.
-- Las solicitudes de reembolso se hacen a través de Google Play, según sus políticas. [Si se activa el servidor de reembolsos:] Si una compra se reembolsa, las gemas de esa compra se descuentan de tu cuenta en el juego; si ya las usaste, tu saldo de gemas puede quedar en negativo hasta que lo recuperes jugando.
+- Las solicitudes de reembolso se hacen a través de Google Play, según sus políticas. Cuando el servidor de reembolsos está activo, si una compra se reembolsa, las gemas de esa compra se descuentan de tu cuenta en el juego; si ya las usaste, tu saldo de gemas puede quedar en negativo hasta que lo recuperes jugando.
 - El "Pack de inicio" se puede comprar una sola vez por partida.
 
 ## 3. Tu partida guardada
@@ -26,7 +24,7 @@ El juego es gratuito y ofrece compras opcionales de **gemas**, una moneda virtua
 
 ## 4. Uso correcto
 
-No está permitido modificar el juego, alterar la partida guardada o usar programas para obtener gemas o ventajas. Si se detecta, [el desarrollador] puede quitar lo obtenido de esa forma.
+No está permitido modificar el juego, alterar la partida guardada o usar programas para obtener gemas o ventajas. Si se detecta, Brandon Muñoz puede quitar lo obtenido de esa forma.
 
 ## 5. Cambios y disponibilidad
 
@@ -34,4 +32,4 @@ El juego puede actualizarse, cambiar su contenido o dejar de estar disponible. L
 
 ## 6. Contacto
 
-[Nombre del desarrollador o empresa] · [correo de contacto] · [país]
+Brandon Muñoz · brandonmunoz055@gmail.com · Chile

@@ -43,7 +43,7 @@ Juego idle de granja en Unity (6000.5, uGUI, vertical 570×1018). Plorp es un ex
 - **Requisitos:** Unity **6000.5.1f1** (URP), con el módulo **Android Build Support** para el celular. Paquetes principales: uGUI, Input System y Unity Purchasing (IAP).
 - **Abrir:** abre la carpeta del repositorio en Unity Hub y luego la escena `Assets/Scenes/Granja.unity`. Usa la vista **Game** en formato vertical (570×1018 o un celular en vertical).
 - **Jugar:** dale Play. Sale la portada, la pantalla de carga y luego la granja. La primera vez, Pepito explica la granja con su guía.
-- **Primera vez después de bajar el proyecto:** usa una vez el menú **Plorp ▸ Hornear UI en el canvas** (ver [Editar el layout en Unity](#editar-el-layout-en-unity)) para que toda la interfaz quede en el canvas y se pueda mover a mano.
+- **Canvas ya horneado:** la interfaz completa vive en `PixelFarmCanvas.prefab`. Si agregas pantallas nuevas por código, usa **Plorp ▸ Hornear UI en el canvas** (ver [Editar el layout en Unity](#editar-el-layout-en-unity)).
 - **Celular:** File ▸ Build Profiles ▸ Android, con orientación vertical. Las compras reales solo funcionan con el define `PLORP_IAP` y los productos creados en Google Play (ver [Tienda y gemas](#tienda-y-gemas)).
 
 ## Personajes
@@ -457,7 +457,7 @@ Las preferencias se guardan (incluso en la nube con Google Play Juegos) y se man
 ## Estado y pendientes
 
 - **Probar en Unity:** el proyecto compila sin errores. Falta probar en el celular el volumen nuevo, el layout y el audio.
-- **Hornear el canvas** una vez con **Plorp ▸ Hornear UI en el canvas** para poder editar todo a mano, incluidas las barras de volumen de Ajustes.
+- **Canvas:** ya está horneado, incluidas las barras de volumen. Vuelve a hornear solo si agregas pantallas nuevas por código.
 - **Sonidos provisionales:** la música y los efectos de `Assets/Resources/Audio/` son sintetizados. Para la versión final se pueden reemplazar por otros (por ejemplo, hechos con Suno, Udio o ElevenLabs) **manteniendo el nombre de cada archivo**.
 - **Antes de publicar:**
   - Configurar un keystore local: `ProjectSettings` todavía apunta a `C:/Users/cmont/OneDrive/Desktop/plorp-upload.keystore`, una ruta de otra máquina.

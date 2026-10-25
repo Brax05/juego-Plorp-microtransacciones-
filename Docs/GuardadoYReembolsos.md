@@ -52,7 +52,7 @@ Se agregan en **Edit ▸ Project Settings ▸ Player ▸ Android ▸ Other Setti
     - pegar el *Client ID* web.
 4. **Minimum API Level: 24 (Android 7.0)**, que es lo que exige el plugin 2.3.0.
 5. Agregar `PLORP_PGS` a los símbolos de Android.
-6. Usar una vez **Plorp ▸ Hornear UI en el canvas**, para que los botones nuevos de AJUSTES queden en el canvas.
+6. El canvas ya viene horneado con los botones de AJUSTES. Si agregas pantallas nuevas por código, vuelve a usar **Plorp ▸ Hornear UI en el canvas**.
 
 ## Paso 2: servidor de reembolsos (Firebase)
 

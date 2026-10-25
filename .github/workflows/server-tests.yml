@@ -1,0 +1,22 @@
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  servidor:
+    name: Servidor de reembolsos
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Server/functions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: Server/functions/package-lock.json
+      - run: npm ci
+      - run: npm test

@@ -20,7 +20,7 @@ public sealed class RewardFx : MonoBehaviour
     public static void Create(Transform portrait, Transform goldLabel)
     {
         var ui = new PixelUIFactory();
-        var layer = ui.Rect(portrait, "Reward effects", 0, 0, 570, 1018);
+        var layer = ui.Rect(portrait, "Reward effects", 0, 0, ScreenLayout.Width, ScreenLayout.Height);
         var fx = layer.gameObject.GetOrAdd<RewardFx>();
         fx.ui = ui;
         fx.layer = layer;

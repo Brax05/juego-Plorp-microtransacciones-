@@ -110,7 +110,10 @@ public sealed class FarmUIBootstrap : MonoBehaviour
             return;
         }
         authoredScale = content.localScale;
-        if (!bake) FitScreen();
+        // Fills the phone: width-fill scale, taller content and the bottom block moved down.
+        ScreenLayout.Prepare(content, authoredScale, bake);
+        lastWidth = Screen.width;
+        lastHeight = Screen.height;
 
         // ---------- Layout (baked into the canvas and reused from it) ----------
         RenameGardenTab(content);
@@ -147,6 +150,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
 
         guide = PepitoGuide.Create(content);
         AddGuideButton(content);
+        if (!bake) ScreenLayout.Fit(content);
 
         if (bake)
         {
@@ -400,9 +404,7 @@ public sealed class FarmUIBootstrap : MonoBehaviour
         if (content == null) return;
         lastWidth = Screen.width;
         lastHeight = Screen.height;
-        float scale = Mathf.Min(Screen.width / Mathf.Max(1f, content.rect.width),
-            Screen.height / Mathf.Max(1f, content.rect.height));
-        content.localScale = authoredScale * scale;
+        ScreenLayout.Apply(content, authoredScale);
     }
 
     /// <summary>

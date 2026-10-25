@@ -12,7 +12,8 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class PepitoGuide : MonoBehaviour
 {
-    const float W = 570f, H = 1018f;
+    const float W = 570f;
+    static float H => ScreenLayout.Height;
     const float PanelH = 178f;
     const string SeenKey = "GlorpFarm.guide.";
     const float CharsPerSecond = 55f;
@@ -145,6 +146,7 @@ public sealed class PepitoGuide : MonoBehaviour
     {
         var ui = new PixelUIFactory();
         var rect = ui.Rect(portrait, "Pepito guide", 0, 0, W, H);
+        rect.sizeDelta = new Vector2(W, H); // reused from the canvas: keep it as tall as the screen
         var guide = rect.gameObject.GetOrAdd<PepitoGuide>();
         guide.Build(ui, rect);
         return guide;
@@ -187,7 +189,8 @@ public sealed class PepitoGuide : MonoBehaviour
         root = rect;
 
         // Invisible blocker: nothing under the tour can be tapped (not even inside the highlight).
-        ui.Backdrop(root, "Blocker", W, H, new Color(0f, 0f, 0f, 0f));
+        var blocker = ui.Backdrop(root, "Blocker", W, H, new Color(0f, 0f, 0f, 0f));
+        blocker.rectTransform.sizeDelta = new Vector2(W, H);
 
         // Four dark blocks leave a "hole" over the highlighted thing; they also swallow taps.
         for (int i = 0; i < 4; i++)
@@ -280,15 +283,16 @@ public sealed class PepitoGuide : MonoBehaviour
         if (face != null) face.Talk(3);
 
         // Pepito's panel goes where it doesn't cover the highlight.
-        bool highlightLow = step.Area.width > 0f && step.Area.center.y > H * .5f;
+        var area = Target(step);
+        bool highlightLow = area.width > 0f && area.center.y > H * .5f;
         float y = highlightLow ? 112f : H - PanelH - 82f;
-        if (step.Area.width > 0f && !highlightLow && step.Area.yMax > y) y = Mathf.Max(step.Area.yMax + 10f, 112f);
-        if (step.Area.width > 0f && highlightLow && step.Area.yMin < y + PanelH) y = Mathf.Max(4f, step.Area.yMin - PanelH - 34f);
+        if (area.width > 0f && !highlightLow && area.yMax > y) y = Mathf.Max(area.yMax + 10f, 112f);
+        if (area.width > 0f && highlightLow && area.yMin < y + PanelH) y = Mathf.Max(4f, area.yMin - PanelH - 34f);
         panel.anchoredPosition = new Vector2(0f, -y);
         panel.SetAsLastSibling();
     }
 
-    static Rect Target(Step step) => step.Area.width > 0f ? step.Area : Center();
+    Rect Target(Step step) => step.Area.width > 0f ? ScreenLayout.GuideArea(section, step.Area) : Center();
 
     void Next()
     {

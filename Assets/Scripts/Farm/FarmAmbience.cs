@@ -10,7 +10,8 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class FarmAmbience : MonoBehaviour
 {
-    const float ViewW = 570f, ViewH = 700f;
+    const float ViewW = 570f, AuthoredH = 700f; // ScreenLayout grows the overlay with the farm
+    static float ViewH => ScreenLayout.FarmViewHeight;
     const int ParticleCount = 22, FireflyCount = 14;
 
     RectTransform root;
@@ -36,7 +37,7 @@ public sealed class FarmAmbience : MonoBehaviour
         var viewport = map != null ? map.parent as RectTransform : null;
         if (viewport == null) return null;
         var ui = new PixelUIFactory();
-        var rect = ui.Rect(viewport, "Ambience", 0, 0, ViewW, ViewH);
+        var rect = ui.Rect(viewport, "Ambience", 0, 0, ViewW, AuthoredH);
         var ambience = rect.gameObject.GetOrAdd<FarmAmbience>();
         ambience.Build(ui, rect, portrait, hudSibling);
         return ambience;
@@ -45,7 +46,7 @@ public sealed class FarmAmbience : MonoBehaviour
     void Build(PixelUIFactory ui, RectTransform rect, Transform portrait, int hudSibling)
     {
         root = rect;
-        tint = ui.Block(root, "Sky tint", 0, 0, ViewW, ViewH, new Color(0, 0, 0, 0));
+        tint = ui.Block(root, "Sky tint", 0, 0, ViewW, AuthoredH, new Color(0, 0, 0, 0));
         for (int i = 0; i < ParticleCount; i++)
         {
             var img = ui.Texture(root, "Season particle", "fx_snow", 0, 0, 4, 4); // Art/Effects/fx_*.png

@@ -43,9 +43,10 @@ public sealed class PlorpComputer : MonoBehaviour
         backdrop = ui.Backdrop(root, "Backdrop", Popup.W, Popup.H, new Color(0f, 0f, .05f, 0f));
 
         // Monitor: green bezel, dark screen with scanlines.
-        card = ui.Rect(root, "Monitor", CardX, CardY, CardW, CardH);
+        float cardY = CardY + ScreenLayout.Extra * .5f;
+        card = ui.Rect(root, "Monitor", CardX, cardY, CardW, CardH);
         card.pivot = new Vector2(.5f, .5f);
-        toPos = new Vector2(CardX + CardW / 2f, -(CardY + CardH / 2f));
+        toPos = new Vector2(CardX + CardW / 2f, -(cardY + CardH / 2f));
         var frame = ui.Texture(card, "Frame", "computer_monitor", 0, 0, CardW, CardH); // Art/Minigames/computer_monitor.png
         frame.raycastTarget = true;
 

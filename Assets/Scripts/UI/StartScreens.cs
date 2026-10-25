@@ -8,9 +8,13 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class StartScreens : MonoBehaviour
 {
-    const float Width = 570f, Height = 1018f;          // portrait canvas
+    const float Width = 570f, CanvasH = 1018f;          // portrait canvas
     const float ArtWidth = 572f, ArtHeight = 1024f;    // source art
     const float LoadSeconds = 2.8f;
+
+    static float Height => ScreenLayout.Height;
+    /// <summary>Dark band above/below the 570x1018 art on a taller phone.</summary>
+    static float Band => Mathf.Max(0f, (Height - CanvasH) * .5f);
 
     static readonly string[] Tips =
     {
@@ -46,6 +50,7 @@ public sealed class StartScreens : MonoBehaviour
     public static StartScreens Create(Transform portrait, FarmGameState state, Action onFinished)
     {
         var root = new PixelUIFactory().Rect(portrait, "Start screens", 0, 0, Width, Height);
+        root.sizeDelta = new Vector2(Width, Height); // reused from the canvas: follow the screen height
         root.gameObject.SetActive(true); // saved hidden in the canvas
         root.SetAsLastSibling();
         var screens = root.gameObject.GetOrAdd<StartScreens>();
@@ -53,9 +58,18 @@ public sealed class StartScreens : MonoBehaviour
         return screens;
     }
 
-    // Converts coordinates measured on the 572x1024 art into the 570x1018 canvas.
+    // Converts coordinates measured on the 572x1024 art into the 570x1018 canvas (centred on a taller phone).
     static float X(float v) => v * Width / ArtWidth;
-    static float Y(float v) => v * Height / ArtHeight;
+    static float Y(float v) => Band + v * CanvasH / ArtHeight;
+
+    /// <summary>Geometry is applied explicitly: the canvas may already contain a baked copy of this screen.</summary>
+    static void Place(RectTransform rect, float x, float y, float width, float height)
+    {
+        if (rect == null) return;
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(x, -y);
+        rect.sizeDelta = new Vector2(width, height);
+    }
 
     void Build(FarmGameState gameState, Action finished)
     {
@@ -65,19 +79,36 @@ public sealed class StartScreens : MonoBehaviour
 
         // ---------- Title ----------
         title = ui.Rect(transform, "Title screen", 0, 0, Width, Height);
-        var titleArt = ui.Texture(title, "Art", "title", 0, 0, Width, Height);
+        Place(title, 0, 0, Width, Height);
+        if (Band > 0f)
+        {
+            var titleTop = ui.Block(title, "Top band", 0, 0, Width, Band, PixelUIFactory.Hex("#0E0D2C"));
+            var titleBottom = ui.Block(title, "Bottom band", 0, Band + CanvasH, Width, Band, PixelUIFactory.Hex("#0E2230"));
+            Place(titleTop.rectTransform, 0, 0, Width, Band);
+            Place(titleBottom.rectTransform, 0, Band + CanvasH, Width, Band);
+            titleTop.raycastTarget = titleBottom.raycastTarget = true;
+        }
+        var titleArt = ui.Texture(title, "Art", "title", 0, Band, Width, CanvasH);
+        Place(titleArt.rectTransform, 0, Band, Width, CanvasH);
         titleArt.raycastTarget = true; // blocks the farm underneath
-        ui.Label(title, "Version", "v0.4", 10, Height - 26, 120, 20, 12,
+        var version = ui.Label(title, "Version", "v0.4", 10, Band + CanvasH - 26, 120, 20, 12,
             new Color(1, 1, 1, .45f), TextAnchor.MiddleLeft);
+        Place(version.rectTransform, 10, Band + CanvasH - 26, 120, 20);
 
         playGlow = ui.Block(title, "Play glow", X(140), Y(850), X(292), Y(56), new Color(1f, .95f, .6f, 0f));
+        Place(playGlow.rectTransform, X(140), Y(850), X(292), Y(56));
         PressArea(title, "Jugar", X(133), Y(844), X(307), Y(69), StartLoading);
         PressArea(title, "Ajustes", X(188), Y(940), X(198), Y(52), OpenSettings);
 
         // ---------- Settings popup (from the title) ----------
         settings = ui.Rect(transform, "Title settings", 0, 0, Width, Height);
-        ui.Backdrop(settings, "Backdrop", Width, Height, new Color(0f, 0f, .05f, .65f));
-        var card = ui.Panel(settings, "Card", 45, 260, 480, 460, PixelUIFactory.Hex("#CE8854"), true);
+        Place(settings, 0, 0, Width, Height);
+        var settingsShade = ui.Backdrop(settings, "Backdrop", Width, Height, new Color(0f, 0f, .05f, .65f));
+        Place(settingsShade.rectTransform, 0, 0, Width, Height);
+        // 260 in the reference portrait; centred when the screen is taller.
+        float cardY = 260f + ScreenLayout.Extra * .5f;
+        var card = ui.Panel(settings, "Card", 45, cardY, 480, 460, PixelUIFactory.Hex("#CE8854"), true);
+        Place(card, 45, cardY, 480, 460);
         ui.Label(card, "Title", "AJUSTES", 0, 20, 480, 44, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
         musicCaption = Toggle(card, "Música", 74, () => { state.ToggleMusic(); RefreshSettings(); });
         BuildVolumeRow(card, "MusicaVol", 136, () => state.MusicVolume, () => state.MusicEnabled,
@@ -95,19 +126,33 @@ public sealed class StartScreens : MonoBehaviour
 
         // ---------- Loading ----------
         loading = ui.Rect(transform, "Loading screen", 0, 0, Width, Height);
-        var loadingArt = ui.Texture(loading, "Art", "loading", 0, 0, Width, Height);
+        Place(loading, 0, 0, Width, Height);
+        if (Band > 0f)
+        {
+            var loadTop = ui.Block(loading, "Top band", 0, 0, Width, Band, PixelUIFactory.Hex("#0E0F2E"));
+            var loadBottom = ui.Block(loading, "Bottom band", 0, Band + CanvasH, Width, Band, PixelUIFactory.Hex("#0D2533"));
+            Place(loadTop.rectTransform, 0, 0, Width, Band);
+            Place(loadBottom.rectTransform, 0, Band + CanvasH, Width, Band);
+            loadTop.raycastTarget = loadBottom.raycastTarget = true;
+        }
+        var loadingArt = ui.Texture(loading, "Art", "loading", 0, Band, Width, CanvasH);
+        Place(loadingArt.rectTransform, 0, Band, Width, CanvasH);
         loadingArt.raycastTarget = true;
 
         dots = new Image[3][];
         float[] dotCenters = { 252f, 287f, 320f };
         for (int i = 0; i < 3; i++) dots[i] = Dot(loading, X(dotCenters[i]), Y(327f));
 
-        ui.Block(loading, "Tip shade", X(70), Y(778), X(432), Y(80), new Color(.03f, .05f, .1f, .55f));
+        var tipShade = ui.Block(loading, "Tip shade", X(70), Y(778), X(432), Y(80),
+            new Color(.03f, .05f, .1f, .55f));
+        Place(tipShade.rectTransform, X(70), Y(778), X(432), Y(80));
         tip = ui.Paragraph(loading, "Tip", "", X(80), Y(780), X(412), Y(76), 22, Color.white,
             TextAnchor.MiddleCenter);
+        Place(tip.rectTransform, X(80), Y(780), X(412), Y(76));
 
         barWidth = X(464);
         barFill = ui.Rect(loading, "Bar fill", X(52), Y(869), 0, Y(36));
+        Place(barFill, X(52), Y(869), 0, Y(36));
         var fill = barFill.gameObject.GetOrAdd<Image>();
         fill.color = PixelUIFactory.Hex("#4FC63F");
         fill.raycastTarget = false;
@@ -121,7 +166,9 @@ public sealed class StartScreens : MonoBehaviour
 
     void PressArea(Transform parent, string name, float x, float y, float w, float h, UnityEngine.Events.UnityAction action)
     {
-        var image = ui.Rect(parent, name, x, y, w, h).gameObject.GetOrAdd<Image>();
+        var area = ui.Rect(parent, name, x, y, w, h);
+        Place(area, x, y, w, h);
+        var image = area.gameObject.GetOrAdd<Image>();
         image.color = Color.white;
         var button = image.gameObject.GetOrAdd<Button>();
         button.targetGraphic = image;
@@ -147,11 +194,11 @@ public sealed class StartScreens : MonoBehaviour
     Image[] Dot(Transform parent, float cx, float cy)
     {
         // Rounded pixel dot made of two crossed blocks; covers the dot painted in the art.
-        return new[]
-        {
-            ui.Block(parent, "Dot h", cx - 9, cy - 6, 18, 12, DotOff),
-            ui.Block(parent, "Dot v", cx - 6, cy - 9, 12, 18, DotOff),
-        };
+        var h = ui.Block(parent, "Dot h", cx - 9, cy - 6, 18, 12, DotOff);
+        var v = ui.Block(parent, "Dot v", cx - 6, cy - 9, 12, 18, DotOff);
+        Place(h.rectTransform, cx - 9, cy - 6, 18, 12);
+        Place(v.rectTransform, cx - 6, cy - 9, 12, 18);
+        return new[] { h, v };
     }
 
     void RefreshSettings()

@@ -8,7 +8,8 @@ using UnityEngine.UI;
 /// </summary>
 public static class MenuPage
 {
-    public const float Width = 570f, Height = 840f;
+    public const float Width = 570f;
+    public static float Height => ScreenLayout.PageHeight;
     public const float ListTop = 118f, ListWidth = 542f;
 
     public static RectTransform Create(Transform parent, string name, string title, string subtitle,
@@ -18,7 +19,7 @@ public static class MenuPage
         var page = ui.Rect(parent, name, 0, 0, Width, Height);
         var bg = ui.Block(page, "Background", 0, 0, Width, Height, PixelUIFactory.Hex("#4A2A1C"));
         bg.raycastTarget = true;
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < Mathf.CeilToInt(Height / 60f); i++)
             ui.Block(page, "Plank", 0, i * 60, Width, 2, PixelUIFactory.Hex("#3A2016"));
         var header = ui.Panel(page, "Header", 16, 12, 538, 96, PixelUIFactory.Hex("#CE8854"));
         ui.Label(header, "Title", title, 20, 10, 498, 42, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);

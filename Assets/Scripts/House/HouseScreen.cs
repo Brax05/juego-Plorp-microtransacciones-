@@ -135,8 +135,11 @@ public sealed class HouseScreen : MonoBehaviour
         Place(cat);
     }
 
-    static Vector2 RandomFloor() =>
-        new Vector2(UnityEngine.Random.Range(50f, PageW - 50f), UnityEngine.Random.Range(FloorTop, FloorBottom));
+    static Vector2 RandomFloor()
+    {
+        float bottom = FloorBottom + ScreenLayout.Extra;
+        return new Vector2(UnityEngine.Random.Range(50f, PageW - 50f), UnityEngine.Random.Range(FloorTop, bottom));
+    }
 
     void Pet(Cat cat)
     {

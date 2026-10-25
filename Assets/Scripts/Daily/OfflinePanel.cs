@@ -10,7 +10,6 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class OfflinePanel : MonoBehaviour
 {
-    const float W = 570f, H = 1018f;
     const float CardX = 30f, CardY = 220f, CardW = 510f, CardH = 520f;
     public const float MinSeconds = 60f;
     const string LastSeenKey = "GlorpFarm.lastSeen";
@@ -96,10 +95,11 @@ public sealed class OfflinePanel : MonoBehaviour
 
     void Build(double away, double counted, double cap)
     {
-        ui.Backdrop(transform, "Backdrop", W, H, new Color(0f, 0f, .05f, .7f));
+        ui.Backdrop(transform, "Backdrop", ScreenLayout.Width, ScreenLayout.Height, new Color(0f, 0f, .05f, .7f));
         card = ui.Panel(transform, "Card", CardX, CardY, CardW, CardH, PixelUIFactory.Hex("#CE8854"), true);
         card.pivot = new Vector2(.5f, .5f);
-        card.anchoredPosition = new Vector2(CardX + CardW / 2f, -(CardY + CardH / 2f));
+        card.anchoredPosition = new Vector2(CardX + CardW / 2f,
+            -(CardY + CardH / 2f + ScreenLayout.Extra * .5f));
 
         ui.Label(card, "Title", "MIENTRAS NO ESTABAS", 0, 18, CardW, 40, 28, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
 

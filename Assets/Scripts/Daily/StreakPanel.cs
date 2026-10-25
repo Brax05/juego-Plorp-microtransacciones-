@@ -8,7 +8,6 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class StreakPanel : MonoBehaviour
 {
-    const float W = 570f, H = 1018f;
     const float CardX = 20f, CardY = 230f, CardW = 530f, CardH = 470f;
     const string ShownKey = "GlorpFarm.daily.popupShown";
 
@@ -45,10 +44,11 @@ public sealed class StreakPanel : MonoBehaviour
     {
         int today = DailyMissions.StreakDay;
         int streak = DailyMissions.Streak;
-        ui.Backdrop(transform, "Backdrop", W, H, new Color(0f, 0f, .05f, .7f));
+        ui.Backdrop(transform, "Backdrop", ScreenLayout.Width, ScreenLayout.Height, new Color(0f, 0f, .05f, .7f));
         card = ui.Panel(transform, "Card", CardX, CardY, CardW, CardH, PixelUIFactory.Hex("#CE8854"), true);
         card.pivot = new Vector2(.5f, .5f);
-        card.anchoredPosition = new Vector2(CardX + CardW / 2f, -(CardY + CardH / 2f));
+        card.anchoredPosition = new Vector2(CardX + CardW / 2f,
+            -(CardY + CardH / 2f + ScreenLayout.Extra * .5f));
         ui.Label(card, "Title", "RACHA DIARIA", 0, 16, CardW, 40, 30, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
 
         // Pepito and his bubble.

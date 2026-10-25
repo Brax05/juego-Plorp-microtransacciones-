@@ -86,6 +86,7 @@ public sealed class FarmEvents : MonoBehaviour
 
         if (viewport != null)
         {
+            // Authored at 700: ScreenLayout grows it with the farm view.
             rain = ui.Rect(viewport, "Rain", 0, 0, 570, 700);
             rainTint = ui.Block(rain, "Tint", 0, 0, 570, 700, new Color(.2f, .3f, .55f, .22f));
             for (int i = 0; i < 46; i++)
@@ -255,7 +256,8 @@ public sealed class FarmEvents : MonoBehaviour
         if (rain == null) { Finish(); return; }
         rain.gameObject.SetActive(true);
         rain.SetAsLastSibling();
-        foreach (var d in drops) d.anchoredPosition = new Vector2(UnityEngine.Random.Range(0f, 600f), -UnityEngine.Random.Range(0f, 700f));
+        float rainH = rain.rect.height;
+        foreach (var d in drops) d.anchoredPosition = new Vector2(UnityEngine.Random.Range(0f, 600f), -UnityEngine.Random.Range(0f, rainH));
         GrowthMultiplier = 2f;
         Say("Miau... ¡está lloviendo! Por un minuto todo crece el doble de rápido. Yo me quedo bajo techo.");
         CurvedPopup.Show(portrait as RectTransform, "¡LLUVIA! x2", new Vector2(285f, 300f), PixelUIFactory.Hex("#9FD3F0"), 26);
@@ -277,11 +279,12 @@ public sealed class FarmEvents : MonoBehaviour
         float a = rainTint.color.a;
         a = Mathf.MoveTowards(a, raining ? .22f : 0f, dt * .3f);
         rainTint.color = new Color(.2f, .3f, .55f, a);
+        float rainH = rain.rect.height;
         float alpha = a / .22f;
         foreach (var d in drops)
         {
             var p = d.anchoredPosition + new Vector2(110f, -620f) * dt;
-            if (p.y < -700f) p = new Vector2(UnityEngine.Random.Range(-80f, 570f), 10f);
+            if (p.y < -rainH) p = new Vector2(UnityEngine.Random.Range(-80f, 570f), 10f);
             d.anchoredPosition = p;
             var img = d.GetComponent<RawImage>();
             if (img != null) img.color = new Color(1f, 1f, 1f, alpha);
@@ -428,8 +431,9 @@ public sealed class FarmEvents : MonoBehaviour
         var item = BestSale(out int amount, out long price);
         var root = Popup.OpenBlank(portrait, "Fair truck sale");
         salePanel = root;
-        ui.Backdrop(root, "Backdrop", 570, 1018, new Color(0f, 0f, .05f, .65f));
-        var card = ui.Panel(root, "Card", 40, 300, 490, 380, PixelUIFactory.Hex("#CE8854"), true);
+        ui.Backdrop(root, "Backdrop", Popup.W, Popup.H, new Color(0f, 0f, .05f, .65f));
+        var card = ui.Panel(root, "Card", 40, 300 + ScreenLayout.Extra * .5f, 490, 380,
+            PixelUIFactory.Hex("#CE8854"), true);
         ui.Label(card, "Title", "CAMIÓN DE FERIA", 0, 16, 490, 40, 28, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
         ui.Texture(card, "Truck", "truck", 24, 70, 138, 93);
         if (item == null)

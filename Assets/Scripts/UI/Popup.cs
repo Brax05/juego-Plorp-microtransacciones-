@@ -9,7 +9,8 @@ using UnityEngine.UI;
 /// </summary>
 public static class Popup
 {
-    public const float W = 570f, H = 1018f;
+    public static float W => ScreenLayout.Width;
+    public static float H => ScreenLayout.Height;
 
     static int open;
     public static bool AnyOpen => open > 0;
@@ -45,7 +46,9 @@ public static class Popup
         marker.OnClosed = onClosed;
         open++;
         ui.Backdrop(root, "Backdrop", W, H, new Color(0f, 0f, .05f, .7f));
-        card = ui.Panel(root, "Card", 14, y, W - 28, height, PixelUIFactory.Hex("#CE8854"), true);
+        // Cards authored around the 1018 portrait stay centred when the screen is taller.
+        card = ui.Panel(root, "Card", 14, y + ScreenLayout.Extra * .5f, W - 28, height,
+            PixelUIFactory.Hex("#CE8854"), true);
         ui.Label(card, "Title", title, 0, 14, W - 28, 40, 28, PixelUIFactory.Gold, TextAnchor.MiddleCenter);
         if (closeButton)
         {

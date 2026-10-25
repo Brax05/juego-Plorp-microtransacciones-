@@ -47,6 +47,7 @@ public sealed class PepitoController : MonoBehaviour
     {
         var ui = new PixelUIFactory();
         var rect = ui.Rect(portrait, "Pepito", 0, Top, 570, 118);
+        ScreenLayout.PinBottom(rect);              // walks along the farm's bottom edge
         float authoredY = rect.anchoredPosition.y; // the height edited in the canvas is kept
         rect.SetSiblingIndex(siblingIndex);
         var pepito = rect.gameObject.GetOrAdd<PepitoController>();

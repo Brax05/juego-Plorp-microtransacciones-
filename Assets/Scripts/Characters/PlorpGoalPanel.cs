@@ -172,11 +172,13 @@ public sealed class PlorpGoalPanel : MonoBehaviour
     void ShowCelebration(PlorpGoal last)
     {
         if (celebration != null) UiUtil.Kill(celebration.gameObject);
-        celebration = ui.Rect(portrait, "Plorp satisfied", 0, 0, 570, 1018);
+        celebration = ui.Rect(portrait, "Plorp satisfied", 0, 0, ScreenLayout.Width, ScreenLayout.Height);
         celebration.SetAsLastSibling();
-        ui.Backdrop(celebration, "Backdrop", 570, 1018, new Color(0f, 0f, .06f, .72f));
+        ui.Backdrop(celebration, "Backdrop", ScreenLayout.Width, ScreenLayout.Height,
+            new Color(0f, 0f, .06f, .72f));
 
-        var card = ui.Panel(celebration, "Card", 35, 250, 500, 470, PixelUIFactory.Hex("#CE8854"), true);
+        var card = ui.Panel(celebration, "Card", 35, 250 + ScreenLayout.Extra * .5f, 500, 470,
+            PixelUIFactory.Hex("#CE8854"), true);
         ui.Label(card, "Title", "¡PLORP ESTÁ CONFORME!", 0, 22, 500, 46, 30, PixelUIFactory.Gold,
             TextAnchor.MiddleCenter);
         ui.Block(card, "Face frame", 176, 80, 148, 148, PixelUIFactory.Hex("#1E1838"));

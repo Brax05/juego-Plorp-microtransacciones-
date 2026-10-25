@@ -35,7 +35,22 @@ public static class PlorpCanvasBaker
                 "Se va a construir toda la UI del juego dentro de PixelFarmCanvas.prefab para que puedas editarla.\n\n" +
                 "Lo que ya esté en el canvas se mantiene como lo dejaste. ¿Continuar?", "Hornear", "Cancelar"))
             return;
+        BakeInternal();
+    }
 
+    /// <summary>Same as the menu command, without dialogs, for `-executeMethod` in batch mode.</summary>
+    public static void BakeBatch()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            Debug.LogError("Plorp: no se puede hornear en modo Play.");
+            return;
+        }
+        BakeInternal();
+    }
+
+    static void BakeInternal()
+    {
         var root = PrefabUtility.LoadPrefabContents(PrefabPath);
         try
         {
@@ -72,13 +87,14 @@ public static class PlorpCanvasBaker
         catch (System.Exception e)
         {
             Debug.LogException(e);
-            EditorUtility.DisplayDialog("Plorp", "No se pudo hornear: " + e.Message + "\nEl prefab no se modificó.", "OK");
+            if (!Application.isBatchMode)
+                EditorUtility.DisplayDialog("Plorp", "No se pudo hornear: " + e.Message + "\nEl prefab no se modificó.", "OK");
         }
         finally
         {
             PrefabUtility.UnloadPrefabContents(root);
             // The build touched static state (game state, events): start clean.
-            EditorUtility.RequestScriptReload();
+            if (!Application.isBatchMode) EditorUtility.RequestScriptReload();
         }
     }
 }

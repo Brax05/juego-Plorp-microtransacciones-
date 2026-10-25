@@ -62,13 +62,13 @@ public sealed class FarmMenuScreen
         var musicaCard = page.Find("Musica");
         var sonidosCard = page.Find("Sonidos");
 
-        Bind(musicaCard, () =>
+        Bind(musicaCard, "Toggle Musica hit", () =>
         {
             state.ToggleMusic();
             message("Música " + (state.MusicEnabled ? "activada" : "apagada"));
             RefreshSettings();
         });
-        Bind(sonidosCard, () =>
+        Bind(sonidosCard, "Toggle Sonidos hit", () =>
         {
             state.ToggleSound();
             message("Sonidos " + (state.SoundEnabled ? "activados" : "apagados"));
@@ -92,8 +92,9 @@ public sealed class FarmMenuScreen
         Action<float> setVolume, Action<float> stepVolume)
     {
         if (card == null) return;
-        if (card.Find("Volume row") != null) return;
 
+        // Reuse the row if the canvas already has it (after baking), but always rewire the slider and
+        // buttons: the bake removes the scripts, and the onClick listeners are not saved in the prefab.
         var ui = new PixelUIFactory();
         var row = ui.Rect(card, "Volume row", 18, 100, 494, 34);
 
@@ -179,9 +180,10 @@ public sealed class FarmMenuScreen
         if (percent != null) percent.text = on ? (Mathf.RoundToInt(volume * 100f) + "%") : "APAGADO";
     }
 
-    static void Bind(Transform card, UnityEngine.Events.UnityAction action)
+    static void Bind(Transform card, string buttonName, UnityEngine.Events.UnityAction action)
     {
-        var button = card != null ? card.GetComponentInChildren<Button>(true) : null;
+        var button = card != null ? card.Find(buttonName)?.GetComponent<Button>() : null;
+        if (button == null && card != null) button = card.GetComponentInChildren<Button>(true);
         if (button == null) return;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(action);
